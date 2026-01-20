@@ -9,6 +9,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Membership from "./pages/Membership";
 import MarinaManagement from "./pages/MarinaManagement";
+import DryStackLaunch from "./pages/DryStackLaunch";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/marina" element={<MarinaManagement />} />
+          <Route path="/dry-stack" element={<DryStackLaunch />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
