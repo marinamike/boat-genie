@@ -2,130 +2,132 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Boat Genie Design System - Nautical Maritime Theme
-   Colors: Deep navy blues, teal accents, warm coral highlights
+/* Boat Genie Design System - Modern Nautical Luxury
+   Colors: Deep Navy (#000080), Champagne Gold, Clean White
+   Mobile-first with high sun visibility
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    /* Ocean Navy - Primary brand color */
-    --background: 210 25% 98%;
-    --foreground: 215 50% 12%;
+    /* Pure White Background */
+    --background: 0 0% 100%;
+    --foreground: 240 100% 6%;
 
-    /* Cards with subtle blue tint */
-    --card: 210 40% 100%;
-    --card-foreground: 215 50% 12%;
+    /* Cards - Clean White */
+    --card: 0 0% 100%;
+    --card-foreground: 240 100% 6%;
 
-    --popover: 210 40% 100%;
-    --popover-foreground: 215 50% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 100% 6%;
 
-    /* Deep Navy Primary */
-    --primary: 215 70% 18%;
-    --primary-foreground: 210 40% 98%;
+    /* Deep Navy Primary - #000080 */
+    --primary: 240 100% 25%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Soft Blue-Gray Secondary */
-    --secondary: 210 30% 94%;
-    --secondary-foreground: 215 50% 18%;
+    /* Light Gray Secondary */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 240 100% 15%;
 
-    /* Muted Ocean Tones */
-    --muted: 210 25% 92%;
-    --muted-foreground: 215 20% 45%;
+    /* Muted Tones */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    /* Teal Accent */
-    --accent: 185 65% 35%;
-    --accent-foreground: 0 0% 100%;
+    /* Champagne Gold Accent */
+    --accent: 40 60% 55%;
+    --accent-foreground: 240 100% 6%;
 
-    /* Coral Destructive/CTA */
-    --destructive: 12 80% 55%;
+    /* Emergency Red for urgent actions */
+    --destructive: 0 84% 50%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders and Inputs */
-    --border: 210 30% 88%;
-    --input: 210 30% 90%;
-    --ring: 185 65% 35%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 40 60% 55%;
 
-    --radius: 0.625rem;
+    --radius: 0.5rem;
 
-    /* Sidebar - Deeper Navy */
-    --sidebar-background: 215 70% 14%;
-    --sidebar-foreground: 210 25% 90%;
-    --sidebar-primary: 185 65% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 60% 22%;
-    --sidebar-accent-foreground: 210 25% 95%;
-    --sidebar-border: 215 50% 20%;
-    --sidebar-ring: 185 65% 50%;
+    /* Sidebar - Deep Navy */
+    --sidebar-background: 240 100% 15%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 40 60% 55%;
+    --sidebar-primary-foreground: 240 100% 6%;
+    --sidebar-accent: 240 100% 22%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 80% 25%;
+    --sidebar-ring: 40 60% 55%;
 
-    /* Custom Boat Genie Tokens */
-    --ocean: 215 70% 18%;
-    --ocean-light: 210 50% 95%;
-    --teal: 185 65% 35%;
-    --teal-light: 185 45% 90%;
-    --coral: 12 80% 55%;
-    --coral-light: 12 60% 92%;
-    --sand: 40 30% 92%;
-    --wave: 200 60% 45%;
+    /* Boat Genie Custom Tokens */
+    --navy: 240 100% 25%;
+    --navy-deep: 240 100% 15%;
+    --navy-light: 220 30% 96%;
+    --gold: 40 60% 55%;
+    --gold-light: 40 45% 92%;
+    --champagne: 40 35% 75%;
+
+    /* Status Colors - High Contrast */
+    --status-completed: 142 76% 36%;
+    --status-in-progress: 45 93% 47%;
+    --status-emergency: 0 84% 50%;
+    --status-pending: 220 9% 46%;
 
     /* Gradients */
-    --gradient-ocean: linear-gradient(135deg, hsl(215 70% 18%) 0%, hsl(200 60% 30%) 100%);
-    --gradient-sunset: linear-gradient(135deg, hsl(12 80% 55%) 0%, hsl(35 85% 55%) 100%);
-    --gradient-teal: linear-gradient(135deg, hsl(185 65% 35%) 0%, hsl(170 55% 40%) 100%);
-    --gradient-sky: linear-gradient(180deg, hsl(200 60% 90%) 0%, hsl(210 40% 98%) 100%);
+    --gradient-navy: linear-gradient(135deg, hsl(240 100% 25%) 0%, hsl(240 100% 18%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(40 60% 55%) 0%, hsl(35 55% 50%) 100%);
+    --gradient-luxury: linear-gradient(135deg, hsl(240 100% 20%) 0%, hsl(40 40% 35%) 100%);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(215 50% 12% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 50% 12% / 0.08), 0 2px 4px -2px hsl(215 50% 12% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(215 50% 12% / 0.1), 0 4px 6px -4px hsl(215 50% 12% / 0.05);
-    --shadow-ocean: 0 10px 30px -10px hsl(185 65% 35% / 0.3);
-    --shadow-coral: 0 10px 30px -10px hsl(12 80% 55% / 0.3);
+    /* Shadows - Refined */
+    --shadow-sm: 0 1px 2px hsl(240 100% 6% / 0.04);
+    --shadow-md: 0 4px 6px -1px hsl(240 100% 6% / 0.06), 0 2px 4px -2px hsl(240 100% 6% / 0.04);
+    --shadow-lg: 0 10px 15px -3px hsl(240 100% 6% / 0.08), 0 4px 6px -4px hsl(240 100% 6% / 0.04);
+    --shadow-gold: 0 4px 14px -3px hsl(40 60% 55% / 0.4);
   }
 
   .dark {
-    --background: 215 50% 8%;
-    --foreground: 210 25% 95%;
+    --background: 240 100% 6%;
+    --foreground: 0 0% 98%;
 
-    --card: 215 50% 12%;
-    --card-foreground: 210 25% 95%;
+    --card: 240 100% 10%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 215 50% 12%;
-    --popover-foreground: 210 25% 95%;
+    --popover: 240 100% 10%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 185 65% 50%;
-    --primary-foreground: 215 50% 8%;
+    --primary: 40 60% 55%;
+    --primary-foreground: 240 100% 6%;
 
-    --secondary: 215 40% 18%;
-    --secondary-foreground: 210 25% 95%;
+    --secondary: 240 100% 15%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 215 40% 18%;
-    --muted-foreground: 210 20% 60%;
+    --muted: 240 100% 15%;
+    --muted-foreground: 220 9% 60%;
 
-    --accent: 185 65% 45%;
-    --accent-foreground: 215 50% 8%;
+    --accent: 40 60% 55%;
+    --accent-foreground: 240 100% 6%;
 
-    --destructive: 12 70% 50%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 40% 22%;
-    --input: 215 40% 22%;
-    --ring: 185 65% 50%;
+    --border: 240 80% 20%;
+    --input: 240 80% 20%;
+    --ring: 40 60% 55%;
 
-    --sidebar-background: 215 55% 6%;
-    --sidebar-foreground: 210 25% 90%;
-    --sidebar-primary: 185 65% 50%;
-    --sidebar-primary-foreground: 215 50% 8%;
-    --sidebar-accent: 215 50% 14%;
-    --sidebar-accent-foreground: 210 25% 95%;
-    --sidebar-border: 215 40% 16%;
-    --sidebar-ring: 185 65% 50%;
+    --sidebar-background: 240 100% 5%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 40 60% 55%;
+    --sidebar-primary-foreground: 240 100% 6%;
+    --sidebar-accent: 240 100% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 80% 18%;
+    --sidebar-ring: 40 60% 55%;
 
-    --ocean: 185 65% 50%;
-    --ocean-light: 215 50% 18%;
-    --teal: 185 65% 50%;
-    --teal-light: 185 50% 20%;
-    --coral: 12 70% 50%;
-    --coral-light: 12 50% 20%;
+    --navy: 40 60% 55%;
+    --navy-deep: 240 100% 8%;
+    --navy-light: 240 100% 18%;
+    --gold: 40 60% 55%;
+    --gold-light: 40 50% 25%;
   }
 }
 
@@ -136,75 +138,123 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4 {
-    font-family: 'Playfair Display', Georgia, serif;
+  /* Clean sans-serif for all headings - maximum legibility */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
   }
 }
 
 @layer utilities {
-  .text-gradient-ocean {
+  /* Text Gradients */
+  .text-gradient-navy {
     @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-ocean);
+    background-image: var(--gradient-navy);
   }
 
-  .text-gradient-sunset {
+  .text-gradient-gold {
     @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-sunset);
+    background-image: var(--gradient-gold);
   }
 
-  .bg-gradient-ocean {
-    background-image: var(--gradient-ocean);
+  /* Background Gradients */
+  .bg-gradient-navy {
+    background-image: var(--gradient-navy);
   }
 
-  .bg-gradient-sunset {
-    background-image: var(--gradient-sunset);
+  .bg-gradient-gold {
+    background-image: var(--gradient-gold);
   }
 
-  .bg-gradient-teal {
-    background-image: var(--gradient-teal);
+  .bg-gradient-luxury {
+    background-image: var(--gradient-luxury);
   }
 
-  .bg-gradient-sky {
-    background-image: var(--gradient-sky);
+  /* Shadows */
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
   }
 
-  .shadow-ocean {
-    box-shadow: var(--shadow-ocean);
+  /* Status Badge Colors */
+  .status-completed {
+    @apply bg-green-100 text-green-800 border-green-200;
   }
 
-  .shadow-coral {
-    box-shadow: var(--shadow-coral);
+  .status-in-progress {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200;
   }
 
-  .animate-wave {
-    animation: wave 3s ease-in-out infinite;
+  .status-emergency {
+    @apply bg-red-100 text-red-800 border-red-200;
   }
 
-  @keyframes wave {
-    0%, 100% {
-      transform: translateY(0) rotate(0deg);
+  .status-pending {
+    @apply bg-gray-100 text-gray-700 border-gray-200;
+  }
+
+  /* High-contrast button styles for sun visibility */
+  .btn-primary-high-contrast {
+    @apply bg-primary text-primary-foreground font-semibold;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-gold-high-contrast {
+    @apply bg-accent text-foreground font-semibold;
+    box-shadow: var(--shadow-gold);
+  }
+
+  /* Touch-friendly sizing */
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /* Animations */
+  .animate-fade-up {
+    animation: fade-up 0.5s ease-out forwards;
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
     }
-    25% {
-      transform: translateY(-3px) rotate(1deg);
-    }
-    75% {
-      transform: translateY(3px) rotate(-1deg);
-    }
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% {
+    to {
+      opacity: 1;
       transform: translateY(0);
     }
-    50% {
-      transform: translateY(-10px);
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out forwards;
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out forwards;
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
     }
   }
 }
