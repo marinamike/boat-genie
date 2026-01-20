@@ -1,11 +1,48 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Ship, User, Building2, Anchor } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
 
 const BottomNav = () => {
   const location = useLocation();
-  const { isAdmin, hasMarina, isProvider } = useUserRole();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isProvider, setIsProvider] = useState(false);
+  const [hasMarina, setHasMarina] = useState(false);
+
+  useEffect(() => {
+    const checkRoles = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        // Check if admin
+        const { data: adminData } = await supabase.rpc("is_admin");
+        setIsAdmin(!!adminData);
+
+        // Check if provider
+        const { data: providerData } = await supabase.rpc("has_role", {
+          _user_id: session.user.id,
+          _role: "provider",
+        });
+        setIsProvider(!!providerData);
+
+        // Check if has marina (for admin)
+        if (adminData) {
+          const { data: marinaData } = await supabase
+            .from("marinas")
+            .select("id")
+            .eq("manager_id", session.user.id)
+            .maybeSingle();
+          setHasMarina(!!marinaData);
+        }
+      } catch (error) {
+        console.error("Error checking roles:", error);
+      }
+    };
+
+    checkRoles();
+  }, []);
 
   const baseNavItems = [
     { href: "/dashboard", icon: Home, label: "Home" },
