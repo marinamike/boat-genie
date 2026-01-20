@@ -48,21 +48,21 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-sky flex items-center justify-center p-6">
-      <Card className="w-full max-w-md animate-scale-in">
-        <CardHeader className="text-center">
-          <Link to="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-gradient-ocean rounded-xl flex items-center justify-center">
-              <Anchor className="w-7 h-7 text-primary-foreground" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md animate-scale-in shadow-lg">
+        <CardHeader className="text-center pb-2">
+          <Link to="/" className="inline-flex items-center justify-center mb-4">
+            <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center">
+              <Anchor className="w-7 h-7 text-primary-foreground" strokeWidth={2.5} />
             </div>
           </Link>
-          <CardTitle className="text-2xl font-display">Create Account</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">Create Account</CardTitle>
           <CardDescription>Join Boat Genie and start managing your vessel</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName" className="font-medium">Full Name</Label>
               <Input
                 id="fullName"
                 type="text"
@@ -70,10 +70,11 @@ const Signup = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
+                className="h-12 touch-target"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -81,10 +82,11 @@ const Signup = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-12 touch-target"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -92,15 +94,20 @@ const Signup = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-12 touch-target"
               />
             </div>
-            <Button type="submit" className="w-full bg-gradient-sunset shadow-coral" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-gradient-gold hover:opacity-90 shadow-gold text-foreground font-semibold touch-target" 
+              disabled={loading}
+            >
               {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
           <p className="text-center text-sm text-muted-foreground mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-teal hover:underline font-medium">
+            <Link to="/login" className="text-primary hover:underline font-semibold">
               Sign in
             </Link>
           </p>

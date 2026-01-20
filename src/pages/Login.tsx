@@ -41,21 +41,21 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-sky flex items-center justify-center p-6">
-      <Card className="w-full max-w-md animate-scale-in">
-        <CardHeader className="text-center">
-          <Link to="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-gradient-ocean rounded-xl flex items-center justify-center">
-              <Anchor className="w-7 h-7 text-primary-foreground" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md animate-scale-in shadow-lg">
+        <CardHeader className="text-center pb-2">
+          <Link to="/" className="inline-flex items-center justify-center mb-4">
+            <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center">
+              <Anchor className="w-7 h-7 text-primary-foreground" strokeWidth={2.5} />
             </div>
           </Link>
-          <CardTitle className="text-2xl font-display">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">Welcome Back</CardTitle>
           <CardDescription>Sign in to your Boat Genie account</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -63,25 +63,31 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-12 touch-target"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="h-12 touch-target"
               />
             </div>
-            <Button type="submit" className="w-full bg-gradient-ocean" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-primary hover:bg-primary/90 font-semibold touch-target" 
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-teal hover:underline font-medium">
+            <Link to="/signup" className="text-primary hover:underline font-semibold">
               Sign up
             </Link>
           </p>
