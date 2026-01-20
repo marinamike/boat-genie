@@ -10,7 +10,10 @@ import Dashboard from "./pages/Dashboard";
 import Membership from "./pages/Membership";
 import MarinaManagement from "./pages/MarinaManagement";
 import DryStackLaunch from "./pages/DryStackLaunch";
+import Profile from "./pages/Profile";
+import RegisterMarina from "./pages/RegisterMarina";
 import NotFound from "./pages/NotFound";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -27,6 +30,8 @@ const App = () => (
           <Route path="/membership" element={<Membership />} />
           <Route path="/marina" element={<MarinaManagement />} />
           <Route path="/dry-stack" element={<DryStackLaunch />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/register-marina" element={<RegisterMarina />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

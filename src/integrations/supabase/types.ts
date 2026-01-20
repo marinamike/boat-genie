@@ -405,6 +405,7 @@ export type Database = {
           enabled_modules: Database["public"]["Enums"]["marina_module"][]
           id: string
           launch_mode: Database["public"]["Enums"]["launch_mode"]
+          marina_id: string | null
           marina_name: string
           re_rack_fee: number
           staging_dock_capacity_ft: number
@@ -417,6 +418,7 @@ export type Database = {
           enabled_modules?: Database["public"]["Enums"]["marina_module"][]
           id?: string
           launch_mode?: Database["public"]["Enums"]["launch_mode"]
+          marina_id?: string | null
           marina_name?: string
           re_rack_fee?: number
           staging_dock_capacity_ft?: number
@@ -429,13 +431,22 @@ export type Database = {
           enabled_modules?: Database["public"]["Enums"]["marina_module"][]
           id?: string
           launch_mode?: Database["public"]["Enums"]["launch_mode"]
+          marina_id?: string | null
           marina_name?: string
           re_rack_fee?: number
           staging_dock_capacity_ft?: number
           stale_timeout_minutes?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "marina_settings_marina_id_fkey"
+            columns: ["marina_id"]
+            isOneToOne: false
+            referencedRelation: "marinas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marina_slips: {
         Row: {
@@ -486,6 +497,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marinas: {
+        Row: {
+          address: string | null
+          amenities: string[]
+          created_at: string
+          id: string
+          manager_id: string
+          marina_name: string
+          staging_dock_linear_footage: number
+          total_slips: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[]
+          created_at?: string
+          id?: string
+          manager_id: string
+          marina_name: string
+          staging_dock_linear_footage?: number
+          total_slips?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[]
+          created_at?: string
+          id?: string
+          manager_id?: string
+          marina_name?: string
+          staging_dock_linear_footage?: number
+          total_slips?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -939,6 +986,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_role: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -951,6 +999,7 @@ export type Database = {
         Args: { _work_order_id: string }
         Returns: boolean
       }
+      is_marina_manager: { Args: never; Returns: boolean }
       owns_boat: { Args: { _boat_id: string }; Returns: boolean }
     }
     Enums: {
