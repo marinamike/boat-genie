@@ -4,14 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Anchor } from "lucide-react";
+import { Anchor, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RoleSelector } from "@/components/onboarding/RoleSelector";
+import type { AppRole } from "@/hooks/useUserRole";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [selectedRole, setSelectedRole] = useState<AppRole>("boat_owner");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -20,7 +23,7 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -37,6 +40,17 @@ const Signup = () => {
         description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
+      return;
+    }
+
+    // If marina manager selected, redirect to registration
+    if (selectedRole === "admin") {
+      toast({
+        title: "Welcome aboard!",
+        description: "Let's set up your marina.",
+      });
+      navigate("/register-marina");
     } else {
       toast({
         title: "Welcome aboard!",
@@ -97,12 +111,25 @@ const Signup = () => {
                 className="h-12 touch-target"
               />
             </div>
+
+            <div className="space-y-2 pt-2">
+              <Label className="font-medium">I am a...</Label>
+              <RoleSelector selectedRole={selectedRole} onSelect={setSelectedRole} />
+            </div>
+
             <Button 
               type="submit" 
               className="w-full h-12 bg-gradient-gold hover:opacity-90 shadow-gold text-foreground font-semibold touch-target" 
               disabled={loading}
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </Button>
           </form>
           <p className="text-center text-sm text-muted-foreground mt-6">
