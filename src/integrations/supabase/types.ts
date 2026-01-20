@@ -231,14 +231,184 @@ export type Database = {
         }
         Relationships: []
       }
+      launch_cards: {
+        Row: {
+          additional_notes: string | null
+          battery_off_confirmed: boolean
+          boat_id: string
+          boat_log_id: string | null
+          created_at: string
+          damage_notes: string | null
+          engine_flush_confirmed: boolean
+          fuel_level: string | null
+          id: string
+          inspection_completed_at: string | null
+          inspection_started_at: string
+          launch_queue_id: string
+          operation_type: string
+          operator_id: string
+          visual_inspection_passed: boolean
+        }
+        Insert: {
+          additional_notes?: string | null
+          battery_off_confirmed?: boolean
+          boat_id: string
+          boat_log_id?: string | null
+          created_at?: string
+          damage_notes?: string | null
+          engine_flush_confirmed?: boolean
+          fuel_level?: string | null
+          id?: string
+          inspection_completed_at?: string | null
+          inspection_started_at?: string
+          launch_queue_id: string
+          operation_type?: string
+          operator_id: string
+          visual_inspection_passed?: boolean
+        }
+        Update: {
+          additional_notes?: string | null
+          battery_off_confirmed?: boolean
+          boat_id?: string
+          boat_log_id?: string | null
+          created_at?: string
+          damage_notes?: string | null
+          engine_flush_confirmed?: boolean
+          fuel_level?: string | null
+          id?: string
+          inspection_completed_at?: string | null
+          inspection_started_at?: string
+          launch_queue_id?: string
+          operation_type?: string
+          operator_id?: string
+          visual_inspection_passed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_cards_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launch_cards_boat_log_id_fkey"
+            columns: ["boat_log_id"]
+            isOneToOne: false
+            referencedRelation: "boat_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launch_cards_launch_queue_id_fkey"
+            columns: ["launch_queue_id"]
+            isOneToOne: false
+            referencedRelation: "launch_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launch_cards_launch_queue_id_fkey"
+            columns: ["launch_queue_id"]
+            isOneToOne: false
+            referencedRelation: "launch_queue_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      launch_queue: {
+        Row: {
+          boat_id: string
+          checked_in_at: string | null
+          created_at: string
+          eta: string | null
+          hauled_at: string | null
+          id: string
+          is_stale: boolean
+          notes: string | null
+          on_deck_at: string | null
+          owner_id: string
+          queue_position: number | null
+          re_rack_fee_charged: boolean
+          re_rack_fee_charged_at: string | null
+          requested_at: string
+          scheduled_time: string | null
+          slip_id: string | null
+          splashed_at: string | null
+          stale_flagged_at: string | null
+          status: Database["public"]["Enums"]["launch_status"]
+          updated_at: string
+        }
+        Insert: {
+          boat_id: string
+          checked_in_at?: string | null
+          created_at?: string
+          eta?: string | null
+          hauled_at?: string | null
+          id?: string
+          is_stale?: boolean
+          notes?: string | null
+          on_deck_at?: string | null
+          owner_id: string
+          queue_position?: number | null
+          re_rack_fee_charged?: boolean
+          re_rack_fee_charged_at?: string | null
+          requested_at?: string
+          scheduled_time?: string | null
+          slip_id?: string | null
+          splashed_at?: string | null
+          stale_flagged_at?: string | null
+          status?: Database["public"]["Enums"]["launch_status"]
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string
+          checked_in_at?: string | null
+          created_at?: string
+          eta?: string | null
+          hauled_at?: string | null
+          id?: string
+          is_stale?: boolean
+          notes?: string | null
+          on_deck_at?: string | null
+          owner_id?: string
+          queue_position?: number | null
+          re_rack_fee_charged?: boolean
+          re_rack_fee_charged_at?: string | null
+          requested_at?: string
+          scheduled_time?: string | null
+          slip_id?: string | null
+          splashed_at?: string | null
+          stale_flagged_at?: string | null
+          status?: Database["public"]["Enums"]["launch_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_queue_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launch_queue_slip_id_fkey"
+            columns: ["slip_id"]
+            isOneToOne: false
+            referencedRelation: "marina_slips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marina_settings: {
         Row: {
           capacity_alert_threshold: number
           created_at: string
           enabled_modules: Database["public"]["Enums"]["marina_module"][]
           id: string
+          launch_mode: Database["public"]["Enums"]["launch_mode"]
           marina_name: string
+          re_rack_fee: number
           staging_dock_capacity_ft: number
+          stale_timeout_minutes: number
           updated_at: string
         }
         Insert: {
@@ -246,8 +416,11 @@ export type Database = {
           created_at?: string
           enabled_modules?: Database["public"]["Enums"]["marina_module"][]
           id?: string
+          launch_mode?: Database["public"]["Enums"]["launch_mode"]
           marina_name?: string
+          re_rack_fee?: number
           staging_dock_capacity_ft?: number
+          stale_timeout_minutes?: number
           updated_at?: string
         }
         Update: {
@@ -255,8 +428,11 @@ export type Database = {
           created_at?: string
           enabled_modules?: Database["public"]["Enums"]["marina_module"][]
           id?: string
+          launch_mode?: Database["public"]["Enums"]["launch_mode"]
           marina_name?: string
+          re_rack_fee?: number
           staging_dock_capacity_ft?: number
+          stale_timeout_minutes?: number
           updated_at?: string
         }
         Relationships: []
@@ -405,6 +581,61 @@ export type Database = {
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      re_rack_fees: {
+        Row: {
+          amount: number
+          boat_id: string
+          charged_at: string
+          charged_by: string
+          id: string
+          launch_queue_id: string
+          owner_id: string
+          reason: string
+        }
+        Insert: {
+          amount?: number
+          boat_id: string
+          charged_at?: string
+          charged_by: string
+          id?: string
+          launch_queue_id: string
+          owner_id: string
+          reason?: string
+        }
+        Update: {
+          amount?: number
+          boat_id?: string
+          charged_at?: string
+          charged_by?: string
+          id?: string
+          launch_queue_id?: string
+          owner_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_rack_fees_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_rack_fees_launch_queue_id_fkey"
+            columns: ["launch_queue_id"]
+            isOneToOne: false
+            referencedRelation: "launch_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_rack_fees_launch_queue_id_fkey"
+            columns: ["launch_queue_id"]
+            isOneToOne: false
+            referencedRelation: "launch_queue_public"
             referencedColumns: ["id"]
           },
         ]
@@ -691,6 +922,21 @@ export type Database = {
           },
         ]
       }
+      launch_queue_public: {
+        Row: {
+          boat_name: string | null
+          boat_type: string | null
+          id: string | null
+          is_own_boat: boolean | null
+          on_deck_at: string | null
+          queue_position: number | null
+          requested_at: string | null
+          scheduled_time: string | null
+          splashed_at: string | null
+          status: Database["public"]["Enums"]["launch_status"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -719,6 +965,16 @@ export type Database = {
         | "pending_release"
         | "released"
         | "disputed"
+      launch_mode: "live_queue" | "scheduled_windows"
+      launch_status:
+        | "queued"
+        | "on_deck"
+        | "splashing"
+        | "splashed"
+        | "in_water"
+        | "hauling"
+        | "re_racked"
+        | "cancelled"
       marina_module: "dry_stack" | "ship_store" | "fuel_dock" | "service_yard"
       membership_tier: "standard" | "genie"
       quote_status: "pending" | "accepted" | "rejected" | "expired"
@@ -873,6 +1129,17 @@ export const Constants = {
         "pending_release",
         "released",
         "disputed",
+      ],
+      launch_mode: ["live_queue", "scheduled_windows"],
+      launch_status: [
+        "queued",
+        "on_deck",
+        "splashing",
+        "splashed",
+        "in_water",
+        "hauling",
+        "re_racked",
+        "cancelled",
       ],
       marina_module: ["dry_stack", "ship_store", "fuel_dock", "service_yard"],
       membership_tier: ["standard", "genie"],
