@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      boat_checkins: {
+        Row: {
+          boat_id: string
+          checked_in_at: string
+          checked_out_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          owner_id: string
+          slip_id: string | null
+          welcome_packet_sent: boolean
+          welcome_packet_sent_at: string | null
+        }
+        Insert: {
+          boat_id: string
+          checked_in_at?: string
+          checked_out_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          slip_id?: string | null
+          welcome_packet_sent?: boolean
+          welcome_packet_sent_at?: string | null
+        }
+        Update: {
+          boat_id?: string
+          checked_in_at?: string
+          checked_out_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          slip_id?: string | null
+          welcome_packet_sent?: boolean
+          welcome_packet_sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_checkins_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_checkins_slip_id_fkey"
+            columns: ["slip_id"]
+            isOneToOne: false
+            referencedRelation: "marina_slips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boat_log_photos: {
         Row: {
           boat_log_id: string
@@ -177,6 +231,86 @@ export type Database = {
         }
         Relationships: []
       }
+      marina_settings: {
+        Row: {
+          capacity_alert_threshold: number
+          created_at: string
+          enabled_modules: Database["public"]["Enums"]["marina_module"][]
+          id: string
+          marina_name: string
+          staging_dock_capacity_ft: number
+          updated_at: string
+        }
+        Insert: {
+          capacity_alert_threshold?: number
+          created_at?: string
+          enabled_modules?: Database["public"]["Enums"]["marina_module"][]
+          id?: string
+          marina_name?: string
+          staging_dock_capacity_ft?: number
+          updated_at?: string
+        }
+        Update: {
+          capacity_alert_threshold?: number
+          created_at?: string
+          enabled_modules?: Database["public"]["Enums"]["marina_module"][]
+          id?: string
+          marina_name?: string
+          staging_dock_capacity_ft?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marina_slips: {
+        Row: {
+          created_at: string
+          current_boat_id: string | null
+          current_boat_length_ft: number | null
+          id: string
+          is_occupied: boolean
+          max_length_ft: number
+          notes: string | null
+          position_order: number
+          slip_number: string
+          slip_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_boat_id?: string | null
+          current_boat_length_ft?: number | null
+          id?: string
+          is_occupied?: boolean
+          max_length_ft?: number
+          notes?: string | null
+          position_order?: number
+          slip_number: string
+          slip_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_boat_id?: string | null
+          current_boat_length_ft?: number | null
+          id?: string
+          is_occupied?: boolean
+          max_length_ft?: number
+          notes?: string | null
+          position_order?: number
+          slip_number?: string
+          slip_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marina_slips_current_boat_id_fkey"
+            columns: ["current_boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -329,6 +463,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      welcome_packet_files: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          file_name: string
+          file_type: string
+          file_url: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -549,6 +719,7 @@ export type Database = {
         | "pending_release"
         | "released"
         | "disputed"
+      marina_module: "dry_stack" | "ship_store" | "fuel_dock" | "service_yard"
       membership_tier: "standard" | "genie"
       quote_status: "pending" | "accepted" | "rejected" | "expired"
       service_type: "genie_service" | "pro_service"
@@ -703,6 +874,7 @@ export const Constants = {
         "released",
         "disputed",
       ],
+      marina_module: ["dry_stack", "ship_store", "fuel_dock", "service_yard"],
       membership_tier: ["standard", "genie"],
       quote_status: ["pending", "accepted", "rejected", "expired"],
       service_type: ["genie_service", "pro_service"],
