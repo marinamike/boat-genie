@@ -210,6 +210,107 @@ export type Database = {
         }
         Relationships: []
       }
+      quotes: {
+        Row: {
+          base_price: number
+          created_at: string
+          emergency_fee: number
+          id: string
+          is_emergency: boolean
+          lead_fee: number
+          notes: string | null
+          provider_id: string
+          service_fee: number
+          service_type: Database["public"]["Enums"]["service_type"]
+          status: Database["public"]["Enums"]["quote_status"]
+          total_owner_price: number
+          total_provider_receives: number
+          updated_at: string
+          valid_until: string | null
+          work_order_id: string
+        }
+        Insert: {
+          base_price: number
+          created_at?: string
+          emergency_fee?: number
+          id?: string
+          is_emergency?: boolean
+          lead_fee?: number
+          notes?: string | null
+          provider_id: string
+          service_fee?: number
+          service_type?: Database["public"]["Enums"]["service_type"]
+          status?: Database["public"]["Enums"]["quote_status"]
+          total_owner_price: number
+          total_provider_receives: number
+          updated_at?: string
+          valid_until?: string | null
+          work_order_id: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          emergency_fee?: number
+          id?: string
+          is_emergency?: boolean
+          lead_fee?: number
+          notes?: string | null
+          provider_id?: string
+          service_fee?: number
+          service_type?: Database["public"]["Enums"]["service_type"]
+          status?: Database["public"]["Enums"]["quote_status"]
+          total_owner_price?: number
+          total_provider_receives?: number
+          updated_at?: string
+          valid_until?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_rates: {
+        Row: {
+          created_at: string
+          description: string | null
+          diagnostic_fee: number | null
+          id: string
+          is_active: boolean
+          rate_per_foot: number | null
+          service_name: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          diagnostic_fee?: number | null
+          id?: string
+          is_active?: boolean
+          rate_per_foot?: number | null
+          service_name: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          diagnostic_fee?: number | null
+          id?: string
+          is_active?: boolean
+          rate_per_foot?: number | null
+          service_name?: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -283,51 +384,88 @@ export type Database = {
       }
       work_orders: {
         Row: {
+          accepted_quote_id: string | null
           boat_id: string
           completed_at: string | null
           created_at: string
           description: string | null
+          emergency_fee: number | null
+          escrow_amount: number | null
+          escrow_status: Database["public"]["Enums"]["escrow_status"]
+          funds_released_at: string | null
           id: string
+          is_emergency: boolean
+          lead_fee: number | null
+          photos_uploaded_at: string | null
           priority: number | null
           provider_id: string | null
           retail_price: number | null
           scheduled_date: string | null
+          service_fee: number | null
+          service_type: Database["public"]["Enums"]["service_type"] | null
           status: Database["public"]["Enums"]["work_order_status"]
           title: string
           updated_at: string
           wholesale_price: number | null
         }
         Insert: {
+          accepted_quote_id?: string | null
           boat_id: string
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          emergency_fee?: number | null
+          escrow_amount?: number | null
+          escrow_status?: Database["public"]["Enums"]["escrow_status"]
+          funds_released_at?: string | null
           id?: string
+          is_emergency?: boolean
+          lead_fee?: number | null
+          photos_uploaded_at?: string | null
           priority?: number | null
           provider_id?: string | null
           retail_price?: number | null
           scheduled_date?: string | null
+          service_fee?: number | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
           status?: Database["public"]["Enums"]["work_order_status"]
           title: string
           updated_at?: string
           wholesale_price?: number | null
         }
         Update: {
+          accepted_quote_id?: string | null
           boat_id?: string
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          emergency_fee?: number | null
+          escrow_amount?: number | null
+          escrow_status?: Database["public"]["Enums"]["escrow_status"]
+          funds_released_at?: string | null
           id?: string
+          is_emergency?: boolean
+          lead_fee?: number | null
+          photos_uploaded_at?: string | null
           priority?: number | null
           provider_id?: string | null
           retail_price?: number | null
           scheduled_date?: string | null
+          service_fee?: number | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
           status?: Database["public"]["Enums"]["work_order_status"]
           title?: string
           updated_at?: string
           wholesale_price?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "work_orders_accepted_quote_id_fkey"
+            columns: ["accepted_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "work_orders_boat_id_fkey"
             columns: ["boat_id"]
@@ -339,7 +477,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      boat_profiles_masked: {
+        Row: {
+          boat_id: string | null
+          created_at: string | null
+          gate_code: string | null
+          id: string | null
+          marina_address: string | null
+          marina_name: string | null
+          slip_number: string | null
+          special_instructions: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          boat_id?: string | null
+          created_at?: string | null
+          gate_code?: never
+          id?: string | null
+          marina_address?: string | null
+          marina_name?: string | null
+          slip_number?: never
+          special_instructions?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          boat_id?: string | null
+          created_at?: string | null
+          gate_code?: never
+          id?: string | null
+          marina_address?: string | null
+          marina_name?: string | null
+          slip_number?: never
+          special_instructions?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_profiles_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: true
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
@@ -358,7 +539,19 @@ export type Database = {
     }
     Enums: {
       app_role: "boat_owner" | "provider" | "admin"
+      escrow_status:
+        | "none"
+        | "pending_quote"
+        | "quoted"
+        | "approved"
+        | "work_started"
+        | "pending_photos"
+        | "pending_release"
+        | "released"
+        | "disputed"
       membership_tier: "standard" | "genie"
+      quote_status: "pending" | "accepted" | "rejected" | "expired"
+      service_type: "genie_service" | "pro_service"
       wish_form_status:
         | "submitted"
         | "reviewed"
@@ -499,7 +692,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["boat_owner", "provider", "admin"],
+      escrow_status: [
+        "none",
+        "pending_quote",
+        "quoted",
+        "approved",
+        "work_started",
+        "pending_photos",
+        "pending_release",
+        "released",
+        "disputed",
+      ],
       membership_tier: ["standard", "genie"],
+      quote_status: ["pending", "accepted", "rejected", "expired"],
+      service_type: ["genie_service", "pro_service"],
       wish_form_status: [
         "submitted",
         "reviewed",
