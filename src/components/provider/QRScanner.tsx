@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Camera, X } from "lucide-react";
 
@@ -16,19 +16,49 @@ export function QRScanner({ open, onClose, onScan, onScanFailed }: QRScannerProp
   const [error, setError] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const hasScanned = useRef(false);
+  const isRunning = useRef(false);
+  const containerIdRef = useRef(`qr-reader-${Date.now()}`);
+
+  const stopScanner = useCallback(async () => {
+    if (scannerRef.current && isRunning.current) {
+      try {
+        isRunning.current = false;
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (err) {
+        // Ignore stop errors - scanner may already be stopped
+        console.log("Scanner stop handled:", err);
+      }
+      scannerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) {
       hasScanned.current = false;
+      stopScanner();
       return;
     }
+
+    // Generate new container ID each time dialog opens
+    containerIdRef.current = `qr-reader-${Date.now()}`;
 
     const initScanner = async () => {
       setIsInitializing(true);
       setError(null);
 
+      // Wait for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const container = document.getElementById(containerIdRef.current);
+      if (!container) {
+        setError("Scanner container not found");
+        setIsInitializing(false);
+        return;
+      }
+
       try {
-        const scanner = new Html5Qrcode("qr-reader");
+        const scanner = new Html5Qrcode(containerIdRef.current);
         scannerRef.current = scanner;
 
         await scanner.start(
@@ -40,7 +70,7 @@ export function QRScanner({ open, onClose, onScan, onScanFailed }: QRScannerProp
           (decodedText) => {
             if (!hasScanned.current) {
               hasScanned.current = true;
-              onScan(decodedText);
+              stopScanner().then(() => onScan(decodedText));
             }
           },
           () => {
@@ -48,6 +78,7 @@ export function QRScanner({ open, onClose, onScan, onScanFailed }: QRScannerProp
           }
         );
 
+        isRunning.current = true;
         setIsInitializing(false);
       } catch (err: any) {
         console.error("QR Scanner error:", err);
@@ -56,28 +87,21 @@ export function QRScanner({ open, onClose, onScan, onScanFailed }: QRScannerProp
       }
     };
 
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(initScanner, 100);
+    initScanner();
 
     return () => {
-      clearTimeout(timer);
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(console.error);
-        scannerRef.current = null;
-      }
+      stopScanner();
     };
-  }, [open, onScan]);
+  }, [open, onScan, stopScanner]);
 
-  const handleClose = () => {
-    if (scannerRef.current) {
-      scannerRef.current.stop().catch(console.error);
-      scannerRef.current = null;
-    }
+  const handleClose = async () => {
+    await stopScanner();
     onClose();
   };
 
-  const handleManualFallback = () => {
-    handleClose();
+  const handleManualFallback = async () => {
+    await stopScanner();
+    onClose();
     onScanFailed();
   };
 
@@ -89,15 +113,18 @@ export function QRScanner({ open, onClose, onScan, onScanFailed }: QRScannerProp
             <Camera className="w-5 h-5" />
             Scan Marina QR Code
           </DialogTitle>
+          <DialogDescription>
+            Point your camera at the marina QR code to verify your arrival.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div 
-            id="qr-reader" 
+            id={containerIdRef.current}
             className="w-full aspect-square bg-muted rounded-lg overflow-hidden relative"
           >
             {isInitializing && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+              <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
                 <div className="text-center space-y-2">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   <p className="text-sm text-muted-foreground">Starting camera...</p>
@@ -113,16 +140,12 @@ export function QRScanner({ open, onClose, onScan, onScanFailed }: QRScannerProp
             </div>
           )}
 
-          <p className="text-sm text-muted-foreground text-center">
-            Point your camera at the marina QR code to verify your arrival.
-          </p>
-
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleClose}>
+            <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
               <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
-            <Button variant="secondary" className="flex-1" onClick={handleManualFallback}>
+            <Button type="button" variant="secondary" className="flex-1" onClick={handleManualFallback}>
               Manual Check-In
             </Button>
           </div>
