@@ -231,22 +231,30 @@ export function useProviderOnboarding() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return null;
 
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split(".").pop()?.toLowerCase();
       const fileName = `${session.user.id}/${type}_${Date.now()}.${fileExt}`;
+
+      // Determine correct Content-Type for proper browser display
+      const contentTypeMap: Record<string, string> = {
+        pdf: "application/pdf",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        gif: "image/gif",
+        webp: "image/webp",
+      };
+      const contentType = contentTypeMap[fileExt || ""] || file.type || "application/octet-stream";
 
       const { error: uploadError } = await supabase.storage
         .from("provider-documents")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: contentType,
+        });
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("provider-documents")
-        .getPublicUrl(fileName);
-
-      // For private buckets, we need the authenticated URL
-      const fileUrl = urlData.publicUrl;
-
+      // Store ONLY the file path (not full URL) for signed URL generation later
       // Update the appropriate field
       const updateField = type === "insurance" 
         ? "insurance_doc_url" 
@@ -254,10 +262,10 @@ export function useProviderOnboarding() {
           ? "w9_doc_url" 
           : "logo_url";
 
-      await updateProfile({ [updateField]: fileUrl } as Partial<ProviderOnboardingProfile>);
+      await updateProfile({ [updateField]: fileName } as Partial<ProviderOnboardingProfile>);
       
       toast({ title: "Document uploaded successfully!" });
-      return fileUrl;
+      return fileName;
     } catch (error: any) {
       console.error("Error uploading document:", error);
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
