@@ -21,6 +21,7 @@ interface Profile {
 const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [safetyTimeoutHit, setSafetyTimeoutHit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -30,29 +31,50 @@ const Profile = () => {
   const { role, isAdmin, hasMarina, updateRole, loading: roleLoading, refetch: refetchRole } = useUserRole();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, email, phone")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-      if (profileData) {
-        setProfile(profileData);
-        setFullName(profileData.full_name || "");
-        setPhone(profileData.phone || "");
-      }
-
+    const timeout = window.setTimeout(() => {
+      // Safety: never trap the UI on the loading state.
+      setSafetyTimeoutHit(true);
       setLoading(false);
+    }, 4000);
+
+    const checkAuth = async () => {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (!session) {
+          navigate("/login");
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name, email, phone")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        if (profileData) {
+          setProfile(profileData);
+          setFullName(profileData.full_name || "");
+          setPhone(profileData.phone || "");
+        }
+      } catch (error) {
+        console.error("Profile: auth/profile load failed", error);
+        // Fail open: allow the rest of the page to render.
+      } finally {
+        window.clearTimeout(timeout);
+        setLoading(false);
+      }
     };
 
     checkAuth();
+    return () => window.clearTimeout(timeout);
   }, [navigate]);
 
   const handleSave = async () => {
@@ -107,7 +129,7 @@ const Profile = () => {
     navigate("/login");
   };
 
-  if (loading || roleLoading) {
+  if ((loading || roleLoading) && !safetyTimeoutHit) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Anchor className="w-12 h-12 text-primary animate-pulse" />
