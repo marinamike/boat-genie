@@ -616,55 +616,100 @@ export type Database = {
       }
       provider_profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           bio: string | null
           business_name: string | null
           created_at: string
           diagnostic_fee: number | null
+          ein: string | null
           hourly_rate: number | null
           id: string
           insurance_doc_url: string | null
           insurance_expiry: string | null
           is_available: boolean
+          logo_url: string | null
+          onboarding_status: string
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          primary_contact_phone: string | null
           rate_per_foot: number | null
           rates_agreed: boolean
           rates_locked_at: string | null
+          rejection_reason: string | null
           service_categories: string[]
+          stripe_account_id: string | null
+          stripe_connected: boolean
+          submitted_for_review_at: string | null
+          terms_accepted: boolean
+          terms_accepted_at: string | null
           updated_at: string
           user_id: string
+          w9_doc_url: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           bio?: string | null
           business_name?: string | null
           created_at?: string
           diagnostic_fee?: number | null
+          ein?: string | null
           hourly_rate?: number | null
           id?: string
           insurance_doc_url?: string | null
           insurance_expiry?: string | null
           is_available?: boolean
+          logo_url?: string | null
+          onboarding_status?: string
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
           rate_per_foot?: number | null
           rates_agreed?: boolean
           rates_locked_at?: string | null
+          rejection_reason?: string | null
           service_categories?: string[]
+          stripe_account_id?: string | null
+          stripe_connected?: boolean
+          submitted_for_review_at?: string | null
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id: string
+          w9_doc_url?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           bio?: string | null
           business_name?: string | null
           created_at?: string
           diagnostic_fee?: number | null
+          ein?: string | null
           hourly_rate?: number | null
           id?: string
           insurance_doc_url?: string | null
           insurance_expiry?: string | null
           is_available?: boolean
+          logo_url?: string | null
+          onboarding_status?: string
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
           rate_per_foot?: number | null
           rates_agreed?: boolean
           rates_locked_at?: string | null
+          rejection_reason?: string | null
           service_categories?: string[]
+          stripe_account_id?: string | null
+          stripe_connected?: boolean
+          submitted_for_review_at?: string | null
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string
+          w9_doc_url?: string | null
         }
         Relationships: []
       }
