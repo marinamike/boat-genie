@@ -22,6 +22,7 @@ const TestingPanel = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [currentRole, setCurrentRole] = useState<AppRole | null>(null);
+  const [allRoles, setAllRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -34,16 +35,19 @@ const TestingPanel = () => {
         setIsVisible(true);
         setUserId(session.user.id);
         
-        // Fetch current role
-        const { data: roleData } = await supabase
+        // Fetch current roles
+        const { data: rolesData, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        
-        if (roleData) {
-          setCurrentRole(roleData.role as AppRole);
+          .eq("user_id", session.user.id);
+
+        if (rolesError) {
+          console.error("TestingPanel: failed to load roles", rolesError);
         }
+
+        const roles = (rolesData ?? []).map((r) => r.role as AppRole);
+        setAllRoles(roles);
+        setCurrentRole(roles[0] ?? null);
       }
     };
 
@@ -54,18 +58,23 @@ const TestingPanel = () => {
         setIsVisible(true);
         setUserId(session.user.id);
         
-        const { data: roleData } = await supabase
+        const { data: rolesData, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        
-        if (roleData) {
-          setCurrentRole(roleData.role as AppRole);
+          .eq("user_id", session.user.id);
+
+        if (rolesError) {
+          console.error("TestingPanel: failed to load roles", rolesError);
         }
+
+        const roles = (rolesData ?? []).map((r) => r.role as AppRole);
+        setAllRoles(roles);
+        setCurrentRole(roles[0] ?? null);
       } else {
         setIsVisible(false);
         setUserId(null);
+        setAllRoles([]);
+        setCurrentRole(null);
       }
     });
 
@@ -80,11 +89,13 @@ const TestingPanel = () => {
     try {
       // Keep a SINGLE active role per user by updating the existing row.
       // (There is no delete policy on user_roles, so delete will fail under RLS.)
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from("user_roles")
         .select("id")
         .eq("user_id", userId)
         .maybeSingle();
+
+      if (existingError) throw existingError;
 
       const { error } = existing?.id
         ? await supabase
@@ -98,6 +109,7 @@ const TestingPanel = () => {
       if (error) throw error;
 
       setCurrentRole(newRole);
+      setAllRoles([newRole]);
       toast({
         title: "Role switched",
         description: `Now viewing as ${ROLES.find(r => r.role === newRole)?.label}`,
@@ -106,7 +118,12 @@ const TestingPanel = () => {
       // Reload page to apply role changes
       window.location.reload();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to switch role";
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: unknown }).message)
+          : error instanceof Error
+            ? error.message
+            : "Failed to switch role";
       console.error("Error switching role:", error);
       setLastError(message);
       toast({
@@ -153,6 +170,11 @@ const TestingPanel = () => {
             <p className="text-xs text-muted-foreground mb-3">
               Current: <Badge variant="outline" className="ml-1">{currentRole || "none"}</Badge>
             </p>
+            {allRoles.length > 1 && (
+              <p className="text-xs text-muted-foreground">
+                Roles rows: {allRoles.join(", ")}
+              </p>
+            )}
             {lastError && (
               <p className="text-xs text-destructive break-words">
                 {lastError}
