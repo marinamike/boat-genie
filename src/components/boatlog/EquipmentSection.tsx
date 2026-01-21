@@ -296,14 +296,17 @@ export function EquipmentSection({ form, onEquipmentMatch }: EquipmentSectionPro
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs">Model</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <Select 
+                  onValueChange={(val) => field.onChange(val === "none" ? "" : val)} 
+                  value={field.value || "none"}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select model" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {seakeeperModels.map((model) => (
                       <SelectItem key={model} value={model}>
                         Seakeeper {model}
