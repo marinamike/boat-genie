@@ -137,7 +137,6 @@ export function MarinaRegistrationForm({ onSubmit, loading }: MarinaRegistration
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/50"
                     }`}
-                    onClick={() => handleAmenityToggle(amenity.id)}
                   >
                     <Checkbox
                       id={amenity.id}
