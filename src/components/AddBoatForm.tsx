@@ -29,8 +29,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Ship, Trash2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Ship, Trash2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,7 +42,10 @@ const formSchema = z.object({
   model: z.string().optional(),
   year: z.coerce.number().min(1900).max(new Date().getFullYear() + 1).optional().or(z.literal("")),
   length_ft: z.coerce.number().min(1).max(500).optional().or(z.literal("")),
+  marina_name: z.string().optional(),
   slip_number: z.string().optional(),
+  gate_code: z.string().optional(),
+  special_instructions: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,7 +58,10 @@ export interface BoatToEdit {
   year: number | null;
   length_ft?: number | null;
   boat_profiles: {
+    marina_name: string | null;
     slip_number: string | null;
+    gate_code: string | null;
+    special_instructions: string | null;
   } | null;
 }
 
@@ -80,7 +88,10 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
       model: "",
       year: "",
       length_ft: "",
+      marina_name: "",
       slip_number: "",
+      gate_code: "",
+      special_instructions: "",
     },
   });
 
@@ -93,7 +104,10 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
         model: boatToEdit.model || "",
         year: boatToEdit.year || "",
         length_ft: boatToEdit.length_ft || "",
+        marina_name: boatToEdit.boat_profiles?.marina_name || "",
         slip_number: boatToEdit.boat_profiles?.slip_number || "",
+        gate_code: boatToEdit.boat_profiles?.gate_code || "",
+        special_instructions: boatToEdit.boat_profiles?.special_instructions || "",
       });
     } else if (open && !boatToEdit) {
       form.reset({
@@ -102,7 +116,10 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
         model: "",
         year: "",
         length_ft: "",
+        marina_name: "",
         slip_number: "",
+        gate_code: "",
+        special_instructions: "",
       });
     }
   }, [open, boatToEdit, form]);
@@ -126,23 +143,28 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
         if (boatError) throw boatError;
 
         // Update or create boat_profile
-        if (data.slip_number) {
-          const { data: existingProfile } = await supabase
-            .from("boat_profiles")
-            .select("id")
-            .eq("boat_id", boatToEdit.id)
-            .maybeSingle();
+        const profileData = {
+          marina_name: data.marina_name || null,
+          slip_number: data.slip_number || null,
+          gate_code: data.gate_code || null,
+          special_instructions: data.special_instructions || null,
+        };
 
-          if (existingProfile) {
-            await supabase
-              .from("boat_profiles")
-              .update({ slip_number: data.slip_number })
-              .eq("boat_id", boatToEdit.id);
-          } else {
-            await supabase
-              .from("boat_profiles")
-              .insert({ boat_id: boatToEdit.id, slip_number: data.slip_number });
-          }
+        const { data: existingProfile } = await supabase
+          .from("boat_profiles")
+          .select("id")
+          .eq("boat_id", boatToEdit.id)
+          .maybeSingle();
+
+        if (existingProfile) {
+          await supabase
+            .from("boat_profiles")
+            .update(profileData)
+            .eq("boat_id", boatToEdit.id);
+        } else {
+          await supabase
+            .from("boat_profiles")
+            .insert({ boat_id: boatToEdit.id, ...profileData });
         }
 
         toast({
@@ -166,13 +188,16 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
 
         if (boatError) throw boatError;
 
-        // If slip number provided, create boat_profile
-        if (data.slip_number && boat) {
+        // Create boat_profile with all fields
+        if (boat) {
           const { error: profileError } = await supabase
             .from("boat_profiles")
             .insert({
               boat_id: boat.id,
-              slip_number: data.slip_number,
+              marina_name: data.marina_name || null,
+              slip_number: data.slip_number || null,
+              gate_code: data.gate_code || null,
+              special_instructions: data.special_instructions || null,
             });
 
           if (profileError) {
@@ -248,7 +273,7 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
@@ -265,6 +290,7 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Vessel Details */}
             <FormField
               control={form.control}
               name="name"
@@ -339,19 +365,85 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="slip_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location / Slip #</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. A-15" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <Separator className="my-4" />
+
+            {/* Location Details */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Location & Access</h4>
+              
+              <FormField
+                control={form.control}
+                name="marina_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marina Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Sunset Harbor Marina" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="slip_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Slip Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. A-15" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Separator className="my-4" />
+
+            {/* Security Details */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-muted-foreground" />
+                <h4 className="text-sm font-medium text-muted-foreground">Security (Private)</h4>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This information is hidden by default and only shared with service providers after a work order is accepted.
+              </p>
+              
+              <FormField
+                control={form.control}
+                name="gate_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gate Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. 1234#" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="special_instructions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Access Instructions</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="e.g. Key is under the dock box. Enter through the side gate after hours."
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex gap-3 pt-4">
               {isEditMode && (

@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Anchor, Ship, Plus, Eye, EyeOff, Sparkles, LogOut, Pencil } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Anchor, Ship, Plus, Sparkles, LogOut, Pencil, Lock, ChevronDown, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import FloatingActionButton from "@/components/FloatingActionButton";
@@ -19,9 +20,10 @@ interface Boat {
   year: number | null;
   length_ft: number | null;
   boat_profiles: {
+    marina_name: string | null;
     slip_number: string | null;
     gate_code: string | null;
-    marina_name: string | null;
+    special_instructions: string | null;
   } | null;
 }
 
@@ -35,7 +37,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [boats, setBoats] = useState<Boat[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
-  const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
+  const [expandedAccess, setExpandedAccess] = useState<Record<string, boolean>>({});
   const [showBoatForm, setShowBoatForm] = useState(false);
   const [boatToEdit, setBoatToEdit] = useState<BoatToEdit | null>(null);
   const navigate = useNavigate();
@@ -53,9 +55,10 @@ const Dashboard = () => {
         year,
         length_ft,
         boat_profiles (
+          marina_name,
           slip_number,
           gate_code,
-          marina_name
+          special_instructions
         )
       `)
       .eq("owner_id", user.id);
@@ -107,13 +110,13 @@ const Dashboard = () => {
     navigate("/login", { replace: true });
   };
 
-  const toggleSensitive = (boatId: string) => {
-    setShowSensitive(prev => ({ ...prev, [boatId]: !prev[boatId] }));
+  const toggleAccessDetails = (boatId: string) => {
+    setExpandedAccess(prev => ({ ...prev, [boatId]: !prev[boatId] }));
   };
 
-  const maskValue = (value: string | null, show: boolean) => {
-    if (!value) return "—";
-    return show ? value : "••••••";
+  const maskValue = (value: string | null) => {
+    if (!value) return null;
+    return "••••••";
   };
 
   const handleMakeWish = () => {
@@ -256,37 +259,71 @@ const Dashboard = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-4">
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Marina</span>
-                        <span className="font-medium text-sm">{boat.boat_profiles?.marina_name || "—"}</span>
+                    <div className="space-y-3">
+                      {/* Location Info - Always Visible */}
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">
+                            {boat.boat_profiles?.marina_name || "No marina set"}
+                          </div>
+                          {boat.boat_profiles?.slip_number && (
+                            <div className="text-sm text-muted-foreground">
+                              Slip {boat.boat_profiles.slip_number}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Slip #</span>
-                        <span className="font-mono text-sm">{maskValue(boat.boat_profiles?.slip_number || null, showSensitive[boat.id])}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Gate Code</span>
-                        <span className="font-mono text-sm">{maskValue(boat.boat_profiles?.gate_code || null, showSensitive[boat.id])}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full mt-3 font-medium"
-                        onClick={() => toggleSensitive(boat.id)}
-                      >
-                        {showSensitive[boat.id] ? (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            Hide Details
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Show Details
-                          </>
-                        )}
-                      </Button>
+
+                      {/* Security Access - Collapsible & Masked by Default */}
+                      {(boat.boat_profiles?.gate_code || boat.boat_profiles?.special_instructions) && (
+                        <Collapsible
+                          open={expandedAccess[boat.id]}
+                          onOpenChange={() => toggleAccessDetails(boat.id)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full justify-between mt-2 text-muted-foreground hover:text-foreground"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Lock className="w-4 h-4" />
+                                <span className="text-sm font-medium">Security & Access</span>
+                              </div>
+                              <ChevronDown 
+                                className={`w-4 h-4 transition-transform ${
+                                  expandedAccess[boat.id] ? "rotate-180" : ""
+                                }`}
+                              />
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="pt-3 space-y-2.5 border-t border-border mt-2">
+                            {boat.boat_profiles?.gate_code && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Gate Code</span>
+                                <span className="font-mono text-sm">
+                                  {expandedAccess[boat.id] 
+                                    ? boat.boat_profiles.gate_code 
+                                    : maskValue(boat.boat_profiles.gate_code)
+                                  }
+                                </span>
+                              </div>
+                            )}
+                            {boat.boat_profiles?.special_instructions && (
+                              <div className="space-y-1">
+                                <span className="text-sm text-muted-foreground">Access Instructions</span>
+                                <p className="text-sm bg-muted/50 p-2 rounded-md">
+                                  {expandedAccess[boat.id] 
+                                    ? boat.boat_profiles.special_instructions 
+                                    : maskValue(boat.boat_profiles.special_instructions)
+                                  }
+                                </p>
+                              </div>
+                            )}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
