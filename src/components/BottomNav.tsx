@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Ship, User, Building2, Anchor } from "lucide-react";
+import { Home, Ship, User, Building2, Anchor, Wrench, HardHat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,6 +8,7 @@ const BottomNav = () => {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProvider, setIsProvider] = useState(false);
+  const [isMarinaStaff, setIsMarinaStaff] = useState(false);
   const [hasMarina, setHasMarina] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,13 @@ const BottomNav = () => {
           _role: "provider",
         });
         setIsProvider(!!providerData);
+
+        // Check if marina staff
+        const { data: staffData } = await supabase.rpc("has_role", {
+          _user_id: session.user.id,
+          _role: "marina_staff",
+        });
+        setIsMarinaStaff(!!staffData);
 
         // Check if has marina (for admin)
         if (adminData) {
@@ -50,21 +58,33 @@ const BottomNav = () => {
     { href: "/profile", icon: User, label: "Profile" },
   ];
 
-  // Add marina management for admins with marina
-  const navItems = isAdmin && hasMarina
-    ? [
-        ...baseNavItems.slice(0, 1),
-        { href: "/marina", icon: Building2, label: "Marina" },
-        { href: "/dry-stack", icon: Anchor, label: "Launch" },
-        ...baseNavItems.slice(2),
-      ]
-    : isProvider
-    ? [
-        ...baseNavItems.slice(0, 1),
-        { href: "/dry-stack", icon: Anchor, label: "Launch" },
-        ...baseNavItems.slice(1),
-      ]
-    : baseNavItems;
+  // Role-based navigation
+  let navItems = baseNavItems;
+
+  if (isAdmin && hasMarina) {
+    // Marina Manager with marina
+    navItems = [
+      { href: "/dashboard", icon: Home, label: "Home" },
+      { href: "/marina", icon: Building2, label: "Marina" },
+      { href: "/dry-stack", icon: Anchor, label: "Launch" },
+      { href: "/profile", icon: User, label: "Profile" },
+    ];
+  } else if (isProvider) {
+    // Service Provider
+    navItems = [
+      { href: "/dashboard", icon: Home, label: "Home" },
+      { href: "/provider", icon: Wrench, label: "Jobs" },
+      { href: "/dry-stack", icon: Anchor, label: "Launch" },
+      { href: "/profile", icon: User, label: "Profile" },
+    ];
+  } else if (isMarinaStaff) {
+    // Marina Staff - mobile-first dock view
+    navItems = [
+      { href: "/dock", icon: HardHat, label: "Dock" },
+      { href: "/dry-stack", icon: Anchor, label: "Launch" },
+      { href: "/profile", icon: User, label: "Profile" },
+    ];
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">

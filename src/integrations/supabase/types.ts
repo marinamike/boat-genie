@@ -498,6 +498,47 @@ export type Database = {
           },
         ]
       }
+      marina_staff_requests: {
+        Row: {
+          id: string
+          marina_id: string
+          notes: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          marina_id: string
+          notes?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          marina_id?: string
+          notes?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marina_staff_requests_marina_id_fkey"
+            columns: ["marina_id"]
+            isOneToOne: false
+            referencedRelation: "marinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marinas: {
         Row: {
           address: string | null
@@ -564,6 +605,48 @@ export type Database = {
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      provider_profiles: {
+        Row: {
+          bio: string | null
+          business_name: string | null
+          created_at: string
+          hourly_rate: number | null
+          id: string
+          insurance_doc_url: string | null
+          insurance_expiry: string | null
+          is_available: boolean
+          service_categories: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          business_name?: string | null
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expiry?: string | null
+          is_available?: boolean
+          service_categories?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          business_name?: string | null
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expiry?: string | null
+          is_available?: boolean
+          service_categories?: string[]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1003,7 +1086,7 @@ export type Database = {
       owns_boat: { Args: { _boat_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "boat_owner" | "provider" | "admin"
+      app_role: "boat_owner" | "provider" | "admin" | "marina_staff"
       escrow_status:
         | "none"
         | "pending_quote"
@@ -1167,7 +1250,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["boat_owner", "provider", "admin"],
+      app_role: ["boat_owner", "provider", "admin", "marina_staff"],
       escrow_status: [
         "none",
         "pending_quote",
