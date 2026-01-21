@@ -1049,6 +1049,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          read_at: string | null
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          read_at?: string | null
+          related_id?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          read_at?: string | null
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pending_invites: {
         Row: {
           accepted_at: string | null
@@ -1631,6 +1667,68 @@ export type Database = {
             columns: ["launch_queue_id"]
             isOneToOne: false
             referencedRelation: "launch_queue_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          flagged_at: string | null
+          flagged_by: string | null
+          flagged_reason: string | null
+          id: string
+          is_flagged: boolean
+          is_hidden: boolean
+          owner_id: string
+          provider_id: string
+          rating: number
+          tags: string[]
+          updated_at: string
+          verified_purchase: boolean
+          work_order_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          flagged_at?: string | null
+          flagged_by?: string | null
+          flagged_reason?: string | null
+          id?: string
+          is_flagged?: boolean
+          is_hidden?: boolean
+          owner_id: string
+          provider_id: string
+          rating: number
+          tags?: string[]
+          updated_at?: string
+          verified_purchase?: boolean
+          work_order_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          flagged_at?: string | null
+          flagged_by?: string | null
+          flagged_reason?: string | null
+          id?: string
+          is_flagged?: boolean
+          is_hidden?: boolean
+          owner_id?: string
+          provider_id?: string
+          rating?: number
+          tags?: string[]
+          updated_at?: string
+          verified_purchase?: boolean
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: true
+            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]

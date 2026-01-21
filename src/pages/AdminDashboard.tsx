@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Crown, TrendingUp, UserCheck, Briefcase, Users, Shield, AlertTriangle } from "lucide-react";
+import { Loader2, Crown, TrendingUp, UserCheck, Briefcase, Users, Shield, AlertTriangle, MessageSquare } from "lucide-react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { MarketplaceHealthCard } from "@/components/admin/MarketplaceHealthCard";
 import { ProviderApprovalQueue } from "@/components/admin/ProviderApprovalQueue";
@@ -10,6 +10,7 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { ViewAsUserPanel } from "@/components/admin/ViewAsUserPanel";
 import { InsuranceExpiryAlerts } from "@/components/admin/InsuranceExpiryAlerts";
 import { DisputedJobsPanel } from "@/components/admin/DisputedJobsPanel";
+import { ReviewModerationPanel } from "@/components/admin/ReviewModerationPanel";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export default function AdminDashboard() {
         />
 
         <Tabs defaultValue="health" className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
             <TabsTrigger value="health" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">Health</span>
@@ -95,6 +96,10 @@ export default function AdminDashboard() {
                   {disputedOrders.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">Reviews</span>
             </TabsTrigger>
             <TabsTrigger value="providers" className="flex items-center gap-2">
               <UserCheck className="w-4 h-4" />
@@ -116,6 +121,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="disputes" className="space-y-6">
             <DisputedJobsPanel disputes={disputedOrders} onRefresh={refetch} />
+          </TabsContent>
+
+          <TabsContent value="reviews" className="space-y-6">
+            <ReviewModerationPanel />
           </TabsContent>
 
           <TabsContent value="providers" className="space-y-6">

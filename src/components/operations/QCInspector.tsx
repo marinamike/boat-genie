@@ -172,6 +172,8 @@ export function QCInspector({ item, onBack, onComplete }: QCInspectorProps) {
             escrowStatus={item.escrow_status}
             materialsDeposit={item.materials_deposit || 0}
             laborBalance={laborBalance > 0 ? laborBalance : item.escrow_amount || 0}
+            providerId={item.provider_id || undefined}
+            providerName={item.provider_name || undefined}
             onComplete={onComplete}
           />
 
