@@ -22,6 +22,9 @@ const MANUAL_CHECKIN_REASONS = [
   "Other technical issue",
 ];
 
+// Testing bypass reason - skips GPS distance check
+const TESTING_BYPASS_REASON = "Testing/Development bypass";
+
 // Haversine formula to calculate distance between two points
 function calculateDistance(
   lat1: number,
@@ -192,6 +195,8 @@ export function useQRCheckIn() {
 
       // Calculate distance if marina coordinates exist
       let distanceFromMarina: number | null = null;
+      const isTestingBypass = reason === TESTING_BYPASS_REASON;
+      
       if (marinaLat && marinaLng) {
         distanceFromMarina = calculateDistance(
           position.latitude,
@@ -200,8 +205,8 @@ export function useQRCheckIn() {
           marinaLng
         );
 
-        // Check if within 500 feet
-        if (distanceFromMarina > 500) {
+        // Check if within 500 feet (skip for testing bypass)
+        if (!isTestingBypass && distanceFromMarina > 500) {
           return {
             success: false,
             method: "manual_gps",
@@ -278,5 +283,6 @@ export function useQRCheckIn() {
     requestGPSLocation,
     performManualCheckIn,
     MANUAL_CHECKIN_REASONS,
+    TESTING_BYPASS_REASON,
   };
 }

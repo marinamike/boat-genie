@@ -29,7 +29,9 @@ export function ManualCheckInDialog({
   const [status, setStatus] = useState<"idle" | "requesting_gps" | "verifying" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  const { performManualCheckIn, gpsPosition, gpsError, MANUAL_CHECKIN_REASONS } = useQRCheckIn();
+  const { performManualCheckIn, gpsPosition, gpsError, MANUAL_CHECKIN_REASONS, TESTING_BYPASS_REASON } = useQRCheckIn();
+  
+  const allReasons = [...MANUAL_CHECKIN_REASONS, TESTING_BYPASS_REASON];
 
   const handleSubmit = async () => {
     if (!selectedReason) return;
@@ -122,11 +124,15 @@ export function ManualCheckInDialog({
                 Why couldn't you scan the QR code?
               </Label>
               <RadioGroup value={selectedReason} onValueChange={setSelectedReason}>
-                {MANUAL_CHECKIN_REASONS.map((reason) => (
+                {allReasons.map((reason) => (
                   <div key={reason} className="flex items-center space-x-2">
                     <RadioGroupItem value={reason} id={reason} />
-                    <Label htmlFor={reason} className="text-sm font-normal cursor-pointer">
+                    <Label 
+                      htmlFor={reason} 
+                      className={`text-sm font-normal cursor-pointer ${reason === TESTING_BYPASS_REASON ? 'text-amber-600 dark:text-amber-400' : ''}`}
+                    >
                       {reason}
+                      {reason === TESTING_BYPASS_REASON && " ⚠️"}
                     </Label>
                   </div>
                 ))}
