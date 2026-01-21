@@ -88,7 +88,7 @@ export function WishStatusCard({ wish }: WishStatusCardProps) {
 
   return (
     <Card className={cn(
-      "transition-all hover:shadow-md",
+      "transition-all hover:shadow-md cursor-pointer",
       wish.is_emergency && "border-destructive/50 bg-destructive/5"
     )}>
       <CardContent className="p-4">
