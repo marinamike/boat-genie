@@ -188,10 +188,21 @@ export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {categoryDocs.map((doc) => (
+                    {categoryDocs.map((doc) => {
+                      const expired = isExpired(doc.expiry_date);
+                      const expiringSoon = isExpiringSoon(doc.expiry_date);
+                      
+                      // Background highlighting for expiry status
+                      const cardClassName = expired
+                        ? "overflow-hidden border-destructive/50 bg-destructive/5"
+                        : expiringSoon
+                        ? "overflow-hidden border-amber-500/50 bg-amber-500/5"
+                        : "overflow-hidden hover:shadow-sm transition-shadow";
+                      
+                      return (
                       <Card
                         key={doc.id}
-                        className="overflow-hidden hover:shadow-sm transition-shadow"
+                        className={cardClassName}
                       >
                         <CardContent className="p-3">
                           <div className="flex items-start gap-3">
@@ -205,12 +216,12 @@ export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
                                 <h4 className="font-medium text-sm truncate">
                                   {doc.title}
                                 </h4>
-                                {isExpired(doc.expiry_date) && (
+                                {expired && (
                                   <Badge variant="destructive" className="text-xs shrink-0">
                                     Expired
                                   </Badge>
                                 )}
-                                {isExpiringSoon(doc.expiry_date) && !isExpired(doc.expiry_date) && (
+                                {expiringSoon && !expired && (
                                   <Badge variant="outline" className="text-amber-600 border-amber-600 text-xs shrink-0">
                                     Expiring Soon
                                   </Badge>
@@ -264,7 +275,8 @@ export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                    );
+                    })}
                     <Button
                       variant="ghost"
                       size="sm"

@@ -259,16 +259,19 @@ export function DocumentUploadSheet({
             />
           </div>
 
-          {/* Expiry Date */}
-          {category === "warranty" && (
+          {/* Expiry Date - show for warranty (Insurance) and documentation (Registration) */}
+          {(category === "warranty" || category === "documentation") && (
             <div className="space-y-2">
-              <Label htmlFor="expiry">Expiration Date</Label>
+              <Label htmlFor="expiry">Expiration Date (optional)</Label>
               <Input
                 id="expiry"
                 type="date"
                 value={expiryDate}
                 onChange={(e) => setExpiryDate(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">
+                You'll be alerted when this document is expiring soon
+              </p>
             </div>
           )}
 
