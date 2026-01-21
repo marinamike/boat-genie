@@ -10,8 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Briefcase, DollarSign, FileText, Loader2, CheckCircle2, Lock, AlertCircle, Phone } from "lucide-react";
 import { useProviderProfile, ProviderProfile } from "@/hooks/useProviderProfile";
+import { ProviderRatingDisplay } from "@/components/reviews/ProviderRatingDisplay";
 import { cn } from "@/lib/utils";
 import { PhoneInput, isValidPhone } from "@/components/ui/phone-input";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProviderProfileFormProps {
   onComplete?: () => void;
@@ -19,6 +21,7 @@ interface ProviderProfileFormProps {
 
 export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
   const { profile, loading, isAdmin, areRatesLocked, createProfile, updateProfile, SERVICE_CATEGORIES } = useProviderProfile();
+  const [userId, setUserId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     business_name: "",
@@ -33,6 +36,12 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
   });
   const [saving, setSaving] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
 
   useEffect(() => {
     if (profile) {
@@ -113,6 +122,10 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Provider Ratings */}
+      {userId && (
+        <ProviderRatingDisplay providerId={userId} />
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
