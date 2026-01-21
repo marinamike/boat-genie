@@ -14,12 +14,21 @@ const RegisterMarina = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          navigate("/login", { replace: true });
+          return;
+        }
+      } catch (error) {
+        console.error("RegisterMarina: auth check failed", error);
+        // If something goes wrong, don't trap the user on a perpetual loader.
+      } finally {
+        setCheckingAuth(false);
       }
-      setCheckingAuth(false);
     };
 
     checkAuth();
