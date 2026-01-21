@@ -21,9 +21,13 @@ export function useUserRole() {
   const { toast } = useToast();
 
   const fetchUserData = useCallback(async () => {
+    setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        setUserId(null);
+        setRole(null);
+        setMarina(null);
         setLoading(false);
         return;
       }
@@ -54,6 +58,8 @@ export function useUserRole() {
         if (marinaData) {
           setMarina(marinaData);
         }
+      } else {
+        setMarina(null);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -64,6 +70,20 @@ export function useUserRole() {
 
   useEffect(() => {
     fetchUserData();
+  }, [fetchUserData]);
+
+  useEffect(() => {
+    const onRoleChanged = () => fetchUserData();
+    window.addEventListener("app:role-changed", onRoleChanged);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      // Keep role state in sync when the session changes.
+      fetchUserData();
+    });
+
+    return () => {
+      window.removeEventListener("app:role-changed", onRoleChanged);
+      subscription.unsubscribe();
+    };
   }, [fetchUserData]);
 
   const updateRole = async (newRole: AppRole) => {

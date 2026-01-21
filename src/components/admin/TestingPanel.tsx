@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ const TestingPanel = () => {
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -123,8 +125,10 @@ const TestingPanel = () => {
         description: `Now viewing as ${ROLES.find(r => r.role === newRole)?.label}`,
       });
 
-      // Reload page to apply role changes
-      window.location.reload();
+      // Let the rest of the app refresh role-dependent UI without a full reload.
+      window.dispatchEvent(new CustomEvent("app:role-changed"));
+      setIsOpen(false);
+      navigate("/dashboard", { replace: true });
     } catch (error: unknown) {
       const message =
         error && typeof error === "object" && "message" in error
