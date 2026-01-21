@@ -56,7 +56,7 @@ export function JobBoard() {
   const { 
     availableWishes, 
     activeWorkOrders, 
-    providerCategories,
+    providerServiceNames,
     loading, 
     submittingQuote,
     submitQuote,
@@ -88,14 +88,14 @@ export function JobBoard() {
     );
   }
 
-  if (providerCategories.length === 0) {
+  if (providerServiceNames.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Briefcase className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="font-semibold text-lg">Complete Your Profile</h3>
+          <h3 className="font-semibold text-lg">Add Services to Your Menu</h3>
           <p className="text-muted-foreground text-center max-w-sm">
-            Add your service categories in the Profile tab to see matching jobs.
+            Add at least one service to your Service Menu to see matching jobs.
           </p>
         </CardContent>
       </Card>
@@ -123,10 +123,10 @@ export function JobBoard() {
                 <Briefcase className="w-12 h-12 text-muted-foreground mb-4" />
                 <h3 className="font-semibold text-lg">No Available Jobs</h3>
                 <p className="text-muted-foreground text-center">
-                  No jobs match your service categories right now
+                  No jobs match your services right now
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Your categories: {providerCategories.join(", ")}
+                  Your services: {providerServiceNames.join(", ")}
                 </p>
               </CardContent>
             </Card>

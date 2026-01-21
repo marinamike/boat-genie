@@ -57,29 +57,34 @@ export interface QuoteFormData {
   notes?: string;
 }
 
-// Maps wish form service types to provider categories
-const SERVICE_TYPE_MAPPING: Record<string, string[]> = {
-  "Wash": ["Detailing", "Hull Cleaning"],
-  "Detail": ["Detailing"],
-  "Hull Cleaning": ["Hull Cleaning", "Detailing"],
-  "Engine Service": ["Engine Repair", "Mechanical"],
-  "Engine Repair": ["Engine Repair", "Mechanical"],
-  "Electronics": ["Electronics", "Electrical"],
-  "Electrical": ["Electrical", "Electronics"],
-  "Canvas": ["Canvas Work"],
-  "Rigging": ["Rigging"],
-  "Bottom Paint": ["Bottom Painting"],
-  "Fiberglass": ["Fiberglass Repair"],
-  "Plumbing": ["Plumbing"],
-  "HVAC": ["HVAC"],
-  "General Maintenance": ["Mechanical", "Engine Repair", "Detailing"],
-  "Other": [], // Shows to all providers
-};
+// Normalize service name for matching (case-insensitive, partial match)
+function normalizeServiceName(name: string): string {
+  return name.toLowerCase().trim();
+}
+
+// Check if a wish service type matches any provider service
+function matchesProviderService(wishServiceType: string, providerServices: string[]): boolean {
+  const normalizedWish = normalizeServiceName(wishServiceType);
+  
+  // "Other" or empty shows to providers with at least one service
+  if (normalizedWish === "other" || !normalizedWish) {
+    return providerServices.length > 0;
+  }
+  
+  return providerServices.some(service => {
+    const normalizedService = normalizeServiceName(service);
+    // Exact match or partial match (e.g., "Full Detail" matches wish "Detail")
+    return normalizedService === normalizedWish ||
+           normalizedService.includes(normalizedWish) ||
+           normalizedWish.includes(normalizedService);
+  });
+}
 
 export function useJobBoard() {
   const [availableWishes, setAvailableWishes] = useState<WishFormItem[]>([]);
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrderItem[]>([]);
   const [providerCategories, setProviderCategories] = useState<string[]>([]);
+  const [providerServiceNames, setProviderServiceNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submittingQuote, setSubmittingQuote] = useState(false);
   const { toast } = useToast();
@@ -92,15 +97,28 @@ export function useJobBoard() {
         return;
       }
 
-      // Fetch provider's service categories
+      // Fetch provider's profile for categories
       const { data: providerProfile } = await supabase
         .from("provider_profiles")
-        .select("service_categories")
+        .select("id, service_categories")
         .eq("user_id", session.user.id)
         .maybeSingle();
 
       const categories = providerProfile?.service_categories || [];
       setProviderCategories(categories);
+
+      // Fetch provider's actual Service Menu items
+      let serviceNames: string[] = [];
+      if (providerProfile?.id) {
+        const { data: providerServices } = await supabase
+          .from("provider_services")
+          .select("service_name")
+          .eq("provider_id", providerProfile.id)
+          .eq("is_active", true);
+        
+        serviceNames = (providerServices || []).map(s => s.service_name);
+      }
+      setProviderServiceNames(serviceNames);
 
       // Fetch available wishes (submitted or reviewed status)
       const { data: wishes, error: wishError } = await supabase
@@ -128,7 +146,7 @@ export function useJobBoard() {
 
       if (wishError) throw wishError;
 
-      // Filter wishes by provider's service categories
+      // Filter wishes by provider's Service Menu (actual services offered)
       const filteredWishes = (wishes || [])
         .map((wish) => {
           // Flatten boat_profiles from array to single object
@@ -144,18 +162,11 @@ export function useJobBoard() {
           };
         })
         .filter((wish) => {
-          // If provider has no categories set, show nothing until they set up profile
-          if (categories.length === 0) return false;
+          // If provider has no services in their menu, show nothing
+          if (serviceNames.length === 0) return false;
           
-          // Match service type to provider categories
-          const matchingCategories = SERVICE_TYPE_MAPPING[wish.service_type] || [];
-          
-          // "Other" shows to everyone
-          if (wish.service_type === "Other" || matchingCategories.length === 0) {
-            return true;
-          }
-          
-          return matchingCategories.some(cat => categories.includes(cat));
+          // Match wish service_type against provider's actual Service Menu
+          return matchesProviderService(wish.service_type, serviceNames);
         });
 
       // Fetch active work orders assigned to this provider
@@ -332,6 +343,7 @@ export function useJobBoard() {
     availableWishes,
     activeWorkOrders,
     providerCategories,
+    providerServiceNames,
     loading,
     submittingQuote,
     submitQuote,
