@@ -2,11 +2,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Status update messages for the chat timeline
 const STATUS_MESSAGES: Record<string, string> = {
+  "approved": "✨ Quote accepted — Job is confirmed",
   "work_started": "🔧 Provider is on-site and has started work",
   "pending_photos": "📸 Work completed — Photos have been uploaded",
-  "pending_release": "✅ Owner reviewing work — Awaiting fund release",
-  "released": "💰 Funds released — Job complete!",
-  "approved": "✨ Quote accepted — Job is confirmed",
+  "pending_release": "📋 QC Review requested — Awaiting verification",
+  "released": "💰 Payment released — Job complete!",
+  "disputed": "⚠️ Issue reported — Escrow frozen for review",
+  "deposit_released": "💵 Materials deposit released to provider",
 };
 
 /**

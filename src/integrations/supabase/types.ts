@@ -993,6 +993,104 @@ export type Database = {
           },
         ]
       }
+      qc_audit_logs: {
+        Row: {
+          action: string
+          boat_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          performed_by: string
+          performer_email: string | null
+          performer_name: string | null
+          performer_role: string | null
+          work_order_id: string
+        }
+        Insert: {
+          action: string
+          boat_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by: string
+          performer_email?: string | null
+          performer_name?: string | null
+          performer_role?: string | null
+          work_order_id: string
+        }
+        Update: {
+          action?: string
+          boat_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string
+          performer_email?: string | null
+          performer_name?: string | null
+          performer_role?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qc_audit_logs_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qc_audit_logs_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qc_checklist_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_verified: boolean | null
+          sort_order: number | null
+          verified_at: string | null
+          verified_by: string | null
+          verifier_name: string | null
+          work_order_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_verified?: boolean | null
+          sort_order?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+          verifier_name?: string | null
+          work_order_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_verified?: boolean | null
+          sort_order?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+          verifier_name?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qc_checklist_items_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           base_price: number
@@ -1001,6 +1099,7 @@ export type Database = {
           id: string
           is_emergency: boolean
           lead_fee: number
+          materials_deposit: number | null
           notes: string | null
           provider_diagnostic_fee: number | null
           provider_hourly_rate: number | null
@@ -1022,6 +1121,7 @@ export type Database = {
           id?: string
           is_emergency?: boolean
           lead_fee?: number
+          materials_deposit?: number | null
           notes?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
@@ -1043,6 +1143,7 @@ export type Database = {
           id?: string
           is_emergency?: boolean
           lead_fee?: number
+          materials_deposit?: number | null
           notes?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
@@ -1282,6 +1383,9 @@ export type Database = {
           completed_at: string | null
           created_at: string
           description: string | null
+          dispute_reason: string | null
+          disputed_at: string | null
+          disputed_by: string | null
           emergency_fee: number | null
           escrow_amount: number | null
           escrow_status: Database["public"]["Enums"]["escrow_status"]
@@ -1289,6 +1393,9 @@ export type Database = {
           id: string
           is_emergency: boolean
           lead_fee: number | null
+          materials_deposit: number | null
+          materials_deposit_released: boolean | null
+          materials_deposit_released_at: string | null
           photos_uploaded_at: string | null
           priority: number | null
           provider_checked_in_at: string | null
@@ -1296,6 +1403,11 @@ export type Database = {
           provider_hourly_rate: number | null
           provider_id: string | null
           provider_rate_per_foot: number | null
+          qc_requested_at: string | null
+          qc_verified_at: string | null
+          qc_verified_by: string | null
+          qc_verifier_name: string | null
+          qc_verifier_role: string | null
           retail_price: number | null
           scheduled_date: string | null
           service_fee: number | null
@@ -1312,6 +1424,9 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          disputed_by?: string | null
           emergency_fee?: number | null
           escrow_amount?: number | null
           escrow_status?: Database["public"]["Enums"]["escrow_status"]
@@ -1319,6 +1434,9 @@ export type Database = {
           id?: string
           is_emergency?: boolean
           lead_fee?: number | null
+          materials_deposit?: number | null
+          materials_deposit_released?: boolean | null
+          materials_deposit_released_at?: string | null
           photos_uploaded_at?: string | null
           priority?: number | null
           provider_checked_in_at?: string | null
@@ -1326,6 +1444,11 @@ export type Database = {
           provider_hourly_rate?: number | null
           provider_id?: string | null
           provider_rate_per_foot?: number | null
+          qc_requested_at?: string | null
+          qc_verified_at?: string | null
+          qc_verified_by?: string | null
+          qc_verifier_name?: string | null
+          qc_verifier_role?: string | null
           retail_price?: number | null
           scheduled_date?: string | null
           service_fee?: number | null
@@ -1342,6 +1465,9 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          disputed_by?: string | null
           emergency_fee?: number | null
           escrow_amount?: number | null
           escrow_status?: Database["public"]["Enums"]["escrow_status"]
@@ -1349,6 +1475,9 @@ export type Database = {
           id?: string
           is_emergency?: boolean
           lead_fee?: number | null
+          materials_deposit?: number | null
+          materials_deposit_released?: boolean | null
+          materials_deposit_released_at?: string | null
           photos_uploaded_at?: string | null
           priority?: number | null
           provider_checked_in_at?: string | null
@@ -1356,6 +1485,11 @@ export type Database = {
           provider_hourly_rate?: number | null
           provider_id?: string | null
           provider_rate_per_foot?: number | null
+          qc_requested_at?: string | null
+          qc_verified_at?: string | null
+          qc_verified_by?: string | null
+          qc_verifier_name?: string | null
+          qc_verifier_role?: string | null
           retail_price?: number | null
           scheduled_date?: string | null
           service_fee?: number | null

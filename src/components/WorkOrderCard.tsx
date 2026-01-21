@@ -6,6 +6,8 @@ import { EscrowStatusBadge } from "@/components/EscrowStatusBadge";
 import StatusBadge from "@/components/StatusBadge";
 import { WorkOrderChat } from "@/components/chat/WorkOrderChat";
 import { AdminChatViewer } from "@/components/admin/AdminChatViewer";
+import { QCChecklist } from "@/components/qc/QCChecklist";
+import { RequestQCReview } from "@/components/qc/RequestQCReview";
 import { 
   Ship, 
   AlertTriangle, 
@@ -35,8 +37,13 @@ interface WorkOrderCardProps {
     wholesale_price: number | null;
     escrow_amount: number | null;
     scheduled_date: string | null;
+    materials_deposit?: number | null;
+    materials_deposit_released?: boolean | null;
+    qc_requested_at?: string | null;
+    boat_id?: string;
   };
   boat?: {
+    id?: string;
     name: string;
     make: string | null;
     model: string | null;
@@ -51,12 +58,14 @@ interface WorkOrderCardProps {
   };
   showSensitiveInfo?: boolean;
   isProvider?: boolean;
-  isAdmin?: boolean; // Only admins can see provider contact info
+  isAdmin?: boolean;
+  isRunner?: boolean;
   membershipTier?: "standard" | "genie";
   onViewDetails?: () => void;
   onStartWork?: () => void;
   onUploadPhotos?: () => void;
   onReleaseFunds?: () => void;
+  onRefresh?: () => void;
 }
 
 export function WorkOrderCard({
@@ -67,13 +76,18 @@ export function WorkOrderCard({
   showSensitiveInfo = false,
   isProvider = false,
   isAdmin = false,
+  isRunner = false,
   membershipTier = "standard",
   onViewDetails,
   onStartWork,
   onUploadPhotos,
   onReleaseFunds,
+  onRefresh,
 }: WorkOrderCardProps) {
   const [showMasked, setShowMasked] = useState(false);
+
+  // Verifier can be Owner, Admin, or Runner (marina_staff)
+  const isVerifier = !isProvider && (isAdmin || isRunner || true); // Owner is always a verifier
 
   const canSeeBoatDetails = 
     showSensitiveInfo || 
@@ -99,29 +113,24 @@ export function WorkOrderCard({
           );
         case "work_started":
           return (
-            <Button size="sm" onClick={onUploadPhotos} className="flex-1">
-              <Camera className="w-4 h-4 mr-1" />
-              Upload Photos
-            </Button>
-          );
-        default:
-          return null;
-      }
-    } else {
-      switch (workOrder.escrow_status) {
-        case "pending_photos":
-        case "pending_release":
-          return (
-            <Button size="sm" onClick={onReleaseFunds} className="flex-1 bg-green-600 hover:bg-green-700">
-              <DollarSign className="w-4 h-4 mr-1" />
-              Release Funds
-            </Button>
+            <RequestQCReview
+              workOrderId={workOrder.id}
+              boatId={workOrder.boat_id || boat?.id || ""}
+              serviceDescription={workOrder.description || workOrder.title}
+              onComplete={onRefresh}
+            />
           );
         default:
           return null;
       }
     }
+    return null;
   };
+
+  // Calculate labor balance (escrow amount minus any released deposit)
+  const materialsDeposit = workOrder.materials_deposit || 0;
+  const laborBalance = (workOrder.escrow_amount || 0);
+  const showQCChecklist = ["pending_release", "disputed", "released"].includes(workOrder.escrow_status);
 
   return (
     <Card className={`overflow-hidden ${workOrder.is_emergency ? "border-destructive" : ""}`}>

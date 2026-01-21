@@ -218,6 +218,7 @@ function QuickQuoteDialog({
   
   const [laborCost, setLaborCost] = useState(autoFillAmount > 0 ? autoFillAmount.toString() : "");
   const [materialsCost, setMaterialsCost] = useState("");
+  const [materialsDeposit, setMaterialsDeposit] = useState("");
   const [estimatedDate, setEstimatedDate] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -225,6 +226,7 @@ function QuickQuoteDialog({
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && matchingService) {
       setLaborCost(autoFillAmount > 0 ? autoFillAmount.toString() : "");
+      setMaterialsDeposit("");
     }
     onOpenChange(isOpen);
   };
@@ -234,12 +236,14 @@ function QuickQuoteDialog({
     onSubmit({
       laborCost: parseFloat(laborCost) || 0,
       materialsCost: parseFloat(materialsCost) || 0,
+      materialsDeposit: parseFloat(materialsDeposit) || 0,
       estimatedCompletionDate: estimatedDate,
       notes: notes || undefined,
     });
   };
 
   const totalCost = (parseFloat(laborCost) || 0) + (parseFloat(materialsCost) || 0);
+  const depositAmount = parseFloat(materialsDeposit) || 0;
   const leadFee = totalCost * 0.05; // 5% lead fee
   const providerReceives = totalCost - leadFee;
   const serviceFee = totalCost * 0.10;

@@ -189,6 +189,10 @@ export function useWorkOrderFlow() {
         .eq("work_order_id", workOrderId)
         .neq("id", quoteId);
 
+      // Check if there's a materials deposit to release immediately
+      const materialsDeposit = quote.materials_deposit || 0;
+      const laborBalance = quote.total_owner_price - materialsDeposit;
+
       // Update work order with accepted quote and escrow info
       const { error: workOrderError } = await supabase
         .from("work_orders")
@@ -196,7 +200,10 @@ export function useWorkOrderFlow() {
           accepted_quote_id: quoteId,
           provider_id: quote.provider_id,
           escrow_status: "approved",
-          escrow_amount: quote.total_owner_price,
+          escrow_amount: laborBalance, // Only labor balance in escrow
+          materials_deposit: materialsDeposit,
+          materials_deposit_released: materialsDeposit > 0,
+          materials_deposit_released_at: materialsDeposit > 0 ? new Date().toISOString() : null,
           status: "in_progress",
           retail_price: quote.total_owner_price,
           wholesale_price: quote.total_provider_receives,
@@ -211,9 +218,16 @@ export function useWorkOrderFlow() {
       // Sync status to chat as system message
       await syncStatusToChat(workOrderId, "approved", user.id);
 
+      // If there's a deposit, add a special message
+      if (materialsDeposit > 0) {
+        await syncStatusToChat(workOrderId, "deposit_released", user.id);
+      }
+
       toast({
         title: "Quote accepted!",
-        description: "The provider can now access your boat details.",
+        description: materialsDeposit > 0 
+          ? `Materials deposit of $${materialsDeposit.toFixed(2)} released. Labor balance held in escrow.`
+          : "The provider can now access your boat details.",
       });
 
       return true;

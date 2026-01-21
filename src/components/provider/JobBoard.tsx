@@ -277,6 +277,7 @@ function QuoteDialog({
 }) {
   const [laborCost, setLaborCost] = useState("");
   const [materialsCost, setMaterialsCost] = useState("");
+  const [materialsDeposit, setMaterialsDeposit] = useState("");
   const [estimatedDate, setEstimatedDate] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -285,12 +286,14 @@ function QuoteDialog({
     onSubmit({
       laborCost: parseFloat(laborCost) || 0,
       materialsCost: parseFloat(materialsCost) || 0,
+      materialsDeposit: parseFloat(materialsDeposit) || 0,
       estimatedCompletionDate: estimatedDate,
       notes: notes || undefined,
     });
   };
 
   const totalCost = (parseFloat(laborCost) || 0) + (parseFloat(materialsCost) || 0);
+  const depositAmount = parseFloat(materialsDeposit) || 0;
   const serviceFee = totalCost * 0.10;
   const ownerTotal = totalCost + serviceFee;
 
@@ -340,6 +343,33 @@ function QuoteDialog({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Materials Deposit Field */}
+          <div className="space-y-2">
+            <Label htmlFor="deposit">
+              Materials Deposit (optional)
+              <span className="text-xs text-muted-foreground ml-1">Released immediately on approval</span>
+            </Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="deposit"
+                type="number"
+                step="0.01"
+                min="0"
+                max={totalCost}
+                placeholder="0.00"
+                value={materialsDeposit}
+                onChange={(e) => setMaterialsDeposit(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            {depositAmount > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Labor balance held in escrow: ${(totalCost - depositAmount).toFixed(2)}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
