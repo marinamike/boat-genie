@@ -35,6 +35,7 @@ import {
   Ban
 } from "lucide-react";
 import { useQCFlow, QCChecklistItem } from "@/hooks/useQCFlow";
+import { ReviewSuccessDialog } from "@/components/reviews/ReviewSuccessDialog";
 import { formatDistanceToNow } from "date-fns";
 
 interface QCChecklistProps {
@@ -44,6 +45,8 @@ interface QCChecklistProps {
   escrowStatus: string;
   materialsDeposit?: number;
   laborBalance?: number;
+  providerId?: string;
+  providerName?: string;
   onComplete?: () => void;
 }
 
@@ -54,12 +57,15 @@ export function QCChecklist({
   escrowStatus,
   materialsDeposit = 0,
   laborBalance = 0,
+  providerId,
+  providerName,
   onComplete,
 }: QCChecklistProps) {
   const [items, setItems] = useState<QCChecklistItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [issueReason, setIssueReason] = useState("");
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   
   const {
     loading,
@@ -97,9 +103,19 @@ export function QCChecklist({
 
   const handleReleaseFunds = async () => {
     const success = await verifyAndReleaseFunds(workOrderId, boatId);
-    if (success && onComplete) {
-      onComplete();
+    if (success) {
+      // Show review dialog after successful release
+      if (providerId) {
+        setReviewDialogOpen(true);
+      } else {
+        onComplete?.();
+      }
     }
+  };
+
+  const handleReviewComplete = () => {
+    setReviewDialogOpen(false);
+    onComplete?.();
   };
 
   const handleReportIssue = async () => {
@@ -318,6 +334,18 @@ export function QCChecklist({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Review Success Dialog */}
+        {providerId && (
+          <ReviewSuccessDialog
+            open={reviewDialogOpen}
+            onOpenChange={setReviewDialogOpen}
+            workOrderId={workOrderId}
+            providerId={providerId}
+            providerName={providerName}
+            onComplete={handleReviewComplete}
+          />
+        )}
       </CardContent>
     </Card>
   );

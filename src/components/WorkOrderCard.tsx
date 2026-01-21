@@ -8,6 +8,7 @@ import { WorkOrderChat } from "@/components/chat/WorkOrderChat";
 import { AdminChatViewer } from "@/components/admin/AdminChatViewer";
 import { QCChecklist } from "@/components/qc/QCChecklist";
 import { RequestQCReview } from "@/components/qc/RequestQCReview";
+import { ProviderRatingDisplay } from "@/components/reviews/ProviderRatingDisplay";
 import { 
   Ship, 
   AlertTriangle, 
@@ -54,6 +55,7 @@ interface WorkOrderCardProps {
     marina_name: string | null;
   };
   provider?: {
+    id?: string;
     business_name: string | null;
   };
   showSensitiveInfo?: boolean;
@@ -231,9 +233,12 @@ export function WorkOrderCard({
               <Wrench className="w-3 h-3" />
               Service Provider
             </span>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {provider.business_name && (
                 <p className="font-medium text-sm">{provider.business_name}</p>
+              )}
+              {provider.id && (
+                <ProviderRatingDisplay providerId={provider.id} compact />
               )}
             </div>
           </div>

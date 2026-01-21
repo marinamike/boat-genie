@@ -17,6 +17,8 @@ import { DailySchedule } from "@/components/provider/DailySchedule";
 import { LeadStream } from "@/components/provider/LeadStream";
 import { EarningsTab } from "@/components/provider/EarningsTab";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ProviderRatingDisplay } from "@/components/reviews/ProviderRatingDisplay";
 import { useProviderProfile } from "@/hooks/useProviderProfile";
 import { useProviderOnboarding } from "@/hooks/useProviderOnboarding";
 import { useProviderMetrics } from "@/hooks/useProviderMetrics";
@@ -154,6 +156,7 @@ const ProviderDashboard = () => {
           
           {profile && isActive && (
             <div className="flex items-center gap-2">
+              <NotificationBell className="text-primary-foreground" />
               <Badge 
                 variant={profile.is_available ? "default" : "secondary"}
                 className={profile.is_available ? "bg-green-500" : ""}
