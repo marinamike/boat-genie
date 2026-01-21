@@ -19,25 +19,56 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      // Prevent infinite "Signing in..." if something downstream hangs.
+      const result = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        new Promise<{ data: null; error: { message: string } }>((_, reject) =>
+          setTimeout(() => reject(new Error("Login timed out. Please try again.")), 12000)
+        ),
+      ]);
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+      const { error } = result as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Ensure the session is actually present before navigating.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast({
+          title: "Signed in, but session missing",
+          description: "Please refresh and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Welcome back!",
         description: "You have been logged in successfully.",
       });
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed.";
+      console.error("Login: sign-in failed", err);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
