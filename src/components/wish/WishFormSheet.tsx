@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info } from "lucide-react";
+import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, Loader2 } from "lucide-react";
 import { useWishForm, SERVICE_CATEGORIES, ServiceCategory, ServiceRate } from "@/hooks/useWishForm";
+import { useAllProviderServices, ProviderService } from "@/hooks/useProviderServices";
 import { formatPrice } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
@@ -37,11 +38,19 @@ const categoryIcons = {
   visual_cosmetic: Paintbrush,
 };
 
+// Map categories to provider service categories
+const CATEGORY_TO_SERVICE_CATEGORY: Record<ServiceCategory, string> = {
+  wash_detail: "Wash & Detail",
+  mechanical: "Mechanical",
+  visual_cosmetic: "Fiberglass & Gelcoat",
+};
+
 export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuccess }: WishFormSheetProps) {
   const [step, setStep] = useState<Step>("select-boat");
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
   const [selectedService, setSelectedService] = useState<string>("");
+  const [selectedProviderService, setSelectedProviderService] = useState<(ProviderService & { provider?: { business_name: string | null } }) | null>(null);
   const [description, setDescription] = useState("");
   const [isEmergency, setIsEmergency] = useState(false);
   const [preferredDate, setPreferredDate] = useState("");
@@ -49,6 +58,10 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
   const { loading, serviceRates, fetchServiceRates, calculatePrice, uploadPhotos, submitWish } = useWishForm();
+  
+  // Fetch provider services based on selected category
+  const serviceCategory = selectedCategory ? CATEGORY_TO_SERVICE_CATEGORY[selectedCategory] : undefined;
+  const { services: providerServices, loading: loadingServices } = useAllProviderServices(serviceCategory);
 
   useEffect(() => {
     if (open) {
@@ -63,6 +76,7 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
       setSelectedBoat(null);
       setSelectedCategory(null);
       setSelectedService("");
+      setSelectedProviderService(null);
       setDescription("");
       setIsEmergency(false);
       setPreferredDate("");
@@ -79,25 +93,51 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
     }
   }, [open, boats, step]);
 
-  // Auto-select service if only one in category
+  // Reset selected service when category changes
   useEffect(() => {
-    if (selectedCategory && step === "form") {
-      const category = SERVICE_CATEGORIES[selectedCategory];
-      if (category.services.length === 1 && !selectedService) {
-        setSelectedService(category.services[0]);
-      }
-    }
-  }, [selectedCategory, step, selectedService]);
+    setSelectedService("");
+    setSelectedProviderService(null);
+  }, [selectedCategory]);
 
   const getMatchingServiceRate = (): ServiceRate | null => {
     if (!selectedService) return null;
     return serviceRates.find((r) => r.service_name === selectedService) || null;
   };
 
+  // Calculate price from provider service
+  const calculateProviderServicePrice = (): { basePrice: number; serviceFee: number; emergencyFee: number; totalPrice: number } | null => {
+    if (!selectedProviderService || !selectedBoat?.length_ft) return null;
+    
+    let basePrice = 0;
+    if (selectedProviderService.pricing_model === "per_foot") {
+      basePrice = selectedProviderService.price * selectedBoat.length_ft;
+    } else {
+      basePrice = selectedProviderService.price;
+    }
+
+    const serviceFee = membershipTier === "genie" ? 0 : basePrice * 0.05;
+    const emergencyFee = isEmergency ? (membershipTier === "genie" ? 50 : 150) : 0;
+    const totalPrice = basePrice + serviceFee + emergencyFee;
+
+    return { basePrice, serviceFee, emergencyFee, totalPrice };
+  };
+
   const getPriceBreakdown = () => {
+    // First try provider service pricing
+    if (selectedProviderService) {
+      return calculateProviderServicePrice();
+    }
+    
+    // Fallback to system service rates
     const rate = getMatchingServiceRate();
     if (!rate || !selectedBoat?.length_ft) return null;
     return calculatePrice(rate, selectedBoat.length_ft, membershipTier, isEmergency);
+  };
+
+  const handleProviderServiceSelect = (serviceId: string) => {
+    const service = providerServices.find(s => s.id === serviceId);
+    setSelectedProviderService(service || null);
+    setSelectedService(service?.service_name || "");
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,7 +272,9 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
     if (!selectedCategory) return null;
     const category = SERVICE_CATEGORIES[selectedCategory];
     const priceBreakdown = getPriceBreakdown();
-    const rate = getMatchingServiceRate();
+
+    // Use provider services for wash_detail category
+    const useProviderServices = selectedCategory === "wash_detail" && providerServices.length > 0;
 
     return (
       <div className="space-y-5">
@@ -245,8 +287,53 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
           <Badge variant="outline">{category.label}</Badge>
         </div>
 
-        {/* Service Selection for categories with multiple services */}
-        {category.services.length > 1 && (
+        {/* Service Selection - Provider Services for Wash & Detail */}
+        {selectedCategory === "wash_detail" && (
+          <div className="space-y-2">
+            <Label>Select Service</Label>
+            {loadingServices ? (
+              <div className="flex items-center gap-2 p-3 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Loading available services...</span>
+              </div>
+            ) : useProviderServices ? (
+              <Select value={selectedProviderService?.id || ""} onValueChange={handleProviderServiceSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a service..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {providerServices.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      <div className="flex items-center justify-between w-full gap-4">
+                        <span>{service.service_name}</span>
+                        <span className="text-muted-foreground">
+                          ${service.price.toFixed(2)}
+                          {service.pricing_model === "per_foot" ? "/ft" : ""}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={selectedService} onValueChange={setSelectedService}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a service..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {category.services.map((service) => (
+                    <SelectItem key={service} value={service}>
+                      {service}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
+
+        {/* Service Selection for other categories */}
+        {selectedCategory !== "wash_detail" && category.services.length > 1 && (
           <div className="space-y-2">
             <Label>Select Service</Label>
             <Select value={selectedService} onValueChange={setSelectedService}>
@@ -264,9 +351,8 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
           </div>
         )}
 
-
-        {/* Instant Price Display for Genie Services */}
-        {selectedCategory === "wash_detail" && rate && priceBreakdown && (
+        {/* Instant Price Display for Wash & Detail */}
+        {selectedCategory === "wash_detail" && priceBreakdown && (selectedProviderService || getMatchingServiceRate()) && (
           <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
@@ -277,7 +363,17 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
                   </div>
                 </div>
                 <div className="text-right text-sm text-muted-foreground">
-                  <div>{selectedBoat?.length_ft}ft × {formatPrice(rate.rate_per_foot || 0)}/ft</div>
+                  {selectedProviderService ? (
+                    <>
+                      {selectedProviderService.pricing_model === "per_foot" ? (
+                        <div>{selectedBoat?.length_ft}ft × {formatPrice(selectedProviderService.price)}/ft</div>
+                      ) : (
+                        <div>Flat rate: {formatPrice(selectedProviderService.price)}</div>
+                      )}
+                    </>
+                  ) : (
+                    <div>{selectedBoat?.length_ft}ft × {formatPrice(getMatchingServiceRate()?.rate_per_foot || 0)}/ft</div>
+                  )}
                   {priceBreakdown.serviceFee > 0 && (
                     <div>+ {formatPrice(priceBreakdown.serviceFee)} service fee</div>
                   )}
@@ -286,6 +382,13 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
                   )}
                 </div>
               </div>
+              {selectedProviderService?.provider && (
+                <div className="mt-2 pt-2 border-t border-primary/20">
+                  <span className="text-xs text-muted-foreground">
+                    Provider: {selectedProviderService.provider.business_name || "Service Provider"}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

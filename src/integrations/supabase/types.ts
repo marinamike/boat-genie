@@ -668,6 +668,59 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_services: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_locked: boolean
+          locked_at: string | null
+          price: number
+          pricing_model: Database["public"]["Enums"]["pricing_model"]
+          provider_id: string
+          service_name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_locked?: boolean
+          locked_at?: string | null
+          price: number
+          pricing_model?: Database["public"]["Enums"]["pricing_model"]
+          provider_id: string
+          service_name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_locked?: boolean
+          locked_at?: string | null
+          price?: number
+          pricing_model?: Database["public"]["Enums"]["pricing_model"]
+          provider_id?: string
+          service_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_services_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           base_price: number
@@ -1154,6 +1207,7 @@ export type Database = {
         | "cancelled"
       marina_module: "dry_stack" | "ship_store" | "fuel_dock" | "service_yard"
       membership_tier: "standard" | "genie"
+      pricing_model: "per_foot" | "flat_rate"
       quote_status: "pending" | "accepted" | "rejected" | "expired"
       service_type: "genie_service" | "pro_service"
       wish_form_status:
@@ -1320,6 +1374,7 @@ export const Constants = {
       ],
       marina_module: ["dry_stack", "ship_store", "fuel_dock", "service_yard"],
       membership_tier: ["standard", "genie"],
+      pricing_model: ["per_foot", "flat_rate"],
       quote_status: ["pending", "accepted", "rejected", "expired"],
       service_type: ["genie_service", "pro_service"],
       wish_form_status: [

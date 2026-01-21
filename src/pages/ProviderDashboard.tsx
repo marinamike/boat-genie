@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, User, Briefcase, Wrench, Loader2 } from "lucide-react";
+import { ArrowLeft, User, Briefcase, Wrench, Loader2, Package } from "lucide-react";
 import { ProviderProfileForm } from "@/components/provider/ProviderProfileForm";
+import { ServiceCatalogManager } from "@/components/provider/ServiceCatalogManager";
 import { JobBoard } from "@/components/provider/JobBoard";
 import { useProviderProfile } from "@/hooks/useProviderProfile";
 import BottomNav from "@/components/BottomNav";
@@ -96,10 +97,14 @@ const ProviderDashboard = () => {
 
       <main className="px-4 py-6">
         <Tabs defaultValue={profile ? "jobs" : "profile"} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="jobs" className="flex items-center gap-2">
               <Briefcase className="w-4 h-4" />
-              Job Board
+              Jobs
+            </TabsTrigger>
+            <TabsTrigger value="services" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Services
             </TabsTrigger>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
@@ -124,6 +129,26 @@ const ProviderDashboard = () => {
               </div>
             ) : (
               <JobBoard />
+            )}
+          </TabsContent>
+
+          <TabsContent value="services">
+            {!profile ? (
+              <div className="text-center py-12">
+                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-semibold text-lg mb-2">Complete Your Profile First</h3>
+                <p className="text-muted-foreground mb-4">
+                  Set up your provider profile before adding services
+                </p>
+                <Button onClick={() => {
+                  const profileTab = document.querySelector('[value="profile"]');
+                  if (profileTab) (profileTab as HTMLElement).click();
+                }}>
+                  Go to Profile
+                </Button>
+              </div>
+            ) : (
+              <ServiceCatalogManager />
             )}
           </TabsContent>
 
