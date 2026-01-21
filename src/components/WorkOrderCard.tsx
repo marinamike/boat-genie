@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/pricing";
 import { EscrowStatusBadge } from "@/components/EscrowStatusBadge";
 import StatusBadge from "@/components/StatusBadge";
+import { WorkOrderChat } from "@/components/chat/WorkOrderChat";
+import { AdminChatViewer } from "@/components/admin/AdminChatViewer";
 import { 
   Ship, 
   AlertTriangle, 
@@ -224,10 +226,28 @@ export function WorkOrderCard({
               {provider.business_name && (
                 <p className="font-medium text-sm">{provider.business_name}</p>
               )}
-              <p className="text-xs text-muted-foreground italic">
-                Use in-app messaging for coordination
-              </p>
             </div>
+          </div>
+        )}
+
+        {/* In-App Chat - Visible after job is accepted */}
+        {canSeeProviderInfo && (
+          <div className="flex items-center gap-2">
+            {isAdmin ? (
+              <AdminChatViewer 
+                workOrderId={workOrder.id} 
+                workOrderTitle={workOrder.title}
+              />
+            ) : (
+              <WorkOrderChat 
+                workOrderId={workOrder.id}
+                otherPartyName={isProvider ? boat?.name : provider?.business_name || undefined}
+                isProvider={isProvider}
+              />
+            )}
+            <span className="text-xs text-muted-foreground">
+              Message for coordination
+            </span>
           </div>
         )}
 
