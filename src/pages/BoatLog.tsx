@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,27 @@ import {
 import { useBoatLog, WorkOrderWithDetails } from "@/hooks/useBoatLog";
 import { WorkOrderDetailSheet } from "@/components/boatlog/WorkOrderDetailSheet";
 import { ManualLogEntrySheet } from "@/components/boatlog/ManualLogEntrySheet";
-import { VesselSelector } from "@/components/boatlog/VesselSelector";
+import { VesselSwitcher } from "@/components/boatlog/VesselSwitcher";
+import { VesselEmptyState } from "@/components/boatlog/VesselEmptyState";
 import { DigitalVault } from "@/components/boatlog/DigitalVault";
 import { ServiceTimeline } from "@/components/boatlog/ServiceTimeline";
 import { formatPrice } from "@/lib/pricing";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
+import { useVessel } from "@/contexts/VesselContext";
 
 const BoatLog = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const {
+    vessels,
+    activeVessel,
+    activeVesselId,
+    setActiveVesselId,
+    loading: vesselsLoading,
+  } = useVessel();
+
   const {
     boats,
     selectedBoat,
@@ -42,6 +53,26 @@ const BoatLog = () => {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [manualEntrySheetOpen, setManualEntrySheetOpen] = useState(false);
   const [generatingYearReport, setGeneratingYearReport] = useState(false);
+
+  // Sync vessel context with useBoatLog
+  useEffect(() => {
+    if (activeVesselId && activeVesselId !== selectedBoatId) {
+      setSelectedBoatId(activeVesselId);
+    }
+  }, [activeVesselId, selectedBoatId, setSelectedBoatId]);
+
+  // Sync URL param with context on initial load
+  useEffect(() => {
+    const boatParam = searchParams.get("boat");
+    if (boatParam && boatParam !== activeVesselId) {
+      setActiveVesselId(boatParam);
+    }
+  }, [searchParams, activeVesselId, setActiveVesselId]);
+
+  const handleVesselSelect = (vesselId: string) => {
+    setActiveVesselId(vesselId);
+    setSelectedBoatId(vesselId);
+  };
 
   const handleViewDetails = (workOrder: WorkOrderWithDetails) => {
     setSelectedWorkOrder(workOrder);
@@ -98,7 +129,7 @@ Generated on ${format(new Date(), "PPP 'at' p")}
     setGeneratingYearReport(false);
   };
 
-  if (loading) {
+  if (loading || vesselsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
@@ -106,8 +137,8 @@ Generated on ${format(new Date(), "PPP 'at' p")}
     );
   }
 
-  // Empty state - no boats
-  if (boats.length === 0) {
+  // Empty state - no boats at all
+  if (vessels.length === 0) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <header className="sticky top-10 z-40 bg-background border-b border-border">
@@ -134,6 +165,29 @@ Generated on ${format(new Date(), "PPP 'at' p")}
             </CardContent>
           </Card>
         </main>
+
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // Empty state - no vessel selected (but has vessels)
+  if (!activeVesselId) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <header className="sticky top-10 z-40 bg-background border-b border-border">
+          <div className="px-4 py-4 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <Book className="w-5 h-5 text-primary" />
+              <h1 className="font-bold text-lg">Boat Log</h1>
+            </div>
+          </div>
+        </header>
+
+        <VesselEmptyState vessels={vessels} onSelectVessel={handleVesselSelect} />
 
         <BottomNav />
       </div>
@@ -188,34 +242,14 @@ Generated on ${format(new Date(), "PPP 'at' p")}
             </div>
           </div>
         </div>
-
-        {/* Vessel Selector */}
-        <VesselSelector
-          boats={boats}
-          selectedBoatId={selectedBoatId}
-          onSelect={setSelectedBoatId}
-        />
       </header>
 
-      {/* Selected Boat Header */}
-      {selectedBoat && (
-        <div className="px-4 py-4 bg-muted/30 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Ship className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="font-semibold">{selectedBoat.name}</h2>
-              {(selectedBoat.make || selectedBoat.model) && (
-                <p className="text-sm text-muted-foreground">
-                  {[selectedBoat.make, selectedBoat.model].filter(Boolean).join(" ")}
-                  {selectedBoat.length_ft && ` • ${selectedBoat.length_ft}ft`}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Vessel Switcher */}
+      <VesselSwitcher
+        vessels={vessels}
+        activeVessel={activeVessel}
+        onSelect={handleVesselSelect}
+      />
 
       <main className="px-4 py-6 space-y-6">
         {/* Digital Vault */}

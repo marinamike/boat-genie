@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Anchor, Ship, Plus, Sparkles, LogOut, Pencil, Lock, ChevronDown, MapPin } from "lucide-react";
+import { Anchor, Ship, Plus, Sparkles, LogOut, Pencil, Lock, ChevronDown, MapPin, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useVessel } from "@/contexts/VesselContext";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AddBoatForm, { BoatToEdit } from "@/components/AddBoatForm";
@@ -51,6 +52,7 @@ interface Profile {
 
 const Dashboard = () => {
   const { user, role, loading: authLoading, signOut } = useAuth();
+  const { selectVesselAndNavigate, refetchVessels } = useVessel();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [boats, setBoats] = useState<Boat[]>([]);
   const [wishes, setWishes] = useState<Wish[]>([]);
@@ -290,8 +292,8 @@ const Dashboard = () => {
               {boats.map((boat) => (
                 <Card 
                   key={boat.id} 
-                  className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/boat-log?boat=${boat.id}`)}
+                  className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
+                  onClick={() => selectVesselAndNavigate(boat.id)}
                 >
                   <CardHeader className="bg-navy-light pb-3">
                     <div className="flex items-start justify-between">
@@ -314,6 +316,7 @@ const Dashboard = () => {
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Ship className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </div>
                   </CardHeader>
@@ -416,7 +419,10 @@ const Dashboard = () => {
         <AddBoatForm
           open={showBoatForm}
           onOpenChange={handleFormClose}
-          onSuccess={fetchBoats}
+          onSuccess={() => {
+            fetchBoats();
+            refetchVessels();
+          }}
           userId={user.id}
           boatToEdit={boatToEdit}
         />
