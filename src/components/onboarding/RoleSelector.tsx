@@ -1,4 +1,4 @@
-import { Ship, Wrench, Building2 } from "lucide-react";
+import { Ship, Wrench, Building2, HardHat } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/hooks/useUserRole";
@@ -27,6 +27,12 @@ const roles = [
     title: "Marina Manager",
     description: "Manage slips, launch queue, and marina operations",
     icon: Building2,
+  },
+  {
+    id: "marina_staff" as AppRole,
+    title: "Marina Staff",
+    description: "Handle launches, dock tasks, and on-site operations",
+    icon: HardHat,
   },
 ];
 
