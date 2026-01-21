@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Ship, User, Building2, Anchor, Wrench, HardHat } from "lucide-react";
+import { Home, Ship, User, Building2, Anchor, Wrench, HardHat, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -24,11 +24,19 @@ const BottomNav = () => {
   let navItems = baseNavItems;
 
   if (isAdmin && hasMarina) {
-    // Marina Manager with marina
+    // Marina Manager with marina - includes Operations
     navItems = [
       { href: "/dashboard", icon: Home, label: "Home" },
       { href: "/marina", icon: Building2, label: "Marina" },
+      { href: "/operations", icon: ClipboardCheck, label: "Ops" },
       { href: "/dry-stack", icon: Anchor, label: "Launch" },
+      { href: "/profile", icon: User, label: "Profile" },
+    ];
+  } else if (isAdmin) {
+    // Admin without marina - still has Operations access
+    navItems = [
+      { href: "/dashboard", icon: Home, label: "Home" },
+      { href: "/operations", icon: ClipboardCheck, label: "Ops" },
       { href: "/profile", icon: User, label: "Profile" },
     ];
   } else if (isProvider) {
@@ -39,9 +47,10 @@ const BottomNav = () => {
       { href: "/profile", icon: User, label: "Profile" },
     ];
   } else if (isMarinaStaff) {
-    // Marina Staff - mobile-first dock view
+    // Marina Staff - mobile-first dock view with Operations access
     navItems = [
       { href: "/dock", icon: HardHat, label: "Dock" },
+      { href: "/operations", icon: ClipboardCheck, label: "Ops" },
       { href: "/dry-stack", icon: Anchor, label: "Launch" },
       { href: "/profile", icon: User, label: "Profile" },
     ];

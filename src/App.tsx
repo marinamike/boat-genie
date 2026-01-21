@@ -17,6 +17,7 @@ import DryStackLaunch from "./pages/DryStackLaunch";
 import Profile from "./pages/Profile";
 import RegisterMarina from "./pages/RegisterMarina";
 import AdminDashboard from "./pages/AdminDashboard";
+import Operations from "./pages/Operations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/provider" element={<ProviderDashboard />} />
               <Route path="/dock" element={<DockView />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/operations" element={<Operations />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
