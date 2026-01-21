@@ -87,6 +87,7 @@ export interface BoatWithDetails {
   name: string;
   make: string | null;
   model: string | null;
+  year: number | null;
   length_ft: number | null;
 }
 
@@ -119,7 +120,7 @@ export function useBoatLog(initialBoatId?: string) {
 
       const { data } = await supabase
         .from("boats")
-        .select("id, name, make, model, length_ft")
+        .select("id, name, make, model, year, length_ft")
         .eq("owner_id", session.user.id)
         .order("name");
 

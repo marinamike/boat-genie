@@ -261,6 +261,76 @@ export type Database = {
           },
         ]
       }
+      boat_warranties: {
+        Row: {
+          boat_equipment_id: string | null
+          boat_id: string
+          created_at: string
+          document_url: string | null
+          end_date: string
+          id: string
+          is_manual_override: boolean
+          notes: string | null
+          start_date: string
+          updated_at: string
+          warranty_default_id: string | null
+          warranty_name: string
+          warranty_type: string
+        }
+        Insert: {
+          boat_equipment_id?: string | null
+          boat_id: string
+          created_at?: string
+          document_url?: string | null
+          end_date: string
+          id?: string
+          is_manual_override?: boolean
+          notes?: string | null
+          start_date: string
+          updated_at?: string
+          warranty_default_id?: string | null
+          warranty_name: string
+          warranty_type: string
+        }
+        Update: {
+          boat_equipment_id?: string | null
+          boat_id?: string
+          created_at?: string
+          document_url?: string | null
+          end_date?: string
+          id?: string
+          is_manual_override?: boolean
+          notes?: string | null
+          start_date?: string
+          updated_at?: string
+          warranty_default_id?: string | null
+          warranty_name?: string
+          warranty_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_warranties_boat_equipment_id_fkey"
+            columns: ["boat_equipment_id"]
+            isOneToOne: false
+            referencedRelation: "boat_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_warranties_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_warranties_warranty_default_id_fkey"
+            columns: ["warranty_default_id"]
+            isOneToOne: false
+            referencedRelation: "warranty_defaults"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boats: {
         Row: {
           created_at: string
@@ -1585,6 +1655,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vessel_specs: {
+        Row: {
+          battery_count: number | null
+          battery_locations: string | null
+          battery_type: string | null
+          beam_ft: number | null
+          bridge_clearance_ft: number | null
+          created_at: string
+          draft_ft: number | null
+          dry_weight_lbs: number | null
+          engine_options: string[] | null
+          fuel_capacity_gal: number | null
+          holding_capacity_gal: number | null
+          id: string
+          length_ft: number | null
+          make: string
+          max_hp: number | null
+          model: string
+          shore_power: string | null
+          updated_at: string
+          water_capacity_gal: number | null
+          year_end: number | null
+          year_start: number | null
+        }
+        Insert: {
+          battery_count?: number | null
+          battery_locations?: string | null
+          battery_type?: string | null
+          beam_ft?: number | null
+          bridge_clearance_ft?: number | null
+          created_at?: string
+          draft_ft?: number | null
+          dry_weight_lbs?: number | null
+          engine_options?: string[] | null
+          fuel_capacity_gal?: number | null
+          holding_capacity_gal?: number | null
+          id?: string
+          length_ft?: number | null
+          make: string
+          max_hp?: number | null
+          model: string
+          shore_power?: string | null
+          updated_at?: string
+          water_capacity_gal?: number | null
+          year_end?: number | null
+          year_start?: number | null
+        }
+        Update: {
+          battery_count?: number | null
+          battery_locations?: string | null
+          battery_type?: string | null
+          beam_ft?: number | null
+          bridge_clearance_ft?: number | null
+          created_at?: string
+          draft_ft?: number | null
+          dry_weight_lbs?: number | null
+          engine_options?: string[] | null
+          fuel_capacity_gal?: number | null
+          holding_capacity_gal?: number | null
+          id?: string
+          length_ft?: number | null
+          make?: string
+          max_hp?: number | null
+          model?: string
+          shore_power?: string | null
+          updated_at?: string
+          water_capacity_gal?: number | null
+          year_end?: number | null
+          year_start?: number | null
+        }
+        Relationships: []
+      }
+      warranty_defaults: {
+        Row: {
+          brand: string
+          created_at: string
+          id: string
+          product_type: string
+          updated_at: string
+          warranty_description: string | null
+          warranty_months: number
+          warranty_name: string
+          warranty_pdf_url: string | null
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          id?: string
+          product_type: string
+          updated_at?: string
+          warranty_description?: string | null
+          warranty_months: number
+          warranty_name: string
+          warranty_pdf_url?: string | null
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          id?: string
+          product_type?: string
+          updated_at?: string
+          warranty_description?: string | null
+          warranty_months?: number
+          warranty_name?: string
+          warranty_pdf_url?: string | null
+        }
+        Relationships: []
       }
       welcome_packet_files: {
         Row: {
