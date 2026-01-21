@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, DollarSign, FileText, Loader2, CheckCircle2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Briefcase, DollarSign, FileText, Loader2, CheckCircle2, Lock, AlertCircle } from "lucide-react";
 import { useProviderProfile, ProviderProfile } from "@/hooks/useProviderProfile";
 import { cn } from "@/lib/utils";
 
@@ -15,14 +17,17 @@ interface ProviderProfileFormProps {
 }
 
 export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
-  const { profile, loading, createProfile, updateProfile, SERVICE_CATEGORIES } = useProviderProfile();
+  const { profile, loading, isAdmin, areRatesLocked, createProfile, updateProfile, SERVICE_CATEGORIES } = useProviderProfile();
   
   const [formData, setFormData] = useState({
     business_name: "",
     bio: "",
     hourly_rate: "",
+    rate_per_foot: "",
+    diagnostic_fee: "",
     service_categories: [] as string[],
     is_available: true,
+    rates_agreed: false,
   });
   const [saving, setSaving] = useState(false);
 
@@ -32,8 +37,11 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
         business_name: profile.business_name || "",
         bio: profile.bio || "",
         hourly_rate: profile.hourly_rate?.toString() || "",
+        rate_per_foot: profile.rate_per_foot?.toString() || "",
+        diagnostic_fee: profile.diagnostic_fee?.toString() || "",
         service_categories: profile.service_categories || [],
         is_available: profile.is_available,
+        rates_agreed: profile.rates_agreed,
       });
     }
   }, [profile]);
@@ -47,16 +55,29 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
     }));
   };
 
+  const canEditRates = !areRatesLocked || isAdmin;
+  const isOnboarding = !profile;
+  const canGoLive = formData.business_name && formData.service_categories.length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation: must agree to rates before going live
+    if (!profile && formData.is_available && !formData.rates_agreed) {
+      return;
+    }
+    
     setSaving(true);
 
     const profileData: Partial<ProviderProfile> = {
       business_name: formData.business_name || null,
       bio: formData.bio || null,
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+      rate_per_foot: formData.rate_per_foot ? parseFloat(formData.rate_per_foot) : null,
+      diagnostic_fee: formData.diagnostic_fee ? parseFloat(formData.diagnostic_fee) : null,
       service_categories: formData.service_categories,
       is_available: formData.is_available,
+      rates_agreed: formData.rates_agreed,
     };
 
     const success = profile 
@@ -108,20 +129,6 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="hourly_rate" className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Hourly Rate
-            </Label>
-            <Input
-              id="hourly_rate"
-              type="number"
-              placeholder="75"
-              value={formData.hourly_rate}
-              onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
-            />
-          </div>
-
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Available for Work</Label>
@@ -132,6 +139,121 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
               onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_available: checked }))}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5" />
+            Standard Rates
+            {areRatesLocked && !isAdmin && (
+              <Badge variant="secondary" className="ml-2">
+                <Lock className="w-3 h-3 mr-1" />
+                Locked
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            {isOnboarding 
+              ? "Set your standard rates. These will be locked once you go live."
+              : areRatesLocked && !isAdmin
+                ? "Rates are locked after going live. Contact Boat Genie Support to request changes."
+                : isAdmin
+                  ? "Admin override: You can edit locked rates."
+                  : "Set your standard rates before going live."
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {areRatesLocked && !isAdmin && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                To update your standard rates, please contact Boat Genie Support.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="hourly_rate" className="flex items-center gap-2">
+                Hourly Rate ($)
+              </Label>
+              <Input
+                id="hourly_rate"
+                type="number"
+                placeholder="75"
+                value={formData.hourly_rate}
+                onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
+                disabled={!canEditRates}
+                className={cn(!canEditRates && "bg-muted cursor-not-allowed")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rate_per_foot" className="flex items-center gap-2">
+                Per-Foot Rate ($)
+              </Label>
+              <Input
+                id="rate_per_foot"
+                type="number"
+                step="0.01"
+                placeholder="2.50"
+                value={formData.rate_per_foot}
+                onChange={(e) => setFormData(prev => ({ ...prev, rate_per_foot: e.target.value }))}
+                disabled={!canEditRates}
+                className={cn(!canEditRates && "bg-muted cursor-not-allowed")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="diagnostic_fee" className="flex items-center gap-2">
+                Diagnostic Fee ($)
+              </Label>
+              <Input
+                id="diagnostic_fee"
+                type="number"
+                placeholder="150"
+                value={formData.diagnostic_fee}
+                onChange={(e) => setFormData(prev => ({ ...prev, diagnostic_fee: e.target.value }))}
+                disabled={!canEditRates}
+                className={cn(!canEditRates && "bg-muted cursor-not-allowed")}
+              />
+            </div>
+          </div>
+
+          {/* Rate Agreement Checkbox - only show during onboarding or before rates are locked */}
+          {canEditRates && !profile?.rates_agreed && (
+            <div className="flex items-start space-x-3 pt-4 border-t">
+              <Checkbox
+                id="rates_agreed"
+                checked={formData.rates_agreed}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, rates_agreed: checked === true }))}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="rates_agreed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I agree that these rates are locked
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  I understand that my standard rates cannot be changed without written approval from Boat Genie. 
+                  This ensures pricing consistency for boat owners.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {isOnboarding && formData.is_available && !formData.rates_agreed && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                You must agree to lock your rates before going live.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
@@ -168,7 +290,11 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
         </CardContent>
       </Card>
 
-      <Button type="submit" className="w-full" disabled={saving}>
+      <Button 
+        type="submit" 
+        className="w-full" 
+        disabled={saving || (isOnboarding && formData.is_available && !formData.rates_agreed) || !canGoLive}
+      >
         {saving ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -176,6 +302,8 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
           </>
         ) : profile ? (
           "Update Profile"
+        ) : formData.rates_agreed ? (
+          "Go Live"
         ) : (
           "Create Profile"
         )}
