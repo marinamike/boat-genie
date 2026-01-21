@@ -185,7 +185,7 @@ export function useJobBoard() {
           wholesale_price,
           created_at,
           boat:boats(id, name, make, model, length_ft),
-          quotes(id, status, base_price, total_owner_price)
+          quotes:quotes!quotes_work_order_id_fkey(id, status, base_price, total_owner_price)
         `)
         .eq("provider_id", session.user.id)
         .not("status", "eq", "completed")
