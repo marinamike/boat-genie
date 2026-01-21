@@ -3,18 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, User, Briefcase, Wrench, Loader2, Package, ClipboardList, Lock } from "lucide-react";
+import { ArrowLeft, User, Wrench, Loader2, Package, ClipboardList, Lock, LayoutDashboard, DollarSign, Briefcase } from "lucide-react";
 import { ProviderProfileForm } from "@/components/provider/ProviderProfileForm";
 import { ServiceCatalogManager } from "@/components/provider/ServiceCatalogManager";
-import { JobBoard } from "@/components/provider/JobBoard";
 import { OnboardingChecklist } from "@/components/provider/OnboardingChecklist";
 import { BusinessProfileForm } from "@/components/provider/BusinessProfileForm";
 import { InsuranceVaultForm } from "@/components/provider/InsuranceVaultForm";
 import { TaxInfoForm } from "@/components/provider/TaxInfoForm";
 import { BankSetupForm } from "@/components/provider/BankSetupForm";
 import { TermsAcceptanceForm } from "@/components/provider/TermsAcceptanceForm";
+import { ProviderMetricsHeader } from "@/components/provider/ProviderMetricsHeader";
+import { DailySchedule } from "@/components/provider/DailySchedule";
+import { LeadStream } from "@/components/provider/LeadStream";
+import { EarningsTab } from "@/components/provider/EarningsTab";
 import { useProviderProfile } from "@/hooks/useProviderProfile";
 import { useProviderOnboarding } from "@/hooks/useProviderOnboarding";
+import { useProviderMetrics } from "@/hooks/useProviderMetrics";
+import { useJobBoard } from "@/hooks/useJobBoard";
 import BottomNav from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +36,20 @@ const ProviderDashboard = () => {
     canAccessJobBoard, 
     refetch: refetchOnboarding 
   } = useProviderOnboarding();
+  const {
+    metrics,
+    activeWorkOrders,
+    completedJobs,
+    providerServices,
+    notifyArrival,
+    updateWorkOrderStatus,
+    refetch: refetchMetrics,
+  } = useProviderMetrics();
+  const {
+    availableWishes,
+    submittingQuote,
+    submitQuote,
+  } = useJobBoard();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -65,6 +84,7 @@ const ProviderDashboard = () => {
   const handleSectionComplete = () => {
     setActiveSection(null);
     refetchOnboarding();
+    refetchMetrics();
   };
 
   if (loading) {
@@ -157,87 +177,137 @@ const ProviderDashboard = () => {
               className="mb-4"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Checklist
+              Back to Dashboard
             </Button>
             {renderSectionContent()}
           </div>
         ) : (
-          <Tabs defaultValue={isActive ? "jobs" : "setup"} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="setup" className="flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" />
-                <span className="hidden sm:inline">Setup</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="jobs" 
-                className="flex items-center gap-2"
-                disabled={!canViewJobs}
-              >
-                {!canViewJobs && <Lock className="w-3 h-3" />}
-                <Briefcase className="w-4 h-4" />
-                <span className="hidden sm:inline">Jobs</span>
-              </TabsTrigger>
-              <TabsTrigger value="services" className="flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                <span className="hidden sm:inline">Services</span>
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                <span className="hidden sm:inline">Profile</span>
-              </TabsTrigger>
-            </TabsList>
+          <>
+            {/* Metrics Header - Only show when active */}
+            {canViewJobs && (
+              <div className="mb-6">
+                <ProviderMetricsHeader
+                  activeJobs={metrics.activeJobsCount}
+                  pendingQuotes={metrics.pendingQuotesCount}
+                  totalEarnings={metrics.totalEarnings}
+                />
+              </div>
+            )}
 
-            <TabsContent value="setup">
-              <OnboardingChecklist onNavigateToSection={handleNavigateToSection} />
-            </TabsContent>
+            <Tabs defaultValue={isActive ? "schedule" : "setup"} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="setup" className="flex items-center gap-1">
+                  <ClipboardList className="w-4 h-4" />
+                  <span className="hidden sm:inline">Setup</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="schedule" 
+                  className="flex items-center gap-1"
+                  disabled={!canViewJobs}
+                >
+                  {!canViewJobs && <Lock className="w-3 h-3" />}
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="hidden sm:inline">Schedule</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="leads" 
+                  className="flex items-center gap-1"
+                  disabled={!canViewJobs}
+                >
+                  {!canViewJobs && <Lock className="w-3 h-3" />}
+                  <Briefcase className="w-4 h-4" />
+                  <span className="hidden sm:inline">Leads</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="earnings" 
+                  className="flex items-center gap-1"
+                  disabled={!canViewJobs}
+                >
+                  {!canViewJobs && <Lock className="w-3 h-3" />}
+                  <DollarSign className="w-4 h-4" />
+                  <span className="hidden sm:inline">Earnings</span>
+                </TabsTrigger>
+                <TabsTrigger value="profile" className="flex items-center gap-1">
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">Profile</span>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="jobs">
-              {!canViewJobs ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="font-semibold text-lg mb-2">Job Board Locked</h3>
-                    <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                      Complete your setup checklist and get approved by an admin before 
-                      you can view and quote on jobs.
-                    </p>
-                    <Button onClick={() => {
-                      const setupTab = document.querySelector('[value="setup"]');
-                      if (setupTab) (setupTab as HTMLElement).click();
-                    }}>
-                      Complete Setup
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <JobBoard />
-              )}
-            </TabsContent>
+              <TabsContent value="setup">
+                <OnboardingChecklist onNavigateToSection={handleNavigateToSection} />
+              </TabsContent>
 
-            <TabsContent value="services">
-              {!profile ? (
-                <div className="text-center py-12">
-                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">Complete Your Profile First</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Set up your provider profile before adding services
-                  </p>
-                  <Button onClick={() => {
-                    const profileTab = document.querySelector('[value="profile"]');
-                    if (profileTab) (profileTab as HTMLElement).click();
-                  }}>
-                    Go to Profile
-                  </Button>
-                </div>
-              ) : (
-                <ServiceCatalogManager />
-              )}
-            </TabsContent>
+              <TabsContent value="schedule">
+                {!canViewJobs ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="font-semibold text-lg mb-2">Dashboard Locked</h3>
+                      <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                        Complete your setup checklist and get approved by an admin to access your operations dashboard.
+                      </p>
+                      <Button onClick={() => {
+                        const setupTab = document.querySelector('[value="setup"]');
+                        if (setupTab) (setupTab as HTMLElement).click();
+                      }}>
+                        Complete Setup
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <DailySchedule 
+                    workOrders={activeWorkOrders}
+                    onNotifyArrival={notifyArrival}
+                    onUpdateStatus={updateWorkOrderStatus}
+                  />
+                )}
+              </TabsContent>
 
-            <TabsContent value="profile">
-              <ProviderProfileForm />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="leads">
+                {!canViewJobs ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="font-semibold text-lg mb-2">Leads Locked</h3>
+                      <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                        Complete your setup checklist to view and quote on leads.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <LeadStream 
+                    wishes={availableWishes}
+                    providerServices={providerServices}
+                    onSubmitQuote={submitQuote}
+                    submitting={submittingQuote}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="earnings">
+                {!canViewJobs ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="font-semibold text-lg mb-2">Earnings Locked</h3>
+                      <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                        Complete your setup to start earning.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <EarningsTab 
+                    completedJobs={completedJobs}
+                    totalEarnings={metrics.totalEarnings}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="profile">
+                <ProviderProfileForm />
+              </TabsContent>
+            </Tabs>
+          </>
         )}
       </main>
 
