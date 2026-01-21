@@ -37,52 +37,56 @@ const Dashboard = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        // Fetch profile
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("full_name, membership_tier")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profileData) {
+          setProfile(profileData);
+        }
+
+        // Fetch boats with profiles
+        const { data: boatsData } = await supabase
+          .from("boats")
+          .select(`
+            id,
+            name,
+            make,
+            model,
+            year,
+            boat_profiles (
+              slip_number,
+              gate_code,
+              marina_name
+            )
+          `)
+          .eq("owner_id", session.user.id);
+
+        if (boatsData) {
+          setBoats(boatsData as Boat[]);
+        }
+      } catch (error) {
+        console.error("Dashboard: auth/data fetch failed", error);
+      } finally {
+        setLoading(false);
       }
-
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, membership_tier")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-      if (profileData) {
-        setProfile(profileData);
-      }
-
-      // Fetch boats with profiles
-      const { data: boatsData } = await supabase
-        .from("boats")
-        .select(`
-          id,
-          name,
-          make,
-          model,
-          year,
-          boat_profiles (
-            slip_number,
-            gate_code,
-            marina_name
-          )
-        `)
-        .eq("owner_id", session.user.id);
-
-      if (boatsData) {
-        setBoats(boatsData as Boat[]);
-      }
-
-      setLoading(false);
     };
 
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
-        navigate("/login");
+        navigate("/login", { replace: true });
       }
     });
 
