@@ -8,6 +8,7 @@ import { ProviderApprovalQueue } from "@/components/admin/ProviderApprovalQueue"
 import { GlobalWorkOrderFeed } from "@/components/admin/GlobalWorkOrderFeed";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { ViewAsUserPanel } from "@/components/admin/ViewAsUserPanel";
+import { InsuranceExpiryAlerts } from "@/components/admin/InsuranceExpiryAlerts";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -66,6 +67,9 @@ export default function AdminDashboard() {
             You have elevated privileges. All actions are logged.
           </span>
         </div>
+
+        {/* Insurance Expiry Alerts - Always visible at top */}
+        <InsuranceExpiryAlerts />
 
         {/* View As User Panel */}
         <ViewAsUserPanel
