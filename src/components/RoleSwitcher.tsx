@@ -1,5 +1,5 @@
 import { useAuth, AppRole } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { User, Wrench, Building2, HardHat, Crown, RotateCcw } from "lucide-react";
@@ -18,17 +18,24 @@ const ROLE_COLORS: Record<AppRole, string> = {
   marina_staff: "bg-orange-500",
 };
 
+// Map roles to their default dashboard routes
+const ROLE_ROUTES: Record<AppRole, string> = {
+  boat_owner: "/dashboard",
+  provider: "/provider",
+  admin: "/marina",
+  marina_staff: "/dock",
+};
+
+const PREVIEW_ROLE_KEY = "preview_role";
+
 export default function RoleSwitcher() {
   const { 
     user, 
     role, 
     isPreviewMode, 
     isGodModeUser, 
-    setPreviewRole, 
-    clearPreviewRole, 
     loading 
   } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
 
   const isOnAdminPage = location.pathname === "/admin";
@@ -38,18 +45,24 @@ export default function RoleSwitcher() {
 
   const handleSetPreviewRole = (newRole: AppRole) => {
     if (newRole === role && !isGodModeActive) return;
-    setPreviewRole(newRole);
+    
+    // Save to localStorage
+    localStorage.setItem(PREVIEW_ROLE_KEY, newRole);
+    
+    // Navigate to the appropriate dashboard for that role
+    const targetRoute = ROLE_ROUTES[newRole];
+    window.location.href = targetRoute;
   };
 
   const handleGodMode = () => {
     // Clear preview role and go to admin
-    clearPreviewRole();
-    navigate("/admin");
+    localStorage.removeItem(PREVIEW_ROLE_KEY);
+    window.location.href = "/admin";
   };
 
   const handleResetToAdmin = () => {
-    clearPreviewRole();
-    navigate("/admin");
+    localStorage.removeItem(PREVIEW_ROLE_KEY);
+    window.location.href = "/admin";
   };
 
   return (
