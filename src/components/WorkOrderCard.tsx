@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/pricing";
 import { EscrowStatusBadge } from "@/components/EscrowStatusBadge";
 import StatusBadge from "@/components/StatusBadge";
-import { PhoneLink } from "@/components/ui/phone-link";
 import { 
   Ship, 
   AlertTriangle, 
@@ -47,10 +46,10 @@ interface WorkOrderCardProps {
   };
   provider?: {
     business_name: string | null;
-    primary_contact_phone: string | null;
   };
   showSensitiveInfo?: boolean;
   isProvider?: boolean;
+  isAdmin?: boolean; // Only admins can see provider contact info
   membershipTier?: "standard" | "genie";
   onViewDetails?: () => void;
   onStartWork?: () => void;
@@ -65,6 +64,7 @@ export function WorkOrderCard({
   provider,
   showSensitiveInfo = false,
   isProvider = false,
+  isAdmin = false,
   membershipTier = "standard",
   onViewDetails,
   onStartWork,
@@ -77,8 +77,8 @@ export function WorkOrderCard({
     showSensitiveInfo || 
     ["approved", "work_started", "pending_photos", "pending_release", "released"].includes(workOrder.escrow_status);
 
-  // Provider contact info visible after job is accepted (escrow approved or later)
-  const canSeeProviderContact = 
+  // Provider business name visible after job is accepted - NEVER show contact info to non-admins
+  const canSeeProviderInfo = 
     !isProvider && 
     ["approved", "work_started", "pending_photos", "pending_release", "released"].includes(workOrder.escrow_status);
 
@@ -213,8 +213,8 @@ export function WorkOrderCard({
           </div>
         )}
 
-        {/* Provider Contact - Visible to boat owners/marina staff after job accepted */}
-        {canSeeProviderContact && provider && (
+        {/* Provider Info - Only business name visible to owners/staff. Contact info is NEVER exposed. */}
+        {canSeeProviderInfo && provider && (
           <div className="bg-muted/50 rounded-md p-3 space-y-2">
             <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
               <Wrench className="w-3 h-3" />
@@ -224,11 +224,9 @@ export function WorkOrderCard({
               {provider.business_name && (
                 <p className="font-medium text-sm">{provider.business_name}</p>
               )}
-              <PhoneLink 
-                phone={provider.primary_contact_phone} 
-                fallbackText="Phone not available"
-                className="text-sm"
-              />
+              <p className="text-xs text-muted-foreground italic">
+                Use in-app messaging for coordination
+              </p>
             </div>
           </div>
         )}
