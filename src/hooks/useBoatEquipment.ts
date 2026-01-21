@@ -20,9 +20,9 @@ export interface BoatEquipment {
 
 export type NewEquipment = Omit<BoatEquipment, "id" | "created_at" | "updated_at">;
 
-const ENGINE_POSITION_LABELS = ["Center Engine", "Port Engine", "Starboard Engine", "Port Outboard", "Starboard Outboard"];
-const GENERATOR_POSITION_LABELS = ["Primary Generator", "Secondary Generator", "Backup Generator"];
-const SEAKEEPER_POSITION_LABELS = ["Primary Seakeeper", "Secondary Seakeeper"];
+export const ENGINE_POSITION_LABELS = ["Center Engine", "Port Engine", "Starboard Engine", "Port Outboard", "Starboard Outboard"];
+export const GENERATOR_POSITION_LABELS = ["Primary Generator", "Secondary Generator", "Backup Generator"];
+export const SEAKEEPER_POSITION_LABELS = ["Primary Seakeeper", "Secondary Seakeeper"];
 
 export function getPositionLabel(type: "engine" | "generator" | "seakeeper", index: number): string {
   const labels = type === "engine" 
@@ -63,20 +63,36 @@ export function useBoatEquipment(boatId: string | null) {
     }
   }, [boatId]);
 
-  const addEquipment = async (newEquipment: Omit<NewEquipment, "boat_id" | "position_order" | "position_label">, ownerId: string) => {
+  const addEquipment = async (
+    newEquipment: {
+      equipment_type: "engine" | "generator" | "seakeeper";
+      brand: string;
+      model: string;
+      serial_number: string | null;
+      current_hours: number;
+      position_label?: string;
+    },
+    ownerId: string
+  ) => {
     if (!boatId) return null;
 
-    // Get current count of this equipment type to determine position
+    // Get current count of this equipment type to determine position order
     const existingOfType = equipment.filter(e => e.equipment_type === newEquipment.equipment_type);
     const positionOrder = existingOfType.length + 1;
-    const positionLabel = getPositionLabel(newEquipment.equipment_type, existingOfType.length);
+    
+    // Use provided position_label or auto-generate one
+    const positionLabel = newEquipment.position_label || getPositionLabel(newEquipment.equipment_type, existingOfType.length);
 
     // Find matching spec
     const spec = findSpec(newEquipment.equipment_type, newEquipment.brand, newEquipment.model);
 
     const equipmentData = {
       boat_id: boatId,
-      ...newEquipment,
+      equipment_type: newEquipment.equipment_type,
+      brand: newEquipment.brand,
+      model: newEquipment.model,
+      serial_number: newEquipment.serial_number,
+      current_hours: newEquipment.current_hours,
       position_order: positionOrder,
       position_label: positionLabel,
       equipment_spec_id: spec?.id || null,
