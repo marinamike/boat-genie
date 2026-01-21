@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Bug, User, Wrench, Building2, HardHat } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { X, Bug, User, Wrench, Building2, HardHat, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -149,6 +150,70 @@ const TestingPanel = () => {
     }
   };
 
+  const clearTestData = async () => {
+    if (!userId || isLoading) return;
+    
+    const confirmed = window.confirm(
+      "This will DELETE all Work Orders, Marinas, and Marina Settings.\n\nUser profiles will remain intact.\n\nContinue?"
+    );
+    if (!confirmed) return;
+
+    setIsLoading(true);
+    setLastError(null);
+    setLastAction("Clearing test data…");
+
+    try {
+      // Delete work orders first (depends on boats, which we keep)
+      const { error: woError } = await supabase
+        .from("work_orders")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // match all
+
+      if (woError) throw woError;
+
+      // Delete marina_settings
+      const { error: msError } = await supabase
+        .from("marina_settings")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+
+      if (msError) throw msError;
+
+      // Delete marinas
+      const { error: marinaError } = await supabase
+        .from("marinas")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+
+      if (marinaError) throw marinaError;
+
+      setLastAction("Test data cleared");
+      toast({
+        title: "Test data cleared",
+        description: "Work orders and marinas have been deleted.",
+      });
+
+      window.dispatchEvent(new CustomEvent("app:role-changed"));
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: unknown }).message)
+          : error instanceof Error
+            ? error.message
+            : "Failed to clear data";
+      console.error("Error clearing test data:", error);
+      setLastError(message);
+      setLastAction("Clear failed");
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -179,24 +244,29 @@ const TestingPanel = () => {
               <X className="w-4 h-4" />
             </Button>
           </CardHeader>
-          <CardContent className="py-2 px-4 space-y-2">
-            <p className="text-xs text-muted-foreground mb-3">
-              Current: <Badge variant="outline" className="ml-1">{currentRole || "none"}</Badge>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Status: {isLoading ? "Working…" : "Idle"}{lastAction ? ` • ${lastAction}` : ""}
-            </p>
-            {allRoles.length > 1 && (
-              <p className="text-xs text-muted-foreground">
-                Roles rows: {allRoles.join(", ")}
-              </p>
-            )}
-            {lastError && (
-              <p className="text-xs text-destructive break-words">
-                {lastError}
-              </p>
-            )}
+          <CardContent className="py-2 px-4 space-y-3">
             <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                Current: <Badge variant="outline" className="ml-1">{currentRole || "none"}</Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Status: {isLoading ? "Working…" : "Idle"}{lastAction ? ` • ${lastAction}` : ""}
+              </p>
+              {allRoles.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  Roles rows: {allRoles.join(", ")}
+                </p>
+              )}
+              {lastError && (
+                <p className="text-xs text-destructive break-words">
+                  {lastError}
+                </p>
+              )}
+            </div>
+
+            {/* Role Switcher */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Switch Role</p>
               {ROLES.map(({ role, label, icon }) => (
                 <Button
                   key={role}
@@ -210,6 +280,23 @@ const TestingPanel = () => {
                   {label}
                 </Button>
               ))}
+            </div>
+
+            <Separator />
+
+            {/* Data Reset */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Data</p>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full justify-start gap-2"
+                onClick={clearTestData}
+                disabled={isLoading}
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear Test Data
+              </Button>
             </div>
           </CardContent>
         </Card>
