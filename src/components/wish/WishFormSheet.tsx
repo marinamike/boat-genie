@@ -25,9 +25,10 @@ interface Boat {
 interface WishFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  boats: Boat[];
-  membershipTier: "standard" | "genie";
+  boats?: Boat[];
+  membershipTier?: "standard" | "genie";
   preselectedBoatId?: string | null;
+  prefilledDescription?: string;
   onSuccess?: () => void;
 }
 
@@ -46,7 +47,7 @@ const CATEGORY_TO_SERVICE_CATEGORY: Record<ServiceCategory, string> = {
   visual_cosmetic: "Fiberglass & Gelcoat",
 };
 
-export function WishFormSheet({ open, onOpenChange, boats, membershipTier, preselectedBoatId, onSuccess }: WishFormSheetProps) {
+export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier = "standard", preselectedBoatId, prefilledDescription, onSuccess }: WishFormSheetProps) {
   const [step, setStep] = useState<Step>("select-boat");
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
@@ -57,12 +58,35 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, prese
   const [preferredDate, setPreferredDate] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [internalBoats, setInternalBoats] = useState<Boat[]>([]);
 
   const { loading, serviceRates, fetchServiceRates, calculatePrice, uploadPhotos, submitWish } = useWishForm();
   
   // Fetch provider services based on selected category
   const serviceCategory = selectedCategory ? CATEGORY_TO_SERVICE_CATEGORY[selectedCategory] : undefined;
   const { services: providerServices, loading: loadingServices } = useAllProviderServices(serviceCategory);
+
+  // Fetch boats if not provided
+  useEffect(() => {
+    const fetchBoats = async () => {
+      if (boats.length === 0 && open) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from("boats")
+            .select("id, name, length_ft, make, model")
+            .eq("owner_id", user.id);
+          if (data) {
+            setInternalBoats(data as Boat[]);
+          }
+        }
+      }
+    };
+    fetchBoats();
+  }, [boats, open]);
+
+  const effectiveBoats = boats.length > 0 ? boats : internalBoats;
 
   useEffect(() => {
     if (open) {
@@ -83,15 +107,18 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, prese
       setPreferredDate("");
       setPhotos([]);
       setPhotoUrls([]);
+    } else if (prefilledDescription) {
+      // Pre-fill description if provided
+      setDescription(prefilledDescription);
     }
-  }, [open]);
+  }, [open, prefilledDescription]);
 
   // Auto-select boat if only one, or use preselected boat
   useEffect(() => {
-    if (open && step === "select-boat") {
+    if (open && step === "select-boat" && effectiveBoats.length > 0) {
       // If a boat is preselected, use that
       if (preselectedBoatId) {
-        const preselectedBoat = boats.find((b) => b.id === preselectedBoatId);
+        const preselectedBoat = effectiveBoats.find((b) => b.id === preselectedBoatId);
         if (preselectedBoat) {
           setSelectedBoat(preselectedBoat);
           setStep("select-category");
@@ -99,12 +126,12 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, prese
         }
       }
       // Otherwise auto-select if only one boat
-      if (boats.length === 1) {
-        setSelectedBoat(boats[0]);
+      if (effectiveBoats.length === 1) {
+        setSelectedBoat(effectiveBoats[0]);
         setStep("select-category");
       }
     }
-  }, [open, boats, step, preselectedBoatId]);
+  }, [open, effectiveBoats, step, preselectedBoatId]);
 
   // Reset selected service when category changes
   useEffect(() => {
@@ -218,7 +245,7 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, prese
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">Which boat needs service?</p>
       <div className="space-y-2">
-        {boats.map((boat) => (
+        {effectiveBoats.map((boat) => (
           <Card
             key={boat.id}
             className={cn(

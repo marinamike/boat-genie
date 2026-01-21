@@ -201,6 +201,12 @@ export type Database = {
       boats: {
         Row: {
           created_at: string
+          engine_brand: string | null
+          engine_hours: number | null
+          engine_model: string | null
+          generator_brand: string | null
+          generator_hours: number | null
+          generator_model: string | null
           id: string
           image_url: string | null
           length_ft: number | null
@@ -208,11 +214,19 @@ export type Database = {
           model: string | null
           name: string
           owner_id: string
+          seakeeper_hours: number | null
+          seakeeper_model: string | null
           updated_at: string
           year: number | null
         }
         Insert: {
           created_at?: string
+          engine_brand?: string | null
+          engine_hours?: number | null
+          engine_model?: string | null
+          generator_brand?: string | null
+          generator_hours?: number | null
+          generator_model?: string | null
           id?: string
           image_url?: string | null
           length_ft?: number | null
@@ -220,11 +234,19 @@ export type Database = {
           model?: string | null
           name: string
           owner_id: string
+          seakeeper_hours?: number | null
+          seakeeper_model?: string | null
           updated_at?: string
           year?: number | null
         }
         Update: {
           created_at?: string
+          engine_brand?: string | null
+          engine_hours?: number | null
+          engine_model?: string | null
+          generator_brand?: string | null
+          generator_hours?: number | null
+          generator_model?: string | null
           id?: string
           image_url?: string | null
           length_ft?: number | null
@@ -232,6 +254,8 @@ export type Database = {
           model?: string | null
           name?: string
           owner_id?: string
+          seakeeper_hours?: number | null
+          seakeeper_model?: string | null
           updated_at?: string
           year?: number | null
         }
@@ -400,6 +424,69 @@ export type Database = {
             columns: ["slip_id"]
             isOneToOne: false
             referencedRelation: "marina_slips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_recommendations: {
+        Row: {
+          boat_id: string
+          completed_at: string | null
+          converted_to_wish_id: string | null
+          created_at: string
+          description: string | null
+          due_at_date: string | null
+          due_at_hours: number | null
+          equipment_spec_id: string | null
+          equipment_type: string
+          id: string
+          is_completed: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          boat_id: string
+          completed_at?: string | null
+          converted_to_wish_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_at_date?: string | null
+          due_at_hours?: number | null
+          equipment_spec_id?: string | null
+          equipment_type: string
+          id?: string
+          is_completed?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string
+          completed_at?: string | null
+          converted_to_wish_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_at_date?: string | null
+          due_at_hours?: number | null
+          equipment_spec_id?: string | null
+          equipment_type?: string
+          id?: string
+          is_completed?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_recommendations_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_recommendations_equipment_spec_id_fkey"
+            columns: ["equipment_spec_id"]
+            isOneToOne: false
+            referencedRelation: "master_equipment_specs"
             referencedColumns: ["id"]
           },
         ]
@@ -634,6 +721,45 @@ export type Database = {
           marina_name?: string
           staging_dock_linear_footage?: number
           total_slips?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_equipment_specs: {
+        Row: {
+          brand: string
+          created_at: string
+          equipment_type: string
+          id: string
+          manual_url: string | null
+          model: string
+          service_description: string | null
+          service_interval_hours: number | null
+          service_interval_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          equipment_type: string
+          id?: string
+          manual_url?: string | null
+          model: string
+          service_description?: string | null
+          service_interval_hours?: number | null
+          service_interval_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          manual_url?: string | null
+          model?: string
+          service_description?: string | null
+          service_interval_hours?: number | null
+          service_interval_months?: number | null
           updated_at?: string
         }
         Relationships: []

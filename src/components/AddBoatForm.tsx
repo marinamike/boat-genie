@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,6 +35,12 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Ship, Trash2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { EquipmentSection } from "@/components/boatlog/EquipmentSection";
+import {
+  useEquipmentSpecs,
+  createMaintenanceRecommendations,
+  addManualToDigitalLocker,
+} from "@/hooks/useEquipmentSpecs";
 
 const formSchema = z.object({
   name: z.string().min(1, "Boat name is required"),
@@ -46,6 +52,15 @@ const formSchema = z.object({
   slip_number: z.string().optional(),
   gate_code: z.string().optional(),
   special_instructions: z.string().optional(),
+  // Equipment fields
+  engine_brand: z.string().optional(),
+  engine_model: z.string().optional(),
+  engine_hours: z.coerce.number().min(0).optional().or(z.literal("")),
+  generator_brand: z.string().optional(),
+  generator_model: z.string().optional(),
+  generator_hours: z.coerce.number().min(0).optional().or(z.literal("")),
+  seakeeper_model: z.string().optional(),
+  seakeeper_hours: z.coerce.number().min(0).optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -57,6 +72,14 @@ export interface BoatToEdit {
   model: string | null;
   year: number | null;
   length_ft?: number | null;
+  engine_brand?: string | null;
+  engine_model?: string | null;
+  engine_hours?: number | null;
+  generator_brand?: string | null;
+  generator_model?: string | null;
+  generator_hours?: number | null;
+  seakeeper_model?: string | null;
+  seakeeper_hours?: number | null;
   boat_profiles: {
     marina_name: string | null;
     slip_number: string | null;
@@ -73,10 +96,22 @@ interface AddBoatFormProps {
   boatToEdit?: BoatToEdit | null;
 }
 
+interface EquipmentMatches {
+  engine: { specId: string | null; manualUrl: string | null };
+  generator: { specId: string | null; manualUrl: string | null };
+  seakeeper: { specId: string | null; manualUrl: string | null };
+}
+
 export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boatToEdit }: AddBoatFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [equipmentMatches, setEquipmentMatches] = useState<EquipmentMatches>({
+    engine: { specId: null, manualUrl: null },
+    generator: { specId: null, manualUrl: null },
+    seakeeper: { specId: null, manualUrl: null },
+  });
   const { toast } = useToast();
+  const { findSpec, specs } = useEquipmentSpecs();
 
   const isEditMode = !!boatToEdit;
 
@@ -92,6 +127,14 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
       slip_number: "",
       gate_code: "",
       special_instructions: "",
+      engine_brand: "",
+      engine_model: "",
+      engine_hours: "",
+      generator_brand: "",
+      generator_model: "",
+      generator_hours: "",
+      seakeeper_model: "",
+      seakeeper_hours: "",
     },
   });
 
@@ -108,6 +151,14 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
         slip_number: boatToEdit.boat_profiles?.slip_number || "",
         gate_code: boatToEdit.boat_profiles?.gate_code || "",
         special_instructions: boatToEdit.boat_profiles?.special_instructions || "",
+        engine_brand: boatToEdit.engine_brand || "",
+        engine_model: boatToEdit.engine_model || "",
+        engine_hours: boatToEdit.engine_hours || "",
+        generator_brand: boatToEdit.generator_brand || "",
+        generator_model: boatToEdit.generator_model || "",
+        generator_hours: boatToEdit.generator_hours || "",
+        seakeeper_model: boatToEdit.seakeeper_model || "",
+        seakeeper_hours: boatToEdit.seakeeper_hours || "",
       });
     } else if (open && !boatToEdit) {
       form.reset({
@@ -120,14 +171,35 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
         slip_number: "",
         gate_code: "",
         special_instructions: "",
+        engine_brand: "",
+        engine_model: "",
+        engine_hours: "",
+        generator_brand: "",
+        generator_model: "",
+        generator_hours: "",
+        seakeeper_model: "",
+        seakeeper_hours: "",
       });
     }
   }, [open, boatToEdit, form]);
 
+  const handleEquipmentMatch = useCallback(
+    (type: "engine" | "generator" | "seakeeper", specId: string | null, manualUrl: string | null) => {
+      setEquipmentMatches((prev) => ({
+        ...prev,
+        [type]: { specId, manualUrl },
+      }));
+    },
+    []
+  );
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      let boatId: string;
+
       if (isEditMode && boatToEdit) {
+        boatId = boatToEdit.id;
         // Update existing boat
         const { error: boatError } = await supabase
           .from("boats")
@@ -137,6 +209,14 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
             model: data.model || null,
             year: data.year ? Number(data.year) : null,
             length_ft: data.length_ft ? Number(data.length_ft) : null,
+            engine_brand: data.engine_brand || null,
+            engine_model: data.engine_model || null,
+            engine_hours: data.engine_hours ? Number(data.engine_hours) : 0,
+            generator_brand: data.generator_brand || null,
+            generator_model: data.generator_model || null,
+            generator_hours: data.generator_hours ? Number(data.generator_hours) : 0,
+            seakeeper_model: data.seakeeper_model || null,
+            seakeeper_hours: data.seakeeper_hours ? Number(data.seakeeper_hours) : 0,
           })
           .eq("id", boatToEdit.id);
 
@@ -182,11 +262,20 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
             model: data.model || null,
             year: data.year ? Number(data.year) : null,
             length_ft: data.length_ft ? Number(data.length_ft) : null,
+            engine_brand: data.engine_brand || null,
+            engine_model: data.engine_model || null,
+            engine_hours: data.engine_hours ? Number(data.engine_hours) : 0,
+            generator_brand: data.generator_brand || null,
+            generator_model: data.generator_model || null,
+            generator_hours: data.generator_hours ? Number(data.generator_hours) : 0,
+            seakeeper_model: data.seakeeper_model || null,
+            seakeeper_hours: data.seakeeper_hours ? Number(data.seakeeper_hours) : 0,
           })
           .select("id")
           .single();
 
         if (boatError) throw boatError;
+        boatId = boat.id;
 
         // Create boat_profile with all fields
         if (boat) {
@@ -210,6 +299,34 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
           description: `${data.name} has been added to your fleet.`,
         });
       }
+
+      // Auto-add manuals and create maintenance recommendations for matched equipment
+      const processEquipment = async (
+        type: "engine" | "generator" | "seakeeper",
+        brand: string | undefined,
+        model: string | undefined,
+        hours: number
+      ) => {
+        if (!brand || !model) return;
+        const actualBrand = type === "seakeeper" ? "Seakeeper" : brand;
+        const spec = specs.find(
+          (s) =>
+            s.equipment_type === type &&
+            s.brand.toLowerCase() === actualBrand.toLowerCase() &&
+            s.model.toLowerCase() === model.toLowerCase()
+        );
+
+        if (spec) {
+          await addManualToDigitalLocker(boatId, userId, spec);
+          await createMaintenanceRecommendations(boatId, spec, hours);
+        }
+      };
+
+      await Promise.all([
+        processEquipment("engine", data.engine_brand, data.engine_model, Number(data.engine_hours) || 0),
+        processEquipment("generator", data.generator_brand, data.generator_model, Number(data.generator_hours) || 0),
+        processEquipment("seakeeper", "Seakeeper", data.seakeeper_model, Number(data.seakeeper_hours) || 0),
+      ]);
 
       form.reset();
       onOpenChange(false);
@@ -364,6 +481,11 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
                 )}
               />
             </div>
+
+            <Separator className="my-4" />
+
+            {/* Equipment Section */}
+            <EquipmentSection form={form} onEquipmentMatch={handleEquipmentMatch} />
 
             <Separator className="my-4" />
 
