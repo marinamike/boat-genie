@@ -671,6 +671,56 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_approval_logs: {
+        Row: {
+          action: string
+          coi_verified: boolean
+          created_at: string
+          id: string
+          notes: string | null
+          provider_id: string
+          rejection_reason: string | null
+          verified_by: string
+          verified_by_email: string | null
+          verified_by_name: string | null
+          w9_verified: boolean
+        }
+        Insert: {
+          action: string
+          coi_verified?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider_id: string
+          rejection_reason?: string | null
+          verified_by: string
+          verified_by_email?: string | null
+          verified_by_name?: string | null
+          w9_verified?: boolean
+        }
+        Update: {
+          action?: string
+          coi_verified?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider_id?: string
+          rejection_reason?: string | null
+          verified_by?: string
+          verified_by_email?: string | null
+          verified_by_name?: string | null
+          w9_verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_approval_logs_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider_checkins: {
         Row: {
           boat_id: string

@@ -122,17 +122,48 @@ export function ProviderApprovalQueue() {
     setProcessing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Not authenticated");
+
+      // Get admin profile for name
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", session.user.id)
+        .single();
+
+      const adminName = adminProfile?.full_name || session.user.email || "Admin";
+      const adminEmail = adminProfile?.email || session.user.email;
       
+      // Update provider status
       const { error } = await supabase
         .from("provider_profiles")
         .update({
           onboarding_status: "active",
           approved_at: new Date().toISOString(),
-          approved_by: session?.user.id,
+          approved_by: session.user.id,
         })
         .eq("id", provider.id);
 
       if (error) throw error;
+
+      // Create audit log entry
+      const { error: logError } = await supabase
+        .from("provider_approval_logs")
+        .insert({
+          provider_id: provider.id,
+          action: "approved",
+          verified_by: session.user.id,
+          verified_by_name: adminName,
+          verified_by_email: adminEmail,
+          coi_verified: verification.coiVerified,
+          w9_verified: verification.w9Verified,
+          notes: `COI and W-9 verified by Admin ${adminName} on ${format(new Date(), "PPpp")}`,
+        });
+
+      if (logError) {
+        console.error("Failed to create audit log:", logError);
+        // Don't fail the approval, just warn
+      }
       
       toast({ title: "Provider approved and activated!" });
       await fetchPendingProviders();
@@ -149,6 +180,19 @@ export function ProviderApprovalQueue() {
     
     setProcessing(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Not authenticated");
+
+      // Get admin profile for name
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", session.user.id)
+        .single();
+
+      const adminName = adminProfile?.full_name || session.user.email || "Admin";
+      const adminEmail = adminProfile?.email || session.user.email;
+
       const { error } = await supabase
         .from("provider_profiles")
         .update({
@@ -158,6 +202,25 @@ export function ProviderApprovalQueue() {
         .eq("id", selectedProvider.id);
 
       if (error) throw error;
+
+      // Create audit log entry for rejection
+      const { error: logError } = await supabase
+        .from("provider_approval_logs")
+        .insert({
+          provider_id: selectedProvider.id,
+          action: "rejected",
+          verified_by: session.user.id,
+          verified_by_name: adminName,
+          verified_by_email: adminEmail,
+          coi_verified: verification.coiVerified,
+          w9_verified: verification.w9Verified,
+          rejection_reason: rejectionReason,
+          notes: `Application rejected by Admin ${adminName} on ${format(new Date(), "PPpp")}`,
+        });
+
+      if (logError) {
+        console.error("Failed to create audit log:", logError);
+      }
       
       toast({ title: "Provider application rejected" });
       await fetchPendingProviders();
