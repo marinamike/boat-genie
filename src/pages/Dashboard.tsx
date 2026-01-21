@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AddBoatForm, { BoatToEdit } from "@/components/AddBoatForm";
 import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { WishStatusCard } from "@/components/wish/WishStatusCard";
+import { PendingQuotesSection } from "@/components/owner/PendingQuotesSection";
 
 interface Boat {
   id: string;
@@ -394,6 +395,14 @@ const Dashboard = () => {
             </div>
           )}
         </section>
+
+        {/* Pending Quotes Section */}
+        {user && (
+          <PendingQuotesSection 
+            userId={user.id} 
+            onQuoteAction={fetchWishes}
+          />
+        )}
 
         {/* Active Wishes Section */}
         {wishes.length > 0 && (
