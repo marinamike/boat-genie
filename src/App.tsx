@@ -15,6 +15,7 @@ import DryStackLaunch from "./pages/DryStackLaunch";
 import Profile from "./pages/Profile";
 import RegisterMarina from "./pages/RegisterMarina";
 import NotFound from "./pages/NotFound";
+import TestingPanel from "./components/admin/TestingPanel";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <TestingPanel />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
