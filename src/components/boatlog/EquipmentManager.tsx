@@ -37,7 +37,7 @@ import {
   Edit2,
   Loader2
 } from "lucide-react";
-import { useBoatEquipment, BoatEquipment, getPositionLabel } from "@/hooks/useBoatEquipment";
+import { useBoatEquipment, BoatEquipment, getPositionLabel, ENGINE_POSITION_LABELS, GENERATOR_POSITION_LABELS, SEAKEEPER_POSITION_LABELS } from "@/hooks/useBoatEquipment";
 import { useEquipmentSpecs } from "@/hooks/useEquipmentSpecs";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,6 +54,7 @@ interface EquipmentFormData {
   model: string;
   serial_number: string;
   current_hours: number;
+  position_label: string;
 }
 
 const defaultFormData: EquipmentFormData = {
@@ -61,6 +62,7 @@ const defaultFormData: EquipmentFormData = {
   model: "",
   serial_number: "",
   current_hours: 0,
+  position_label: "",
 };
 
 export function EquipmentManager({ boatId, ownerId, readOnly = false }: EquipmentManagerProps) {
@@ -76,18 +78,22 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
 
   const handleOpenAdd = (type: EquipmentType) => {
     setSelectedType(type);
-    setFormData(defaultFormData);
+    // Get available positions for this type
+    const usedLabels = equipment.filter(e => e.equipment_type === type).map(e => e.position_label);
+    const availableLabels = getPositionLabelsForType(type).filter(l => !usedLabels.includes(l));
+    setFormData({ ...defaultFormData, position_label: availableLabels[0] || "" });
     setEditingEquipment(null);
     setAddDialogOpen(true);
   };
 
   const handleOpenEdit = (item: BoatEquipment) => {
-    setSelectedType(item.equipment_type);
+    setSelectedType(item.equipment_type as EquipmentType);
     setFormData({
       brand: item.brand,
       model: item.model,
       serial_number: item.serial_number || "",
       current_hours: item.current_hours,
+      position_label: item.position_label || "",
     });
     setEditingEquipment(item);
     setAddDialogOpen(true);
@@ -96,6 +102,10 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
   const handleSubmit = async () => {
     if (!formData.brand || !formData.model) {
       toast({ title: "Please fill in brand and model", variant: "destructive" });
+      return;
+    }
+    if (!formData.position_label) {
+      toast({ title: "Please select a position", variant: "destructive" });
       return;
     }
 
@@ -107,6 +117,7 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
           model: formData.model,
           serial_number: formData.serial_number || null,
           current_hours: formData.current_hours,
+          position_label: formData.position_label,
         });
         toast({ title: "Equipment updated" });
       } else {
@@ -116,8 +127,7 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
           model: formData.model,
           serial_number: formData.serial_number || null,
           current_hours: formData.current_hours,
-          equipment_spec_id: null,
-          manual_url: null,
+          position_label: formData.position_label,
         }, ownerId);
         toast({ title: "Equipment added", description: "Manual and service schedule auto-populated if available." });
       }
@@ -148,6 +158,20 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
   const getModels = () => {
     if (selectedType === "seakeeper") return getSeakeeperModels();
     return formData.brand ? getModelsForBrand(selectedType, formData.brand) : [];
+  };
+
+  const getPositionLabelsForType = (type: EquipmentType) => {
+    if (type === "engine") return ENGINE_POSITION_LABELS;
+    if (type === "generator") return GENERATOR_POSITION_LABELS;
+    return SEAKEEPER_POSITION_LABELS;
+  };
+
+  const getAvailablePositions = () => {
+    const allLabels = getPositionLabelsForType(selectedType);
+    const usedLabels = equipment
+      .filter(e => e.equipment_type === selectedType && e.id !== editingEquipment?.id)
+      .map(e => e.position_label);
+    return allLabels.filter(l => !usedLabels.includes(l));
   };
 
   const spec = formData.brand && formData.model 
@@ -235,6 +259,24 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Position */}
+            <div className="space-y-2">
+              <Label>Position</Label>
+              <Select 
+                value={formData.position_label} 
+                onValueChange={(v) => setFormData(prev => ({ ...prev, position_label: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select position" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailablePositions().map((label) => (
+                    <SelectItem key={label} value={label}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Brand */}
             <div className="space-y-2">
               <Label>Brand</Label>
