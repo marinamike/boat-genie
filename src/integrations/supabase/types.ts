@@ -688,6 +688,57 @@ export type Database = {
           },
         ]
       }
+      pending_invites: {
+        Row: {
+          accepted_at: string | null
+          boat_length_ft: number | null
+          boat_name: string
+          created_at: string
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_at: string
+          owner_email: string
+          owner_name: string
+          provider_id: string
+          status: string
+          updated_at: string
+          work_order_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          boat_length_ft?: number | null
+          boat_name: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_at?: string
+          owner_email: string
+          owner_name: string
+          provider_id: string
+          status?: string
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          boat_length_ft?: number | null
+          boat_name?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_at?: string
+          owner_email?: string
+          owner_name?: string
+          provider_id?: string
+          status?: string
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1396,13 +1447,17 @@ export type Database = {
           materials_deposit: number | null
           materials_deposit_released: boolean | null
           materials_deposit_released_at: string | null
+          owner_approved_at: string | null
+          pending_invite_id: string | null
           photos_uploaded_at: string | null
           priority: number | null
           provider_checked_in_at: string | null
           provider_diagnostic_fee: number | null
           provider_hourly_rate: number | null
           provider_id: string | null
+          provider_initiated: boolean
           provider_rate_per_foot: number | null
+          provider_service_id: string | null
           qc_requested_at: string | null
           qc_verified_at: string | null
           qc_verified_by: string | null
@@ -1437,13 +1492,17 @@ export type Database = {
           materials_deposit?: number | null
           materials_deposit_released?: boolean | null
           materials_deposit_released_at?: string | null
+          owner_approved_at?: string | null
+          pending_invite_id?: string | null
           photos_uploaded_at?: string | null
           priority?: number | null
           provider_checked_in_at?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
           provider_id?: string | null
+          provider_initiated?: boolean
           provider_rate_per_foot?: number | null
+          provider_service_id?: string | null
           qc_requested_at?: string | null
           qc_verified_at?: string | null
           qc_verified_by?: string | null
@@ -1478,13 +1537,17 @@ export type Database = {
           materials_deposit?: number | null
           materials_deposit_released?: boolean | null
           materials_deposit_released_at?: string | null
+          owner_approved_at?: string | null
+          pending_invite_id?: string | null
           photos_uploaded_at?: string | null
           priority?: number | null
           provider_checked_in_at?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
           provider_id?: string | null
+          provider_initiated?: boolean
           provider_rate_per_foot?: number | null
+          provider_service_id?: string | null
           qc_requested_at?: string | null
           qc_verified_at?: string | null
           qc_verified_by?: string | null
@@ -1512,6 +1575,20 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_pending_invite_id_fkey"
+            columns: ["pending_invite_id"]
+            isOneToOne: false
+            referencedRelation: "pending_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_provider_service_id_fkey"
+            columns: ["provider_service_id"]
+            isOneToOne: false
+            referencedRelation: "provider_services"
             referencedColumns: ["id"]
           },
         ]

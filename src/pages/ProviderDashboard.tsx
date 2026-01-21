@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, User, Wrench, Loader2, Package, ClipboardList, Lock, LayoutDashboard, DollarSign, Briefcase } from "lucide-react";
+import { ArrowLeft, User, Wrench, Loader2, Package, ClipboardList, Lock, LayoutDashboard, DollarSign, Briefcase, Plus } from "lucide-react";
 import { ProviderProfileForm } from "@/components/provider/ProviderProfileForm";
 import { ServiceCatalogManager } from "@/components/provider/ServiceCatalogManager";
 import { OnboardingChecklist } from "@/components/provider/OnboardingChecklist";
@@ -16,6 +16,7 @@ import { ProviderMetricsHeader } from "@/components/provider/ProviderMetricsHead
 import { DailySchedule } from "@/components/provider/DailySchedule";
 import { LeadStream } from "@/components/provider/LeadStream";
 import { EarningsTab } from "@/components/provider/EarningsTab";
+import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { useProviderProfile } from "@/hooks/useProviderProfile";
 import { useProviderOnboarding } from "@/hooks/useProviderOnboarding";
 import { useProviderMetrics } from "@/hooks/useProviderMetrics";
@@ -29,6 +30,7 @@ const ProviderDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isProvider, setIsProvider] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [createJobDialogOpen, setCreateJobDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { profile, toggleAvailability } = useProviderProfile();
   const { 
@@ -183,14 +185,24 @@ const ProviderDashboard = () => {
           </div>
         ) : (
           <>
-            {/* Metrics Header - Only show when active */}
+            {/* Metrics Header and Create Job Button - Only show when active */}
             {canViewJobs && (
-              <div className="mb-6">
-                <ProviderMetricsHeader
-                  activeJobs={metrics.activeJobsCount}
-                  pendingQuotes={metrics.pendingQuotesCount}
-                  totalEarnings={metrics.totalEarnings}
-                />
+              <div className="mb-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <ProviderMetricsHeader
+                    activeJobs={metrics.activeJobsCount}
+                    pendingQuotes={metrics.pendingQuotesCount}
+                    totalEarnings={metrics.totalEarnings}
+                  />
+                </div>
+                <Button 
+                  onClick={() => setCreateJobDialogOpen(true)}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create New Job
+                </Button>
               </div>
             )}
 
@@ -311,6 +323,12 @@ const ProviderDashboard = () => {
           </>
         )}
       </main>
+
+      <CreateWorkOrderDialog
+        open={createJobDialogOpen}
+        onOpenChange={setCreateJobDialogOpen}
+        onSuccess={refetchMetrics}
+      />
 
       <BottomNav />
     </div>
