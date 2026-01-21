@@ -29,6 +29,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { DocumentViewer } from "./DocumentViewer";
 
 interface ProviderProfile {
@@ -338,9 +339,11 @@ export function ProviderApprovalQueue() {
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   <span>{selectedProvider.primary_contact_email}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span>{selectedProvider.primary_contact_phone || "Not provided"}</span>
+                <div className="text-sm">
+                  <PhoneLink 
+                    phone={selectedProvider.primary_contact_phone} 
+                    fallbackText="Phone not provided"
+                  />
                 </div>
               </div>
 

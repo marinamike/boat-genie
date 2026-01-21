@@ -28,6 +28,8 @@ export interface ActiveWorkOrder {
   marina_address: string | null;
   slip_number: string | null;
   owner_id: string | null;
+  provider_phone: string | null;
+  provider_name: string | null;
 }
 
 export interface CompletedJob {
@@ -105,12 +107,17 @@ export function useProviderMetrics() {
           service_fee,
           created_at,
           boat_id,
+          provider_id,
           boat:boats(
             id,
             name,
             length_ft,
             owner_id,
             boat_profiles(marina_name, marina_address, slip_number)
+          ),
+          provider:provider_profiles!work_orders_provider_id_fkey(
+            business_name,
+            primary_contact_phone
           )
         `)
         .eq("provider_id", userId)
@@ -143,6 +150,8 @@ export function useProviderMetrics() {
           marina_address: boatProfile?.marina_address || null,
           slip_number: boatProfile?.slip_number || null,
           owner_id: wo.boat?.owner_id || null,
+          provider_phone: wo.provider?.primary_contact_phone || null,
+          provider_name: wo.provider?.business_name || null,
         };
       });
 
