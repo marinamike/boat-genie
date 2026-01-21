@@ -71,9 +71,20 @@ export interface MessageWithPhoto {
   message_type: string;
 }
 
+export interface ManualLogEntry {
+  id: string;
+  boat_id: string;
+  title: string;
+  description: string | null;
+  log_type: string;
+  created_at: string;
+  created_by: string | null;
+}
+
 export function useBoatLog(boatId?: string) {
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrderWithDetails[]>([]);
   const [completedWorkOrders, setCompletedWorkOrders] = useState<WorkOrderWithDetails[]>([]);
+  const [manualEntries, setManualEntries] = useState<ManualLogEntry[]>([]);
   const [boats, setBoats] = useState<{ id: string; name: string }[]>([]);
   const [selectedBoatId, setSelectedBoatId] = useState<string | null>(boatId || null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +110,24 @@ export function useBoatLog(boatId?: string) {
       }
     } catch (error) {
       console.error("Error fetching boats:", error);
+    }
+  }, [selectedBoatId]);
+
+  // Fetch manual log entries for the selected boat
+  const fetchManualEntries = useCallback(async () => {
+    if (!selectedBoatId) return;
+
+    try {
+      const { data } = await supabase
+        .from("boat_logs")
+        .select("*")
+        .eq("boat_id", selectedBoatId)
+        .is("work_order_id", null)
+        .order("created_at", { ascending: false });
+
+      setManualEntries(data || []);
+    } catch (error) {
+      console.error("Error fetching manual entries:", error);
     }
   }, [selectedBoatId]);
 
@@ -146,12 +175,15 @@ export function useBoatLog(boatId?: string) {
 
       setActiveWorkOrders(activeWithProviders);
       setCompletedWorkOrders(completedWithProviders);
+
+      // Also fetch manual entries
+      await fetchManualEntries();
     } catch (error) {
       console.error("Error fetching work orders:", error);
     } finally {
       setLoading(false);
     }
-  }, [selectedBoatId]);
+  }, [selectedBoatId, fetchManualEntries]);
 
   // Enrich work orders with provider business names
   const enrichWithProviders = async (workOrders: any[]): Promise<WorkOrderWithDetails[]> => {
@@ -229,6 +261,7 @@ export function useBoatLog(boatId?: string) {
     setSelectedBoatId,
     activeWorkOrders,
     completedWorkOrders,
+    manualEntries,
     loading,
     fetchQCChecklist,
     fetchWorkOrderPhotos,

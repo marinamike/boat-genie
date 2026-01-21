@@ -24,12 +24,32 @@ import {
   Calendar,
   Download,
   AlertTriangle,
+  Plus,
+  Fuel,
+  Gauge,
+  Wrench,
+  FileText,
 } from "lucide-react";
-import { useBoatLog, WorkOrderWithDetails } from "@/hooks/useBoatLog";
+import { useBoatLog, WorkOrderWithDetails, ManualLogEntry } from "@/hooks/useBoatLog";
 import { WorkOrderDetailSheet } from "@/components/boatlog/WorkOrderDetailSheet";
+import { ManualLogEntrySheet } from "@/components/boatlog/ManualLogEntrySheet";
 import { formatPrice } from "@/lib/pricing";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
+
+const LOG_TYPE_ICONS: Record<string, React.ReactNode> = {
+  fuel: <Fuel className="w-4 h-4" />,
+  engine_hours: <Gauge className="w-4 h-4" />,
+  maintenance: <Wrench className="w-4 h-4" />,
+  note: <FileText className="w-4 h-4" />,
+};
+
+const LOG_TYPE_LABELS: Record<string, string> = {
+  fuel: "Fuel",
+  engine_hours: "Engine Hours",
+  maintenance: "Maintenance",
+  note: "Note",
+};
 
 const BoatLog = () => {
   const navigate = useNavigate();
@@ -40,11 +60,14 @@ const BoatLog = () => {
     setSelectedBoatId,
     activeWorkOrders,
     completedWorkOrders,
+    manualEntries,
     loading,
+    refetch,
   } = useBoatLog();
 
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrderWithDetails | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [manualEntrySheetOpen, setManualEntrySheetOpen] = useState(false);
   const [generatingYearReport, setGeneratingYearReport] = useState(false);
 
   const handleViewDetails = (workOrder: WorkOrderWithDetails) => {
@@ -161,8 +184,8 @@ Generated on ${format(new Date(), "PPP 'at' p")}
     );
   }
 
-  // Empty state - no history
-  const hasNoHistory = activeWorkOrders.length === 0 && completedWorkOrders.length === 0;
+  // Empty state - no history (but include manual entries)
+  const hasNoHistory = activeWorkOrders.length === 0 && completedWorkOrders.length === 0 && manualEntries.length === 0;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -180,23 +203,34 @@ Generated on ${format(new Date(), "PPP 'at' p")}
               </div>
             </div>
             
-            {completedWorkOrders.length > 0 && (
+            <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={handleDownloadYearReport}
-                disabled={generatingYearReport}
+                onClick={() => setManualEntrySheetOpen(true)}
               >
-                {generatingYearReport ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Download className="w-4 h-4 mr-1" />
-                    Export
-                  </>
-                )}
+                <Plus className="w-4 h-4 mr-1" />
+                Add Entry
               </Button>
-            )}
+              
+              {(completedWorkOrders.length > 0 || manualEntries.length > 0) && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleDownloadYearReport}
+                  disabled={generatingYearReport}
+                >
+                  {generatingYearReport ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-1" />
+                      Export
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Boat Selector */}
@@ -342,6 +376,46 @@ Generated on ${format(new Date(), "PPP 'at' p")}
                 </div>
               </section>
             )}
+
+            {/* Manual Log Entries */}
+            {manualEntries.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-500" />
+                  Owner Entries
+                </h2>
+                <div className="space-y-3">
+                  {manualEntries.map((entry) => (
+                    <Card key={entry.id}>
+                      <CardContent className="py-4">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600">
+                            {LOG_TYPE_ICONS[entry.log_type] || <FileText className="w-4 h-4" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-medium">{entry.title}</h3>
+                              <Badge variant="outline" className="text-xs">
+                                {LOG_TYPE_LABELS[entry.log_type] || entry.log_type}
+                              </Badge>
+                            </div>
+                            {entry.description && (
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {entry.description}
+                              </p>
+                            )}
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {format(new Date(entry.created_at), "MMM d, yyyy 'at' h:mm a")}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>
@@ -351,6 +425,14 @@ Generated on ${format(new Date(), "PPP 'at' p")}
         workOrder={selectedWorkOrder}
         open={detailSheetOpen}
         onOpenChange={setDetailSheetOpen}
+      />
+
+      {/* Manual Log Entry Sheet */}
+      <ManualLogEntrySheet
+        open={manualEntrySheetOpen}
+        onOpenChange={setManualEntrySheetOpen}
+        boatId={selectedBoatId}
+        onSuccess={refetch}
       />
 
       <BottomNav />
