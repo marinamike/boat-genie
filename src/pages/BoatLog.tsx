@@ -20,6 +20,7 @@ import { VesselEmptyState } from "@/components/boatlog/VesselEmptyState";
 import { DigitalVault } from "@/components/boatlog/DigitalVault";
 import { ServiceTimeline } from "@/components/boatlog/ServiceTimeline";
 import { ManufacturerRecommendations } from "@/components/boatlog/ManufacturerRecommendations";
+import { EquipmentInventory } from "@/components/boatlog/EquipmentInventory";
 import { MaintenanceRecommendation } from "@/hooks/useEquipmentSpecs";
 import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { formatPrice } from "@/lib/pricing";
@@ -93,6 +94,14 @@ const BoatLog = () => {
                    recommendation.equipment_type === "generator" ? "Generator Service" : 
                    "General Maintenance",
       description: `${recommendation.title}\n\n${recommendation.description || ""}`,
+    });
+    setWishSheetOpen(true);
+  };
+
+  const handleEquipmentWish = (description: string) => {
+    setPrefilledWishData({
+      serviceType: "General Maintenance",
+      description,
     });
     setWishSheetOpen(true);
   };
@@ -272,6 +281,16 @@ Generated on ${format(new Date(), "PPP 'at' p")}
       <main className="px-4 py-6 space-y-6">
         {/* Digital Vault */}
         <DigitalVault boatId={selectedBoatId} boatName={selectedBoat?.name} />
+
+        {/* Equipment Inventory */}
+        <Card>
+          <CardContent className="pt-6">
+            <EquipmentInventory 
+              boatId={selectedBoatId!} 
+              onOpenWish={handleEquipmentWish}
+            />
+          </CardContent>
+        </Card>
 
         {/* Manufacturer Recommendations */}
         <ManufacturerRecommendations

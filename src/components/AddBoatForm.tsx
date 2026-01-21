@@ -36,6 +36,7 @@ import { Loader2, Ship, Trash2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EquipmentSection } from "@/components/boatlog/EquipmentSection";
+import { EquipmentManager } from "@/components/boatlog/EquipmentManager";
 import {
   useEquipmentSpecs,
   createMaintenanceRecommendations,
@@ -484,8 +485,12 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
 
             <Separator className="my-4" />
 
-            {/* Equipment Section */}
-            <EquipmentSection form={form} onEquipmentMatch={handleEquipmentMatch} />
+            {/* Equipment Section - Different UI for new vs existing boats */}
+            {isEditMode && boatToEdit ? (
+              <EquipmentManager boatId={boatToEdit.id} ownerId={userId} />
+            ) : (
+              <EquipmentSection form={form} onEquipmentMatch={handleEquipmentMatch} />
+            )}
 
             <Separator className="my-4" />
 
