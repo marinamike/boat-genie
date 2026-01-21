@@ -57,31 +57,28 @@ export function DocumentViewer({
     setErrorMessage(null);
 
     try {
-      // Extract the file path from the URL
-      // The URL format is typically: https://project.supabase.co/storage/v1/object/public/bucket/path
-      // or just the path: bucket/path
       let filePath = documentUrl;
       
-      // If it's a full URL, extract just the path part
+      // If it's a full URL, extract just the path part after the bucket name
       if (documentUrl.includes('/storage/v1/object/')) {
-        const pathMatch = documentUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/(.+)/);
+        // Format: https://project.supabase.co/storage/v1/object/public/provider-documents/user-id/file.pdf
+        const pathMatch = documentUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/provider-documents\/(.+)/);
         if (pathMatch) {
           filePath = pathMatch[1];
         }
+      } else if (documentUrl.startsWith('provider-documents/')) {
+        // Format: provider-documents/user-id/file.pdf
+        filePath = documentUrl.replace('provider-documents/', '');
       }
+      // If it's already just the path (user-id/file.pdf), use as-is
 
-      // Get the bucket and file path
-      const parts = filePath.split('/');
-      const bucket = parts[0];
-      const path = parts.slice(1).join('/');
-
-      // Create signed URL (valid for 1 hour)
+      // Create signed URL (valid for 60 seconds as requested)
       const { data, error } = await supabase.storage
-        .from(bucket || 'provider-documents')
-        .createSignedUrl(path || filePath, 3600);
+        .from('provider-documents')
+        .createSignedUrl(filePath, 60);
 
       if (error) {
-        console.error("Signed URL error:", error);
+        console.error("Signed URL error:", error, "Path attempted:", filePath);
         throw new Error("File not found in storage. Request re-upload.");
       }
 
@@ -116,8 +113,8 @@ export function DocumentViewer({
       // Open image in modal
       setShowImageModal(true);
     } else {
-      // Open PDF or other files in new tab
-      window.open(url, '_blank');
+      // Open PDF or other files in new tab with security attributes
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -220,7 +217,7 @@ export function DocumentViewer({
           <div className="flex justify-end gap-2 mt-4">
             <Button
               variant="outline"
-              onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+              onClick={() => signedUrl && window.open(signedUrl, '_blank', 'noopener,noreferrer')}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Open in New Tab
