@@ -57,7 +57,14 @@ const DryStackLaunch = () => {
         setLoading(false);
       }
     };
+
+    const timeout = window.setTimeout(() => {
+      // Safety: never trap the UI on the spinner.
+      setLoading(false);
+    }, 4000);
+
     checkAuth();
+    return () => window.clearTimeout(timeout);
   }, [navigate]);
 
   const handleChargeReRackFee = async (item: LaunchQueueItem) => {
