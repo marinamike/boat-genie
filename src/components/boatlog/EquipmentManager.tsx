@@ -169,7 +169,7 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
           <Badge variant="secondary" className="text-xs">{items.length}</Badge>
         </div>
         {!readOnly && (
-          <Button variant="outline" size="sm" onClick={() => handleOpenAdd(type)}>
+          <Button type="button" variant="outline" size="sm" onClick={() => handleOpenAdd(type)}>
             <Plus className="w-3 h-3 mr-1" />
             Add {type === "engine" ? "Engine" : type === "generator" ? "Generator" : "Seakeeper"}
           </Button>
@@ -316,10 +316,10 @@ export function EquipmentManager({ boatId, ownerId, readOnly = false }: Equipmen
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editingEquipment ? "Save Changes" : "Add Equipment"}
             </Button>
@@ -365,10 +365,10 @@ function EquipmentCard({ item, onEdit, onDelete, readOnly }: EquipmentCardProps)
 
           {!readOnly && (
             <div className="flex items-center gap-1 shrink-0">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
                 <Edit2 className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
