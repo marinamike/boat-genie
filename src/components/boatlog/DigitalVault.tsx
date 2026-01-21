@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,15 +15,18 @@ import {
   Shield,
   ScrollText,
   Plus,
-  ExternalLink,
+  Eye,
   Calendar,
   AlertCircle,
   Trash2,
   Loader2,
+  FileImage,
+  File,
 } from "lucide-react";
 import { DocumentUploadSheet } from "./DocumentUploadSheet";
 import { useVesselDocuments, VesselDocument } from "@/hooks/useVesselDocuments";
 import { differenceInDays } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface DigitalVaultProps {
   boatId: string | null;
@@ -50,10 +53,24 @@ const CATEGORY_CONFIG = {
 
 type CategoryKey = keyof typeof CATEGORY_CONFIG;
 
+// File type icon helper
+function getFileIcon(fileType: string) {
+  const type = fileType.toLowerCase();
+  if (type === "pdf") {
+    return <FileText className="w-5 h-5 text-red-500" />;
+  }
+  if (["jpg", "jpeg", "png", "webp", "gif"].includes(type)) {
+    return <FileImage className="w-5 h-5 text-blue-500" />;
+  }
+  return <File className="w-5 h-5 text-muted-foreground" />;
+}
+
 export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
   const [uploadSheetOpen, setUploadSheetOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(null);
-  const { documents, loading, deleteDocument, refetch } = useVesselDocuments(boatId);
+  const [viewingDocId, setViewingDocId] = useState<string | null>(null);
+  const { documents, loading, deleteDocument, getSignedUrl, refetch } = useVesselDocuments(boatId);
+  const { toast } = useToast();
 
   const handleAddDocument = (category: CategoryKey) => {
     setSelectedCategory(category);
@@ -76,12 +93,27 @@ export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
   };
 
   const handleViewDocument = async (doc: VesselDocument) => {
-    window.open(doc.file_url, "_blank");
+    setViewingDocId(doc.id);
+    try {
+      // Generate a fresh 60-second signed URL
+      const signedUrl = await getSignedUrl(doc.file_url);
+      if (signedUrl) {
+        window.open(signedUrl, "_blank");
+      } else {
+        toast({
+          title: "Unable to open document",
+          description: "Failed to generate secure access link.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setViewingDocId(null);
+    }
   };
 
-  const handleDeleteDocument = async (docId: string) => {
+  const handleDeleteDocument = async (doc: VesselDocument) => {
     if (confirm("Are you sure you want to delete this document?")) {
-      await deleteDocument(docId);
+      await deleteDocument(doc.id, doc.file_url);
     }
   };
 
@@ -162,7 +194,12 @@ export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
                         className="overflow-hidden hover:shadow-sm transition-shadow"
                       >
                         <CardContent className="p-3">
-                          <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3">
+                            {/* File type icon */}
+                            <div className="shrink-0 mt-0.5">
+                              {getFileIcon(doc.file_type)}
+                            </div>
+                            
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-medium text-sm truncate">
@@ -185,7 +222,10 @@ export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
                                 </p>
                               )}
                               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="uppercase">{doc.file_type}</span>
+                                <span className="uppercase font-medium">{doc.file_type}</span>
+                                {doc.file_size_bytes && (
+                                  <span>{(doc.file_size_bytes / 1024 / 1024).toFixed(1)} MB</span>
+                                )}
                                 {doc.expiry_date && (
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
@@ -194,20 +234,29 @@ export function DigitalVault({ boatId, boatName }: DigitalVaultProps) {
                                 )}
                               </div>
                             </div>
+                            
                             <div className="flex items-center gap-1 shrink-0">
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3"
                                 onClick={() => handleViewDocument(doc)}
+                                disabled={viewingDocId === doc.id}
                               >
-                                <ExternalLink className="w-4 h-4" />
+                                {viewingDocId === doc.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    View
+                                  </>
+                                )}
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteDocument(doc.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteDocument(doc)}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>

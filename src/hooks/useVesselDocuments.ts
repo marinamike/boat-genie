@@ -9,7 +9,7 @@ export interface VesselDocument {
   category: "manuals" | "warranty" | "documentation";
   title: string;
   description: string | null;
-  file_url: string;
+  file_url: string; // This now stores the file path, not the signed URL
   file_type: string;
   file_size_bytes: number | null;
   expiry_date: string | null;
@@ -17,6 +17,8 @@ export interface VesselDocument {
   created_at: string;
   updated_at: string;
 }
+
+const STORAGE_BUCKET = "vessel-vault";
 
 export function useVesselDocuments(boatId: string | null) {
   const [documents, setDocuments] = useState<VesselDocument[]>([]);
@@ -46,8 +48,34 @@ export function useVesselDocuments(boatId: string | null) {
     }
   }, [boatId]);
 
-  const deleteDocument = async (docId: string) => {
+  // Generate a fresh signed URL for viewing a document (60 seconds)
+  const getSignedUrl = async (filePath: string): Promise<string | null> => {
     try {
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(filePath, 60);
+
+      if (error) throw error;
+      return data?.signedUrl || null;
+    } catch (error) {
+      console.error("Error generating signed URL:", error);
+      return null;
+    }
+  };
+
+  const deleteDocument = async (docId: string, filePath: string) => {
+    try {
+      // Delete from storage first
+      const { error: storageError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error("Storage delete error:", storageError);
+        // Continue with DB delete even if storage fails
+      }
+
+      // Delete from database
       const { error } = await supabase
         .from("vessel_documents")
         .delete()
@@ -78,6 +106,8 @@ export function useVesselDocuments(boatId: string | null) {
     documents,
     loading,
     deleteDocument,
+    getSignedUrl,
     refetch: fetchDocuments,
+    storageBucket: STORAGE_BUCKET,
   };
 }
