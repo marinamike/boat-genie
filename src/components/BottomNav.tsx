@@ -36,7 +36,6 @@ const BottomNav = () => {
     navItems = [
       { href: "/dashboard", icon: Home, label: "Home" },
       { href: "/provider", icon: Wrench, label: "Jobs" },
-      { href: "/dry-stack", icon: Anchor, label: "Launch" },
       { href: "/profile", icon: User, label: "Profile" },
     ];
   } else if (isMarinaStaff) {
