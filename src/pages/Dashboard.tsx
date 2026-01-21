@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AddBoatForm, { BoatToEdit } from "@/components/AddBoatForm";
+import { WishFormSheet } from "@/components/wish/WishFormSheet";
+import { WishStatusCard } from "@/components/wish/WishStatusCard";
 
 interface Boat {
   id: string;
@@ -27,6 +29,21 @@ interface Boat {
   } | null;
 }
 
+interface Wish {
+  id: string;
+  service_type: string;
+  description: string;
+  status: string;
+  urgency: string | null;
+  is_emergency: boolean;
+  calculated_price: number | null;
+  preferred_date: string | null;
+  created_at: string;
+  boat: {
+    name: string;
+  } | null;
+}
+
 interface Profile {
   full_name: string | null;
   membership_tier: "standard" | "genie";
@@ -36,9 +53,11 @@ const Dashboard = () => {
   const { user, role, loading: authLoading, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [boats, setBoats] = useState<Boat[]>([]);
+  const [wishes, setWishes] = useState<Wish[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [expandedAccess, setExpandedAccess] = useState<Record<string, boolean>>({});
   const [showBoatForm, setShowBoatForm] = useState(false);
+  const [showWishForm, setShowWishForm] = useState(false);
   const [boatToEdit, setBoatToEdit] = useState<BoatToEdit | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -68,6 +87,30 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  const fetchWishes = useCallback(async () => {
+    if (!user) return;
+    const { data: wishData } = await supabase
+      .from("wish_forms")
+      .select(`
+        id,
+        service_type,
+        description,
+        status,
+        urgency,
+        is_emergency,
+        calculated_price,
+        preferred_date,
+        created_at,
+        boat:boats(name)
+      `)
+      .eq("requester_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (wishData) {
+      setWishes(wishData as unknown as Wish[]);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -89,8 +132,8 @@ const Dashboard = () => {
           setProfile(profileData);
         }
 
-        // Fetch boats
-        await fetchBoats();
+        // Fetch boats and wishes
+        await Promise.all([fetchBoats(), fetchWishes()]);
       } catch (err) {
         console.error("Dashboard: data fetch failed", err);
       } finally {
@@ -99,7 +142,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [user, authLoading, navigate, fetchBoats]);
+  }, [user, authLoading, navigate, fetchBoats, fetchWishes]);
 
   const handleLogout = async () => {
     await signOut();
@@ -120,10 +163,15 @@ const Dashboard = () => {
   };
 
   const handleMakeWish = () => {
-    toast({
-      title: "Coming soon!",
-      description: "The Wish Form will be available shortly.",
-    });
+    if (boats.length === 0) {
+      toast({
+        title: "Add a boat first",
+        description: "You need to add a boat before making a service request.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowWishForm(true);
   };
 
   const handleAddBoat = () => {
@@ -331,6 +379,18 @@ const Dashboard = () => {
             </div>
           )}
         </section>
+
+        {/* Active Wishes Section */}
+        {wishes.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-xl font-bold tracking-tight mb-4">My Wishes</h2>
+            <div className="space-y-3">
+              {wishes.map((wish) => (
+                <WishStatusCard key={wish.id} wish={wish} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       {/* Floating Action Button */}
@@ -349,6 +409,21 @@ const Dashboard = () => {
           boatToEdit={boatToEdit}
         />
       )}
+
+      {/* Wish Form Sheet */}
+      <WishFormSheet
+        open={showWishForm}
+        onOpenChange={setShowWishForm}
+        boats={boats.map((b) => ({
+          id: b.id,
+          name: b.name,
+          length_ft: b.length_ft,
+          make: b.make,
+          model: b.model,
+        }))}
+        membershipTier={profile?.membership_tier || "standard"}
+        onSuccess={fetchWishes}
+      />
     </div>
   );
 };
