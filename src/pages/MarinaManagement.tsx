@@ -10,6 +10,7 @@ import { ModuleToggle } from "@/components/marina/ModuleToggle";
 import { StagingDockView } from "@/components/marina/StagingDockView";
 import { SlipManager } from "@/components/marina/SlipManager";
 import { WelcomePacketManager } from "@/components/marina/WelcomePacketManager";
+import { QRCodeGenerator } from "@/components/marina/QRCodeGenerator";
 import { AdminProviderReview } from "@/components/provider/AdminProviderReview";
 import BottomNav from "@/components/BottomNav";
 
@@ -116,6 +117,12 @@ const MarinaManagement = () => {
           onMoveBoat={moveBoatToSlip}
           onRemoveBoat={removeBoatFromSlip}
           showDryStack={isModuleEnabled("dry_stack")}
+        />
+
+        {/* QR Code Generator */}
+        <QRCodeGenerator
+          marinaId={settings?.id || null}
+          slips={slips}
         />
 
         {/* Welcome Packet */}
