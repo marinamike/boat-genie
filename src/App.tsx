@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { VesselProvider } from "@/contexts/VesselContext";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import ProviderDashboard from "./pages/ProviderDashboard";
 import DockView from "./pages/DockView";
@@ -30,27 +31,29 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <RoleSwitcher />
-          <div className="pt-10"> {/* Offset for role switcher header */}
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/boat-log" element={<BoatLog />} />
-              <Route path="/membership" element={<Membership />} />
-              <Route path="/marina" element={<MarinaManagement />} />
-              <Route path="/dry-stack" element={<DryStackLaunch />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/register-marina" element={<RegisterMarina />} />
-              <Route path="/provider" element={<ProviderDashboard />} />
-              <Route path="/dock" element={<DockView />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/operations" element={<Operations />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
+          <VesselProvider>
+            <RoleSwitcher />
+            <div className="pt-10"> {/* Offset for role switcher header */}
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/boat-log" element={<BoatLog />} />
+                <Route path="/membership" element={<Membership />} />
+                <Route path="/marina" element={<MarinaManagement />} />
+                <Route path="/dry-stack" element={<DryStackLaunch />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/register-marina" element={<RegisterMarina />} />
+                <Route path="/provider" element={<ProviderDashboard />} />
+                <Route path="/dock" element={<DockView />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/operations" element={<Operations />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+          </VesselProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

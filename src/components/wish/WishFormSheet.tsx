@@ -27,6 +27,7 @@ interface WishFormSheetProps {
   onOpenChange: (open: boolean) => void;
   boats: Boat[];
   membershipTier: "standard" | "genie";
+  preselectedBoatId?: string | null;
   onSuccess?: () => void;
 }
 
@@ -45,7 +46,7 @@ const CATEGORY_TO_SERVICE_CATEGORY: Record<ServiceCategory, string> = {
   visual_cosmetic: "Fiberglass & Gelcoat",
 };
 
-export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuccess }: WishFormSheetProps) {
+export function WishFormSheet({ open, onOpenChange, boats, membershipTier, preselectedBoatId, onSuccess }: WishFormSheetProps) {
   const [step, setStep] = useState<Step>("select-boat");
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
@@ -85,13 +86,25 @@ export function WishFormSheet({ open, onOpenChange, boats, membershipTier, onSuc
     }
   }, [open]);
 
-  // Auto-select boat if only one
+  // Auto-select boat if only one, or use preselected boat
   useEffect(() => {
-    if (open && boats.length === 1 && step === "select-boat") {
-      setSelectedBoat(boats[0]);
-      setStep("select-category");
+    if (open && step === "select-boat") {
+      // If a boat is preselected, use that
+      if (preselectedBoatId) {
+        const preselectedBoat = boats.find((b) => b.id === preselectedBoatId);
+        if (preselectedBoat) {
+          setSelectedBoat(preselectedBoat);
+          setStep("select-category");
+          return;
+        }
+      }
+      // Otherwise auto-select if only one boat
+      if (boats.length === 1) {
+        setSelectedBoat(boats[0]);
+        setStep("select-category");
+      }
     }
-  }, [open, boats, step]);
+  }, [open, boats, step, preselectedBoatId]);
 
   // Reset selected service when category changes
   useEffect(() => {
