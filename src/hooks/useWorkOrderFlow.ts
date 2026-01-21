@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { syncStatusToChat } from "@/lib/chatUtils";
 import type { Database } from "@/integrations/supabase/types";
 
 type EscrowStatus = Database["public"]["Enums"]["escrow_status"];
@@ -163,6 +164,9 @@ export function useWorkOrderFlow() {
   const acceptQuote = async (quoteId: string, workOrderId: string) => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       // Get the quote details
       const { data: quote, error: quoteError } = await supabase
         .from("quotes")
@@ -204,6 +208,9 @@ export function useWorkOrderFlow() {
 
       if (workOrderError) throw workOrderError;
 
+      // Sync status to chat as system message
+      await syncStatusToChat(workOrderId, "approved", user.id);
+
       toast({
         title: "Quote accepted!",
         description: "The provider can now access your boat details.",
@@ -227,12 +234,18 @@ export function useWorkOrderFlow() {
   const startWork = async (workOrderId: string) => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { error } = await supabase
         .from("work_orders")
         .update({ escrow_status: "work_started" })
         .eq("id", workOrderId);
 
       if (error) throw error;
+
+      // Sync status to chat as system message
+      await syncStatusToChat(workOrderId, "work_started", user.id);
 
       toast({
         title: "Work started",
@@ -262,6 +275,9 @@ export function useWorkOrderFlow() {
   ) => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       // Create boat log entry for the completed work
       const { data: boatLog, error: logError } = await supabase
         .from("boat_logs")
@@ -288,6 +304,9 @@ export function useWorkOrderFlow() {
 
       if (workOrderError) throw workOrderError;
 
+      // Sync status to chat as system message
+      await syncStatusToChat(workOrderId, "pending_photos", user.id);
+
       toast({
         title: "Photos uploaded!",
         description: "Awaiting owner approval to release funds.",
@@ -311,6 +330,9 @@ export function useWorkOrderFlow() {
   const releaseFunds = async (workOrderId: string) => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { error } = await supabase
         .from("work_orders")
         .update({
@@ -322,6 +344,9 @@ export function useWorkOrderFlow() {
         .eq("id", workOrderId);
 
       if (error) throw error;
+
+      // Sync status to chat as system message
+      await syncStatusToChat(workOrderId, "released", user.id);
 
       toast({
         title: "Funds released!",
