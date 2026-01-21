@@ -261,6 +261,98 @@ export type Database = {
           },
         ]
       }
+      boat_specs: {
+        Row: {
+          battery_count: number | null
+          battery_locations: string | null
+          battery_type: string | null
+          beam_ft: number | null
+          boat_id: string
+          bridge_clearance_ft: number | null
+          created_at: string
+          cruise_speed_knots: number | null
+          draft_engines_down_ft: number | null
+          draft_engines_up_ft: number | null
+          dry_weight_lbs: number | null
+          engine_options: string[] | null
+          fuel_capacity_gal: number | null
+          holding_capacity_gal: number | null
+          hull_type: string | null
+          id: string
+          is_custom_override: boolean
+          livewell_capacity_gal: number | null
+          loa_ft: number | null
+          max_hp: number | null
+          max_speed_knots: number | null
+          notes: string | null
+          shore_power: string | null
+          updated_at: string
+          water_capacity_gal: number | null
+        }
+        Insert: {
+          battery_count?: number | null
+          battery_locations?: string | null
+          battery_type?: string | null
+          beam_ft?: number | null
+          boat_id: string
+          bridge_clearance_ft?: number | null
+          created_at?: string
+          cruise_speed_knots?: number | null
+          draft_engines_down_ft?: number | null
+          draft_engines_up_ft?: number | null
+          dry_weight_lbs?: number | null
+          engine_options?: string[] | null
+          fuel_capacity_gal?: number | null
+          holding_capacity_gal?: number | null
+          hull_type?: string | null
+          id?: string
+          is_custom_override?: boolean
+          livewell_capacity_gal?: number | null
+          loa_ft?: number | null
+          max_hp?: number | null
+          max_speed_knots?: number | null
+          notes?: string | null
+          shore_power?: string | null
+          updated_at?: string
+          water_capacity_gal?: number | null
+        }
+        Update: {
+          battery_count?: number | null
+          battery_locations?: string | null
+          battery_type?: string | null
+          beam_ft?: number | null
+          boat_id?: string
+          bridge_clearance_ft?: number | null
+          created_at?: string
+          cruise_speed_knots?: number | null
+          draft_engines_down_ft?: number | null
+          draft_engines_up_ft?: number | null
+          dry_weight_lbs?: number | null
+          engine_options?: string[] | null
+          fuel_capacity_gal?: number | null
+          holding_capacity_gal?: number | null
+          hull_type?: string | null
+          id?: string
+          is_custom_override?: boolean
+          livewell_capacity_gal?: number | null
+          loa_ft?: number | null
+          max_hp?: number | null
+          max_speed_knots?: number | null
+          notes?: string | null
+          shore_power?: string | null
+          updated_at?: string
+          water_capacity_gal?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_specs_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: true
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boat_warranties: {
         Row: {
           boat_equipment_id: string | null
@@ -1664,15 +1756,22 @@ export type Database = {
           beam_ft: number | null
           bridge_clearance_ft: number | null
           created_at: string
+          cruise_speed_knots: number | null
+          draft_engines_down_ft: number | null
+          draft_engines_up_ft: number | null
           draft_ft: number | null
           dry_weight_lbs: number | null
           engine_options: string[] | null
           fuel_capacity_gal: number | null
           holding_capacity_gal: number | null
+          hull_type: string | null
           id: string
           length_ft: number | null
+          livewell_capacity_gal: number | null
+          loa_ft: number | null
           make: string
           max_hp: number | null
+          max_speed_knots: number | null
           model: string
           shore_power: string | null
           updated_at: string
@@ -1687,15 +1786,22 @@ export type Database = {
           beam_ft?: number | null
           bridge_clearance_ft?: number | null
           created_at?: string
+          cruise_speed_knots?: number | null
+          draft_engines_down_ft?: number | null
+          draft_engines_up_ft?: number | null
           draft_ft?: number | null
           dry_weight_lbs?: number | null
           engine_options?: string[] | null
           fuel_capacity_gal?: number | null
           holding_capacity_gal?: number | null
+          hull_type?: string | null
           id?: string
           length_ft?: number | null
+          livewell_capacity_gal?: number | null
+          loa_ft?: number | null
           make: string
           max_hp?: number | null
+          max_speed_knots?: number | null
           model: string
           shore_power?: string | null
           updated_at?: string
@@ -1710,15 +1816,22 @@ export type Database = {
           beam_ft?: number | null
           bridge_clearance_ft?: number | null
           created_at?: string
+          cruise_speed_knots?: number | null
+          draft_engines_down_ft?: number | null
+          draft_engines_up_ft?: number | null
           draft_ft?: number | null
           dry_weight_lbs?: number | null
           engine_options?: string[] | null
           fuel_capacity_gal?: number | null
           holding_capacity_gal?: number | null
+          hull_type?: string | null
           id?: string
           length_ft?: number | null
+          livewell_capacity_gal?: number | null
+          loa_ft?: number | null
           make?: string
           max_hp?: number | null
+          max_speed_knots?: number | null
           model?: string
           shore_power?: string | null
           updated_at?: string

@@ -1,14 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Ruler,
-  Droplets,
-  Zap,
   Shield,
-  FileText,
   ExternalLink,
   Plus,
   Edit2,
@@ -16,32 +12,28 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { useVesselSpecs, useBoatWarranties, useWarrantyDefaults, BoatWarranty } from "@/hooks/useVesselSpecs";
+import { useBoatWarranties, useWarrantyDefaults, BoatWarranty } from "@/hooks/useVesselSpecs";
 import { useBoatEquipment } from "@/hooks/useBoatEquipment";
 import { WarrantyEditSheet } from "./WarrantyEditSheet";
+import { VesselSpecSheet } from "./VesselSpecSheet";
 import { format, isAfter, parseISO, addMonths } from "date-fns";
 
 interface SpecsWarrantyTabProps {
   boatId: string | null;
+  boatName?: string | null;
   boatMake?: string | null;
   boatModel?: string | null;
   boatYear?: number | null;
 }
 
-export function SpecsWarrantyTab({ boatId, boatMake, boatModel, boatYear }: SpecsWarrantyTabProps) {
-  const { specs, loading: specsLoading } = useVesselSpecs(boatMake, boatModel);
+export function SpecsWarrantyTab({ boatId, boatName, boatMake, boatModel, boatYear }: SpecsWarrantyTabProps) {
   const { warranties, loading: warrantiesLoading, createWarranty, updateWarranty, deleteWarranty, refetch } = useBoatWarranties(boatId);
-  const { defaults, getWarrantyForBrand } = useWarrantyDefaults();
+  const { getWarrantyForBrand } = useWarrantyDefaults();
   const { equipment } = useBoatEquipment(boatId);
   
   const [editingWarranty, setEditingWarranty] = useState<BoatWarranty | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-
-  const loading = specsLoading || warrantiesLoading;
-
-  // Calculate purchase date from boat year (assume January 1st of that year)
-  const purchaseDate = boatYear ? new Date(boatYear, 0, 1) : new Date();
 
   // Auto-generate warranties for equipment that doesn't have them
   const handleAutoGenerateWarranties = async () => {
@@ -123,7 +115,7 @@ export function SpecsWarrantyTab({ boatId, boatMake, boatModel, boatYear }: Spec
     setSheetOpen(true);
   };
 
-  if (loading) {
+  if (warrantiesLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -135,143 +127,18 @@ export function SpecsWarrantyTab({ boatId, boatMake, boatModel, boatYear }: Spec
     <div className="space-y-6">
       <Tabs defaultValue="specs" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="specs">Vessel Specs</TabsTrigger>
+          <TabsTrigger value="specs">Spec Sheet</TabsTrigger>
           <TabsTrigger value="warranty">Warranty</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="specs" className="space-y-4 mt-4">
-          {specs ? (
-            <>
-              {/* Dimensions Card */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Ruler className="w-4 h-4 text-primary" />
-                    Vessel Dimensions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Length</p>
-                      <p className="font-medium">{specs.length_ft ? `${specs.length_ft} ft` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Beam</p>
-                      <p className="font-medium">{specs.beam_ft ? `${specs.beam_ft} ft` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Draft</p>
-                      <p className="font-medium">{specs.draft_ft ? `${specs.draft_ft} ft` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Bridge Clearance</p>
-                      <p className="font-medium">{specs.bridge_clearance_ft ? `${specs.bridge_clearance_ft} ft` : "—"}</p>
-                    </div>
-                    {specs.dry_weight_lbs && (
-                      <div className="col-span-2">
-                        <p className="text-muted-foreground">Dry Weight</p>
-                        <p className="font-medium">{specs.dry_weight_lbs.toLocaleString()} lbs</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Capacities Card */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Droplets className="w-4 h-4 text-primary" />
-                    Tank Capacities
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Fuel</p>
-                      <p className="font-medium">{specs.fuel_capacity_gal ? `${specs.fuel_capacity_gal} gal` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Water</p>
-                      <p className="font-medium">{specs.water_capacity_gal ? `${specs.water_capacity_gal} gal` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Holding</p>
-                      <p className="font-medium">{specs.holding_capacity_gal ? `${specs.holding_capacity_gal} gal` : "—"}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Electrical Card */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    Electrical System
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Battery Type</span>
-                      <span className="font-medium">{specs.battery_type || "—"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Battery Count</span>
-                      <span className="font-medium">{specs.battery_count || "—"}</span>
-                    </div>
-                    {specs.battery_locations && (
-                      <div>
-                        <p className="text-muted-foreground mb-1">Locations</p>
-                        <p className="font-medium text-xs">{specs.battery_locations}</p>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Shore Power</span>
-                      <span className="font-medium">{specs.shore_power || "—"}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Engine Options */}
-              {specs.engine_options && specs.engine_options.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Available Engine Configurations</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {specs.engine_options.map((option, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {option}
-                        </Badge>
-                      ))}
-                    </div>
-                    {specs.max_hp && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Max rated HP: {specs.max_hp}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </>
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="py-8 text-center">
-                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-medium mb-2">No Specs Available</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {boatMake && boatModel 
-                    ? `We don't have specs for ${boatMake} ${boatModel} yet.`
-                    : "Enter your boat's make and model to see specifications."}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="specs" className="mt-4">
+          <VesselSpecSheet
+            boatId={boatId}
+            boatName={boatName}
+            boatMake={boatMake}
+            boatModel={boatModel}
+            boatYear={boatYear}
+          />
         </TabsContent>
 
         <TabsContent value="warranty" className="space-y-4 mt-4">
