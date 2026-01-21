@@ -53,6 +53,7 @@ export interface WorkOrderItem {
 export interface QuoteFormData {
   laborCost: number;
   materialsCost: number;
+  materialsDeposit: number;
   estimatedCompletionDate: string;
   notes?: string;
 }
@@ -268,7 +269,7 @@ export function useJobBoard() {
 
       if (woError) throw woError;
 
-      // Create quote with rate snapshot
+      // Create quote with rate snapshot and materials deposit
       const { error: quoteError } = await supabase
         .from("quotes")
         .insert({
@@ -279,6 +280,7 @@ export function useJobBoard() {
           lead_fee: basePrice * 0.03,
           total_owner_price: totalOwnerPrice,
           total_provider_receives: totalProviderReceives,
+          materials_deposit: quoteData.materialsDeposit || 0,
           notes: quoteData.notes || null,
           status: "pending",
           is_emergency: wish.urgency === "urgent",
