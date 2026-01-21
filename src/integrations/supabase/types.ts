@@ -404,6 +404,57 @@ export type Database = {
           },
         ]
       }
+      marina_qr_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          marina_id: string | null
+          slip_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          marina_id?: string | null
+          slip_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          marina_id?: string | null
+          slip_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marina_qr_codes_marina_id_fkey"
+            columns: ["marina_id"]
+            isOneToOne: false
+            referencedRelation: "marinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marina_qr_codes_slip_id_fkey"
+            columns: ["slip_id"]
+            isOneToOne: false
+            referencedRelation: "marina_slips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marina_settings: {
         Row: {
           capacity_alert_threshold: number
@@ -551,6 +602,8 @@ export type Database = {
           amenities: string[]
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
           manager_id: string
           marina_name: string
           staging_dock_linear_footage: number
@@ -562,6 +615,8 @@ export type Database = {
           amenities?: string[]
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           manager_id: string
           marina_name: string
           staging_dock_linear_footage?: number
@@ -573,6 +628,8 @@ export type Database = {
           amenities?: string[]
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           manager_id?: string
           marina_name?: string
           staging_dock_linear_footage?: number
@@ -613,6 +670,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      provider_checkins: {
+        Row: {
+          boat_id: string
+          check_in_method: string
+          checked_in_at: string
+          created_at: string
+          distance_from_marina_ft: number | null
+          gps_accuracy_meters: number | null
+          gps_latitude: number | null
+          gps_longitude: number | null
+          id: string
+          manual_reason: string | null
+          provider_id: string
+          qr_code_id: string | null
+          work_order_id: string
+        }
+        Insert: {
+          boat_id: string
+          check_in_method: string
+          checked_in_at?: string
+          created_at?: string
+          distance_from_marina_ft?: number | null
+          gps_accuracy_meters?: number | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
+          id?: string
+          manual_reason?: string | null
+          provider_id: string
+          qr_code_id?: string | null
+          work_order_id: string
+        }
+        Update: {
+          boat_id?: string
+          check_in_method?: string
+          checked_in_at?: string
+          created_at?: string
+          distance_from_marina_ft?: number | null
+          gps_accuracy_meters?: number | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
+          id?: string
+          manual_reason?: string | null
+          provider_id?: string
+          qr_code_id?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_checkins_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_checkins_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "marina_qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_checkins_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provider_profiles: {
         Row: {
@@ -1051,6 +1178,7 @@ export type Database = {
         Row: {
           accepted_quote_id: string | null
           boat_id: string
+          check_in_method: string | null
           completed_at: string | null
           created_at: string
           description: string | null
@@ -1063,6 +1191,7 @@ export type Database = {
           lead_fee: number | null
           photos_uploaded_at: string | null
           priority: number | null
+          provider_checked_in_at: string | null
           provider_diagnostic_fee: number | null
           provider_hourly_rate: number | null
           provider_id: string | null
@@ -1079,6 +1208,7 @@ export type Database = {
         Insert: {
           accepted_quote_id?: string | null
           boat_id: string
+          check_in_method?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
@@ -1091,6 +1221,7 @@ export type Database = {
           lead_fee?: number | null
           photos_uploaded_at?: string | null
           priority?: number | null
+          provider_checked_in_at?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
           provider_id?: string | null
@@ -1107,6 +1238,7 @@ export type Database = {
         Update: {
           accepted_quote_id?: string | null
           boat_id?: string
+          check_in_method?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
@@ -1119,6 +1251,7 @@ export type Database = {
           lead_fee?: number | null
           photos_uploaded_at?: string | null
           priority?: number | null
+          provider_checked_in_at?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
           provider_id?: string | null

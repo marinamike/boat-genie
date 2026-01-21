@@ -259,6 +259,7 @@ const ProviderDashboard = () => {
                     workOrders={activeWorkOrders}
                     onNotifyArrival={notifyArrival}
                     onUpdateStatus={updateWorkOrderStatus}
+                    onRefresh={refetchMetrics}
                   />
                 )}
               </TabsContent>
