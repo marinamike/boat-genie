@@ -19,6 +19,9 @@ import { VesselSwitcher } from "@/components/boatlog/VesselSwitcher";
 import { VesselEmptyState } from "@/components/boatlog/VesselEmptyState";
 import { DigitalVault } from "@/components/boatlog/DigitalVault";
 import { ServiceTimeline } from "@/components/boatlog/ServiceTimeline";
+import { ManufacturerRecommendations } from "@/components/boatlog/ManufacturerRecommendations";
+import { MaintenanceRecommendation } from "@/hooks/useEquipmentSpecs";
+import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { formatPrice } from "@/lib/pricing";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +56,11 @@ const BoatLog = () => {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [manualEntrySheetOpen, setManualEntrySheetOpen] = useState(false);
   const [generatingYearReport, setGeneratingYearReport] = useState(false);
+  const [wishSheetOpen, setWishSheetOpen] = useState(false);
+  const [prefilledWishData, setPrefilledWishData] = useState<{
+    serviceType: string;
+    description: string;
+  } | null>(null);
 
   // Sync vessel context with useBoatLog
   useEffect(() => {
@@ -77,6 +85,16 @@ const BoatLog = () => {
   const handleViewDetails = (workOrder: WorkOrderWithDetails) => {
     setSelectedWorkOrder(workOrder);
     setDetailSheetOpen(true);
+  };
+
+  const handleTurnIntoWish = (recommendation: MaintenanceRecommendation) => {
+    setPrefilledWishData({
+      serviceType: recommendation.equipment_type === "engine" ? "Engine Service" : 
+                   recommendation.equipment_type === "generator" ? "Generator Service" : 
+                   "General Maintenance",
+      description: `${recommendation.title}\n\n${recommendation.description || ""}`,
+    });
+    setWishSheetOpen(true);
   };
 
   const handleDownloadYearReport = async () => {
@@ -255,6 +273,12 @@ Generated on ${format(new Date(), "PPP 'at' p")}
         {/* Digital Vault */}
         <DigitalVault boatId={selectedBoatId} boatName={selectedBoat?.name} />
 
+        {/* Manufacturer Recommendations */}
+        <ManufacturerRecommendations
+          boatId={selectedBoatId}
+          onTurnIntoWish={handleTurnIntoWish}
+        />
+
         {/* Service Timeline */}
         {hasNoHistory ? (
           <Card className="border-dashed border-2">
@@ -299,6 +323,17 @@ Generated on ${format(new Date(), "PPP 'at' p")}
         onOpenChange={setManualEntrySheetOpen}
         boatId={selectedBoatId}
         onSuccess={refetch}
+      />
+
+      {/* Wish Form Sheet for recommendations */}
+      <WishFormSheet
+        open={wishSheetOpen}
+        onOpenChange={(open) => {
+          setWishSheetOpen(open);
+          if (!open) setPrefilledWishData(null);
+        }}
+        preselectedBoatId={selectedBoatId || undefined}
+        prefilledDescription={prefilledWishData?.description}
       />
 
       <BottomNav />
