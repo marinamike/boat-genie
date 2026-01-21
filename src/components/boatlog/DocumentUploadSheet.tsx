@@ -88,33 +88,27 @@ export function DocumentUploadSheet({
 
     setUploading(true);
     try {
-      // Upload file to storage
+      // Upload file to storage (vessel-vault bucket)
       const fileExt = file.name.split(".").pop()?.toLowerCase() || "pdf";
       const filePath = `${user.id}/${boatId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("vessel-documents")
+        .from("vessel-vault")
         .upload(filePath, file, {
           contentType: file.type,
         });
 
       if (uploadError) throw uploadError;
 
-      // Get signed URL for private bucket
-      const { data: urlData } = await supabase.storage
-        .from("vessel-documents")
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
-
-      if (!urlData?.signedUrl) throw new Error("Failed to get file URL");
-
-      // Save document record
+      // Save document record with file PATH (not signed URL)
+      // Signed URLs are generated on-demand when viewing
       const { error: dbError } = await supabase.from("vessel_documents").insert({
         boat_id: boatId,
         owner_id: user.id,
         category,
         title: title.trim(),
         description: description.trim() || null,
-        file_url: urlData.signedUrl,
+        file_url: filePath, // Store the path, not a signed URL
         file_type: fileExt,
         file_size_bytes: file.size,
         expiry_date: expiryDate || null,
