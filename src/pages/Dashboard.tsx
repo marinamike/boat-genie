@@ -144,6 +144,21 @@ const Dashboard = () => {
     fetchData();
   }, [user, authLoading, navigate, fetchBoats, fetchWishes]);
 
+  // Role-based redirect (avoid navigate() during render which can cause update loops)
+  useEffect(() => {
+    if (authLoading || dataLoading) return;
+    if (!user) return;
+
+    if (role === "admin") {
+      navigate("/marina", { replace: true });
+      return;
+    }
+
+    if (role === "provider") {
+      navigate("/provider", { replace: true });
+    }
+  }, [authLoading, dataLoading, role, user, navigate]);
+
   const handleLogout = async () => {
     await signOut();
     toast({
@@ -199,17 +214,6 @@ const Dashboard = () => {
         </div>
       </div>
     );
-  }
-
-  // Role-based redirect (optional - you can customize this)
-  if (role === "admin") {
-    navigate("/marina", { replace: true });
-    return null;
-  }
-
-  if (role === "provider") {
-    navigate("/provider", { replace: true });
-    return null;
   }
 
   return (
