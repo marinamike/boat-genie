@@ -23,6 +23,7 @@ const TestingPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentRole, setCurrentRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -75,6 +76,7 @@ const TestingPanel = () => {
     if (!userId || isLoading) return;
     
     setIsLoading(true);
+    setLastError(null);
     try {
       // Keep a SINGLE active role per user by updating the existing row.
       // (There is no delete policy on user_roles, so delete will fail under RLS.)
@@ -103,11 +105,13 @@ const TestingPanel = () => {
 
       // Reload page to apply role changes
       window.location.reload();
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to switch role";
       console.error("Error switching role:", error);
+      setLastError(message);
       toast({
         title: "Error",
-        description: "Failed to switch role",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -149,6 +153,11 @@ const TestingPanel = () => {
             <p className="text-xs text-muted-foreground mb-3">
               Current: <Badge variant="outline" className="ml-1">{currentRole || "none"}</Badge>
             </p>
+            {lastError && (
+              <p className="text-xs text-destructive break-words">
+                {lastError}
+              </p>
+            )}
             <div className="space-y-1">
               {ROLES.map(({ role, label, icon }) => (
                 <Button
