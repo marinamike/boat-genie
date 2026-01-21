@@ -21,6 +21,8 @@ import { DigitalVault } from "@/components/boatlog/DigitalVault";
 import { ServiceTimeline } from "@/components/boatlog/ServiceTimeline";
 import { ManufacturerRecommendations } from "@/components/boatlog/ManufacturerRecommendations";
 import { EquipmentInventory } from "@/components/boatlog/EquipmentInventory";
+import { SpecsWarrantyTab } from "@/components/boatlog/SpecsWarrantyTab";
+import { BoatLogTabs } from "@/components/boatlog/BoatLogTabs";
 import { MaintenanceRecommendation } from "@/hooks/useEquipmentSpecs";
 import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { formatPrice } from "@/lib/pricing";
@@ -278,55 +280,69 @@ Generated on ${format(new Date(), "PPP 'at' p")}
         onSelect={handleVesselSelect}
       />
 
-      <main className="px-4 py-6 space-y-6">
-        {/* Digital Vault */}
-        <DigitalVault boatId={selectedBoatId} boatName={selectedBoat?.name} />
+      <main className="px-4 py-6">
+        <BoatLogTabs
+          serviceContent={
+            <div className="space-y-6">
+              {/* Equipment Inventory */}
+              <Card>
+                <CardContent className="pt-6">
+                  <EquipmentInventory 
+                    boatId={selectedBoatId!} 
+                    onOpenWish={handleEquipmentWish}
+                  />
+                </CardContent>
+              </Card>
 
-        {/* Equipment Inventory */}
-        <Card>
-          <CardContent className="pt-6">
-            <EquipmentInventory 
-              boatId={selectedBoatId!} 
-              onOpenWish={handleEquipmentWish}
+              {/* Manufacturer Recommendations */}
+              <ManufacturerRecommendations
+                boatId={selectedBoatId}
+                onTurnIntoWish={handleTurnIntoWish}
+              />
+
+              {/* Service Timeline */}
+              {hasNoHistory ? (
+                <Card className="border-dashed border-2">
+                  <CardContent className="py-12 text-center">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Sparkles className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-xl mb-2">
+                      Your digital service history starts here
+                    </h3>
+                    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                      Post a "Wish" to request your first service and begin building your boat's
+                      complete maintenance record.
+                    </p>
+                    <Button onClick={() => navigate("/dashboard")}>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Make a Wish
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <ServiceTimeline
+                  scheduledWorkOrders={scheduledWorkOrders}
+                  activeWorkOrders={activeWorkOrders}
+                  completedWorkOrders={completedWorkOrders}
+                  manualEntries={manualEntries}
+                  onViewWorkOrder={handleViewDetails}
+                />
+              )}
+            </div>
+          }
+          vaultContent={
+            <DigitalVault boatId={selectedBoatId} boatName={selectedBoat?.name} />
+          }
+          specsWarrantyContent={
+            <SpecsWarrantyTab
+              boatId={selectedBoatId}
+              boatMake={selectedBoat?.make}
+              boatModel={selectedBoat?.model}
+              boatYear={selectedBoat?.year}
             />
-          </CardContent>
-        </Card>
-
-        {/* Manufacturer Recommendations */}
-        <ManufacturerRecommendations
-          boatId={selectedBoatId}
-          onTurnIntoWish={handleTurnIntoWish}
+          }
         />
-
-        {/* Service Timeline */}
-        {hasNoHistory ? (
-          <Card className="border-dashed border-2">
-            <CardContent className="py-12 text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="font-semibold text-xl mb-2">
-                Your digital service history starts here
-              </h3>
-              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                Post a "Wish" to request your first service and begin building your boat's
-                complete maintenance record.
-              </p>
-              <Button onClick={() => navigate("/dashboard")}>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Make a Wish
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <ServiceTimeline
-            scheduledWorkOrders={scheduledWorkOrders}
-            activeWorkOrders={activeWorkOrders}
-            completedWorkOrders={completedWorkOrders}
-            manualEntries={manualEntries}
-            onViewWorkOrder={handleViewDetails}
-          />
-        )}
       </main>
 
       {/* Work Order Detail Sheet */}
