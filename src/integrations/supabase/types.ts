@@ -150,10 +150,12 @@ export type Database = {
       }
       boat_profiles: {
         Row: {
+          access_type: string
           boat_id: string
           created_at: string
           gate_code: string | null
           id: string
+          lockbox_code: string | null
           marina_address: string | null
           marina_name: string | null
           slip_number: string | null
@@ -161,10 +163,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_type?: string
           boat_id: string
           created_at?: string
           gate_code?: string | null
           id?: string
+          lockbox_code?: string | null
           marina_address?: string | null
           marina_name?: string | null
           slip_number?: string | null
@@ -172,10 +176,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_type?: string
           boat_id?: string
           created_at?: string
           gate_code?: string | null
           id?: string
+          lockbox_code?: string | null
           marina_address?: string | null
           marina_name?: string | null
           slip_number?: string | null
@@ -867,9 +873,12 @@ export type Database = {
         Row: {
           admin_notes: string | null
           boat_id: string | null
+          calculated_price: number | null
           created_at: string
           description: string
           id: string
+          is_emergency: boolean
+          photos: string[] | null
           preferred_date: string | null
           requester_id: string
           service_type: string
@@ -880,9 +889,12 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           boat_id?: string | null
+          calculated_price?: number | null
           created_at?: string
           description: string
           id?: string
+          is_emergency?: boolean
+          photos?: string[] | null
           preferred_date?: string | null
           requester_id: string
           service_type: string
@@ -893,9 +905,12 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           boat_id?: string | null
+          calculated_price?: number | null
           created_at?: string
           description?: string
           id?: string
+          is_emergency?: boolean
+          photos?: string[] | null
           preferred_date?: string | null
           requester_id?: string
           service_type?: string
