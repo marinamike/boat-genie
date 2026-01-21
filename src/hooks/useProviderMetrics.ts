@@ -114,10 +114,6 @@ export function useProviderMetrics() {
             length_ft,
             owner_id,
             boat_profiles(marina_name, marina_address, slip_number)
-          ),
-          provider:provider_profiles!work_orders_provider_id_fkey(
-            business_name,
-            primary_contact_phone
           )
         `)
         .eq("provider_id", userId)
