@@ -25,6 +25,7 @@ const TestingPanel = () => {
   const [allRoles, setAllRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -86,6 +87,7 @@ const TestingPanel = () => {
     
     setIsLoading(true);
     setLastError(null);
+    setLastAction(`Switching to ${newRole}…`);
     try {
       // Keep a SINGLE active role per user by updating the existing row.
       // (There is no delete policy on user_roles, so delete will fail under RLS.)
@@ -108,6 +110,12 @@ const TestingPanel = () => {
 
       if (error) throw error;
 
+      console.log("TestingPanel: role switch ok", {
+        userId,
+        existingId: existing?.id ?? null,
+        newRole,
+      });
+
       setCurrentRole(newRole);
       setAllRoles([newRole]);
       toast({
@@ -126,6 +134,7 @@ const TestingPanel = () => {
             : "Failed to switch role";
       console.error("Error switching role:", error);
       setLastError(message);
+      setLastAction("Role switch failed");
       toast({
         title: "Error",
         description: message,
@@ -169,6 +178,9 @@ const TestingPanel = () => {
           <CardContent className="py-2 px-4 space-y-2">
             <p className="text-xs text-muted-foreground mb-3">
               Current: <Badge variant="outline" className="ml-1">{currentRole || "none"}</Badge>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Status: {isLoading ? "Working…" : "Idle"}{lastAction ? ` • ${lastAction}` : ""}
             </p>
             {allRoles.length > 1 && (
               <p className="text-xs text-muted-foreground">
