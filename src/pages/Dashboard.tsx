@@ -288,7 +288,11 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-4">
               {boats.map((boat) => (
-                <Card key={boat.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <Card 
+                  key={boat.id} 
+                  className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/boat-log?boat=${boat.id}`)}
+                >
                   <CardHeader className="bg-navy-light pb-3">
                     <div className="flex items-start justify-between">
                       <div>
@@ -302,7 +306,10 @@ const Dashboard = () => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => handleEditBoat(boat)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditBoat(boat);
+                          }}
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -338,6 +345,7 @@ const Dashboard = () => {
                               variant="ghost"
                               size="sm"
                               className="w-full justify-between mt-2 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div className="flex items-center gap-2">
                                 <Lock className="w-4 h-4" />

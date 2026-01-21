@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -81,14 +82,34 @@ export interface ManualLogEntry {
   created_by: string | null;
 }
 
-export function useBoatLog(boatId?: string) {
+export interface BoatWithDetails {
+  id: string;
+  name: string;
+  make: string | null;
+  model: string | null;
+  length_ft: number | null;
+}
+
+export function useBoatLog(initialBoatId?: string) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [scheduledWorkOrders, setScheduledWorkOrders] = useState<WorkOrderWithDetails[]>([]);
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrderWithDetails[]>([]);
   const [completedWorkOrders, setCompletedWorkOrders] = useState<WorkOrderWithDetails[]>([]);
   const [manualEntries, setManualEntries] = useState<ManualLogEntry[]>([]);
-  const [boats, setBoats] = useState<{ id: string; name: string }[]>([]);
-  const [selectedBoatId, setSelectedBoatId] = useState<string | null>(boatId || null);
+  const [boats, setBoats] = useState<BoatWithDetails[]>([]);
+  const [selectedBoatId, setSelectedBoatIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Handle URL-based boat selection
+  const setSelectedBoatId = useCallback((boatId: string | null) => {
+    setSelectedBoatIdState(boatId);
+    if (boatId) {
+      setSearchParams({ boat: boatId }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [setSearchParams]);
 
   // Fetch user's boats
   const fetchBoats = useCallback(async () => {
@@ -98,20 +119,33 @@ export function useBoatLog(boatId?: string) {
 
       const { data } = await supabase
         .from("boats")
-        .select("id, name")
+        .select("id, name, make, model, length_ft")
         .eq("owner_id", session.user.id)
         .order("name");
 
       if (data && data.length > 0) {
         setBoats(data);
-        if (!selectedBoatId) {
-          setSelectedBoatId(data[0].id);
+        
+        // Priority: URL param > initial prop > first boat
+        const urlBoatId = searchParams.get("boat");
+        const targetBoatId = urlBoatId || initialBoatId || data[0].id;
+        
+        // Only set if this boat exists in user's boats
+        const boatExists = data.some(b => b.id === targetBoatId);
+        if (boatExists) {
+          setSelectedBoatIdState(targetBoatId);
+          if (targetBoatId !== urlBoatId) {
+            setSearchParams({ boat: targetBoatId }, { replace: true });
+          }
+        } else {
+          setSelectedBoatIdState(data[0].id);
+          setSearchParams({ boat: data[0].id }, { replace: true });
         }
       }
     } catch (error) {
       console.error("Error fetching boats:", error);
     }
-  }, [selectedBoatId]);
+  }, [initialBoatId, searchParams, setSearchParams]);
 
   // Fetch manual log entries for the selected boat
   const fetchManualEntries = useCallback(async () => {
@@ -139,7 +173,24 @@ export function useBoatLog(boatId?: string) {
     }
 
     try {
-      // Fetch active work orders (not completed/cancelled)
+      // Fetch scheduled work orders (have scheduled_date, not started yet)
+      const { data: scheduledData } = await supabase
+        .from("work_orders")
+        .select(`
+          id, title, description, status, service_type,
+          scheduled_date, completed_at, created_at,
+          retail_price, wholesale_price, service_fee, lead_fee,
+          materials_deposit, escrow_amount, is_emergency,
+          provider_id, qc_verified_at, qc_verifier_name, qc_verifier_role,
+          boat:boats!inner(id, name, make, model, length_ft)
+        `)
+        .eq("boat_id", selectedBoatId)
+        .in("status", ["pending", "assigned"])
+        .not("scheduled_date", "is", null)
+        .gte("scheduled_date", new Date().toISOString().split("T")[0])
+        .order("scheduled_date", { ascending: true });
+
+      // Fetch active work orders (in progress, no future scheduled date)
       const { data: activeData } = await supabase
         .from("work_orders")
         .select(`
@@ -151,7 +202,7 @@ export function useBoatLog(boatId?: string) {
           boat:boats!inner(id, name, make, model, length_ft)
         `)
         .eq("boat_id", selectedBoatId)
-        .not("status", "in", '("completed","cancelled")')
+        .in("status", ["in_progress"])
         .order("created_at", { ascending: false });
 
       // Fetch completed work orders
@@ -170,9 +221,11 @@ export function useBoatLog(boatId?: string) {
         .order("completed_at", { ascending: false });
 
       // Get provider names for work orders with providers
+      const scheduledWithProviders = await enrichWithProviders(scheduledData || []);
       const activeWithProviders = await enrichWithProviders(activeData || []);
       const completedWithProviders = await enrichWithProviders(completedData || []);
 
+      setScheduledWorkOrders(scheduledWithProviders);
       setActiveWorkOrders(activeWithProviders);
       setCompletedWorkOrders(completedWithProviders);
 
@@ -255,10 +308,14 @@ export function useBoatLog(boatId?: string) {
     }
   }, [selectedBoatId, fetchWorkOrders]);
 
+  const selectedBoat = boats.find((b) => b.id === selectedBoatId) || null;
+
   return {
     boats,
+    selectedBoat,
     selectedBoatId,
     setSelectedBoatId,
+    scheduledWorkOrders,
     activeWorkOrders,
     completedWorkOrders,
     manualEntries,

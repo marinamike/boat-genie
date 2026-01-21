@@ -1331,6 +1331,62 @@ export type Database = {
         }
         Relationships: []
       }
+      vessel_documents: {
+        Row: {
+          boat_id: string
+          category: string
+          created_at: string
+          description: string | null
+          expiry_date: string | null
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string
+          id: string
+          metadata: Json | null
+          owner_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          boat_id: string
+          category: string
+          created_at?: string
+          description?: string | null
+          expiry_date?: string | null
+          file_size_bytes?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          metadata?: Json | null
+          owner_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          expiry_date?: string | null
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          metadata?: Json | null
+          owner_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vessel_documents_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       welcome_packet_files: {
         Row: {
           created_at: string
