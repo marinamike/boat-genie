@@ -76,16 +76,22 @@ const TestingPanel = () => {
     
     setIsLoading(true);
     try {
-      // Delete existing role first, then insert new one
-      // (unique constraint is on user_id+role, not just user_id)
-      await supabase
+      // Keep a SINGLE active role per user by updating the existing row.
+      // (There is no delete policy on user_roles, so delete will fail under RLS.)
+      const { data: existing } = await supabase
         .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({ user_id: userId, role: newRole });
+      const { error } = existing?.id
+        ? await supabase
+            .from("user_roles")
+            .update({ role: newRole })
+            .eq("id", existing.id)
+        : await supabase
+            .from("user_roles")
+            .insert({ user_id: userId, role: newRole });
 
       if (error) throw error;
 
