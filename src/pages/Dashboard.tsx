@@ -2,14 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Anchor, Ship, Plus, Eye, EyeOff, Sparkles, LogOut } from "lucide-react";
+import { Anchor, Ship, Plus, Eye, EyeOff, Sparkles, LogOut, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import AddBoatForm from "@/components/AddBoatForm";
+import AddBoatForm, { BoatToEdit } from "@/components/AddBoatForm";
 
 interface Boat {
   id: string;
@@ -17,6 +17,7 @@ interface Boat {
   make: string | null;
   model: string | null;
   year: number | null;
+  length_ft: number | null;
   boat_profiles: {
     slip_number: string | null;
     gate_code: string | null;
@@ -35,7 +36,8 @@ const Dashboard = () => {
   const [boats, setBoats] = useState<Boat[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
-  const [showAddBoatForm, setShowAddBoatForm] = useState(false);
+  const [showBoatForm, setShowBoatForm] = useState(false);
+  const [boatToEdit, setBoatToEdit] = useState<BoatToEdit | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -49,6 +51,7 @@ const Dashboard = () => {
         make,
         model,
         year,
+        length_ft,
         boat_profiles (
           slip_number,
           gate_code,
@@ -120,6 +123,23 @@ const Dashboard = () => {
     });
   };
 
+  const handleAddBoat = () => {
+    setBoatToEdit(null);
+    setShowBoatForm(true);
+  };
+
+  const handleEditBoat = (boat: Boat) => {
+    setBoatToEdit(boat);
+    setShowBoatForm(true);
+  };
+
+  const handleFormClose = (open: boolean) => {
+    setShowBoatForm(open);
+    if (!open) {
+      setBoatToEdit(null);
+    }
+  };
+
   if (authLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -188,7 +208,7 @@ const Dashboard = () => {
               variant="outline" 
               size="sm" 
               className="font-medium"
-              onClick={() => setShowAddBoatForm(true)}
+              onClick={handleAddBoat}
             >
               <Plus className="w-4 h-4 mr-1.5" />
               Add Boat
@@ -203,7 +223,7 @@ const Dashboard = () => {
                 <p className="text-muted-foreground text-sm mb-4">Add your first vessel to get started</p>
                 <Button 
                   className="bg-primary font-semibold touch-target"
-                  onClick={() => setShowAddBoatForm(true)}
+                  onClick={handleAddBoat}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your Boat
@@ -222,7 +242,17 @@ const Dashboard = () => {
                           {[boat.year, boat.make, boat.model].filter(Boolean).join(" ") || "No details"}
                         </CardDescription>
                       </div>
-                      <Ship className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleEditBoat(boat)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Ship className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-4">
@@ -272,13 +302,14 @@ const Dashboard = () => {
       {/* Bottom Navigation */}
       <BottomNav />
 
-      {/* Add Boat Modal */}
+      {/* Add/Edit Boat Modal */}
       {user && (
         <AddBoatForm
-          open={showAddBoatForm}
-          onOpenChange={setShowAddBoatForm}
+          open={showBoatForm}
+          onOpenChange={handleFormClose}
           onSuccess={fetchBoats}
           userId={user.id}
+          boatToEdit={boatToEdit}
         />
       )}
     </div>
