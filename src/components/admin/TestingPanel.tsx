@@ -76,12 +76,16 @@ const TestingPanel = () => {
     
     setIsLoading(true);
     try {
+      // Delete existing role first, then insert new one
+      // (unique constraint is on user_id+role, not just user_id)
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
       const { error } = await supabase
         .from("user_roles")
-        .upsert(
-          { user_id: userId, role: newRole },
-          { onConflict: "user_id" }
-        );
+        .insert({ user_id: userId, role: newRole });
 
       if (error) throw error;
 
