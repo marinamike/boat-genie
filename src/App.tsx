@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import BoatLog from "./pages/BoatLog";
 import Membership from "./pages/Membership";
 import MarinaManagement from "./pages/MarinaManagement";
 import DryStackLaunch from "./pages/DryStackLaunch";
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/boat-log" element={<BoatLog />} />
               <Route path="/membership" element={<Membership />} />
               <Route path="/marina" element={<MarinaManagement />} />
               <Route path="/dry-stack" element={<DryStackLaunch />} />

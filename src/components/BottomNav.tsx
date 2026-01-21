@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Ship, User, Building2, Anchor, Wrench, HardHat, ClipboardCheck } from "lucide-react";
+import { Home, Ship, User, Building2, Anchor, Wrench, HardHat, ClipboardCheck, Book } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -14,8 +14,10 @@ const BottomNav = () => {
     if (!loading) setHydrated(true);
   }, [loading]);
 
+  // Boat Owner navigation - includes Boat Log
   const baseNavItems = [
     { href: "/dashboard", icon: Home, label: "Home" },
+    { href: "/boat-log", icon: Book, label: "Boat Log" },
     { href: "/membership", icon: Ship, label: "Membership" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
