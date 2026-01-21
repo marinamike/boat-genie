@@ -18,6 +18,7 @@ interface Wish {
   boat?: {
     name: string;
   } | null;
+  work_order_status?: string | null;
 }
 
 interface WishStatusCardProps {
@@ -40,6 +41,16 @@ const statusConfig: Record<string, { label: string; icon: typeof Clock; variant:
     icon: Wrench,
     variant: "outline",
   },
+  in_progress: {
+    label: "Work in Progress",
+    icon: Wrench,
+    variant: "outline",
+  },
+  completed: {
+    label: "Completed",
+    icon: CheckCircle2,
+    variant: "default",
+  },
   converted: {
     label: "Completed",
     icon: CheckCircle2,
@@ -52,8 +63,21 @@ const statusConfig: Record<string, { label: string; icon: typeof Clock; variant:
   },
 };
 
+// Determine the effective status based on work order status
+function getEffectiveStatus(wish: Wish): string {
+  // If there's a work order status, use it for more accurate display
+  if (wish.work_order_status) {
+    if (wish.work_order_status === "completed") return "completed";
+    if (wish.work_order_status === "in_progress") return "in_progress";
+    if (wish.work_order_status === "pending_qc") return "in_progress";
+    if (wish.work_order_status === "qc_passed") return "completed";
+  }
+  return wish.status;
+}
+
 export function WishStatusCard({ wish }: WishStatusCardProps) {
-  const status = statusConfig[wish.status] || statusConfig.submitted;
+  const effectiveStatus = getEffectiveStatus(wish);
+  const status = statusConfig[effectiveStatus] || statusConfig.submitted;
   const StatusIcon = status.icon;
 
   const formatServiceType = (type: string) => {

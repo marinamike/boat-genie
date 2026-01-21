@@ -44,6 +44,7 @@ interface Wish {
   boat: {
     name: string;
   } | null;
+  work_order_status?: string | null;
 }
 
 interface Profile {
@@ -92,6 +93,8 @@ const Dashboard = () => {
 
   const fetchWishes = useCallback(async () => {
     if (!user) return;
+    
+    // Fetch wishes
     const { data: wishData } = await supabase
       .from("wish_forms")
       .select(`
@@ -104,13 +107,35 @@ const Dashboard = () => {
         calculated_price,
         preferred_date,
         created_at,
+        boat_id,
         boat:boats(name)
       `)
       .eq("requester_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (wishData) {
-      setWishes(wishData as unknown as Wish[]);
+    if (wishData && wishData.length > 0) {
+      // Get boat IDs to fetch related work orders
+      const boatIds = wishData.map(w => w.boat_id).filter(Boolean);
+      
+      // Fetch work orders for these boats to get actual status
+      const { data: workOrders } = await supabase
+        .from("work_orders")
+        .select("id, boat_id, status, title")
+        .in("boat_id", boatIds);
+      
+      // Map work order status to wishes
+      const wishesWithStatus = wishData.map(wish => {
+        // Find matching work order (most recent one for this boat)
+        const relatedWorkOrder = workOrders?.find(wo => wo.boat_id === wish.boat_id);
+        return {
+          ...wish,
+          work_order_status: relatedWorkOrder?.status || null,
+        };
+      });
+      
+      setWishes(wishesWithStatus as unknown as Wish[]);
+    } else {
+      setWishes([]);
     }
   }, [user]);
 
