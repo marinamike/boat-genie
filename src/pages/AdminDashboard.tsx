@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Crown, TrendingUp, UserCheck, Briefcase, Users, Shield } from "lucide-react";
+import { Loader2, Crown, TrendingUp, UserCheck, Briefcase, Users, Shield, AlertTriangle } from "lucide-react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { MarketplaceHealthCard } from "@/components/admin/MarketplaceHealthCard";
 import { ProviderApprovalQueue } from "@/components/admin/ProviderApprovalQueue";
@@ -9,6 +9,7 @@ import { GlobalWorkOrderFeed } from "@/components/admin/GlobalWorkOrderFeed";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { ViewAsUserPanel } from "@/components/admin/ViewAsUserPanel";
 import { InsuranceExpiryAlerts } from "@/components/admin/InsuranceExpiryAlerts";
+import { DisputedJobsPanel } from "@/components/admin/DisputedJobsPanel";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -18,9 +19,11 @@ export default function AdminDashboard() {
     marketplaceHealth,
     users,
     workOrders,
+    disputedOrders,
     viewAsUserId,
     setViewAsUserId,
     updateUserRole,
+    refetch,
   } = useAdminDashboard();
 
   useEffect(() => {
@@ -79,10 +82,19 @@ export default function AdminDashboard() {
         />
 
         <Tabs defaultValue="health" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
             <TabsTrigger value="health" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">Health</span>
+            </TabsTrigger>
+            <TabsTrigger value="disputes" className="flex items-center gap-2 relative">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="hidden sm:inline">Disputes</span>
+              {disputedOrders.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {disputedOrders.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="providers" className="flex items-center gap-2">
               <UserCheck className="w-4 h-4" />
@@ -100,6 +112,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="health" className="space-y-6">
             <MarketplaceHealthCard health={marketplaceHealth} />
+          </TabsContent>
+
+          <TabsContent value="disputes" className="space-y-6">
+            <DisputedJobsPanel disputes={disputedOrders} onRefresh={refetch} />
           </TabsContent>
 
           <TabsContent value="providers" className="space-y-6">

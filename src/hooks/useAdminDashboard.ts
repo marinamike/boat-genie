@@ -32,6 +32,19 @@ export interface WorkOrderWithDetails {
   is_emergency: boolean;
 }
 
+export interface DisputedWorkOrder {
+  id: string;
+  title: string;
+  boat_id: string;
+  boat_name: string;
+  provider_name: string | null;
+  escrow_amount: number | null;
+  dispute_reason: string | null;
+  disputed_at: string | null;
+  disputed_by: string | null;
+  disputed_by_name: string | null;
+}
+
 export function useAdminDashboard() {
   const [isGodMode, setIsGodMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -43,6 +56,7 @@ export function useAdminDashboard() {
   });
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrderWithDetails[]>([]);
+  const [disputedOrders, setDisputedOrders] = useState<DisputedWorkOrder[]>([]);
   const [viewAsUserId, setViewAsUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -64,6 +78,7 @@ export function useAdminDashboard() {
           fetchMarketplaceHealth(),
           fetchUsers(),
           fetchWorkOrders(),
+          fetchDisputedOrders(),
         ]);
       }
     } catch (error) {
@@ -192,6 +207,68 @@ export function useAdminDashboard() {
     }
   };
 
+  const fetchDisputedOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("work_orders")
+        .select(`
+          id,
+          title,
+          boat_id,
+          escrow_amount,
+          dispute_reason,
+          disputed_at,
+          disputed_by,
+          boats(name),
+          provider_id
+        `)
+        .eq("escrow_status", "disputed")
+        .order("disputed_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Get provider names and disputer names
+      const providerIds = [...new Set((data || []).map(wo => wo.provider_id).filter(Boolean))];
+      const disputerIds = [...new Set((data || []).map(wo => wo.disputed_by).filter(Boolean))];
+      
+      let providerMap = new Map<string, string>();
+      let disputerMap = new Map<string, string>();
+
+      if (providerIds.length > 0) {
+        const { data: providers } = await supabase
+          .from("provider_profiles")
+          .select("user_id, business_name")
+          .in("user_id", providerIds);
+        providerMap = new Map((providers || []).map(p => [p.user_id, p.business_name || "Unknown"]));
+      }
+
+      if (disputerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", disputerIds);
+        disputerMap = new Map((profiles || []).map(p => [p.id, p.full_name || "Unknown"]));
+      }
+
+      const disputed: DisputedWorkOrder[] = (data || []).map(wo => ({
+        id: wo.id,
+        title: wo.title,
+        boat_id: wo.boat_id,
+        boat_name: (wo.boats as any)?.name || "Unknown Boat",
+        provider_name: wo.provider_id ? (providerMap.get(wo.provider_id) || null) : null,
+        escrow_amount: wo.escrow_amount,
+        dispute_reason: wo.dispute_reason,
+        disputed_at: wo.disputed_at,
+        disputed_by: wo.disputed_by,
+        disputed_by_name: wo.disputed_by ? (disputerMap.get(wo.disputed_by) || null) : null,
+      }));
+
+      setDisputedOrders(disputed);
+    } catch (error) {
+      console.error("Error fetching disputed orders:", error);
+    }
+  };
+
   const updateUserRole = async (userId: string, newRole: AppRole) => {
     try {
       const { error } = await supabase
@@ -223,6 +300,7 @@ export function useAdminDashboard() {
     marketplaceHealth,
     users,
     workOrders,
+    disputedOrders,
     viewAsUserId,
     setViewAsUserId,
     updateUserRole,
