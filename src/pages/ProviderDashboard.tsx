@@ -3,20 +3,34 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, User, Briefcase, Wrench, Loader2, Package } from "lucide-react";
+import { ArrowLeft, User, Briefcase, Wrench, Loader2, Package, ClipboardList, Lock } from "lucide-react";
 import { ProviderProfileForm } from "@/components/provider/ProviderProfileForm";
 import { ServiceCatalogManager } from "@/components/provider/ServiceCatalogManager";
 import { JobBoard } from "@/components/provider/JobBoard";
+import { OnboardingChecklist } from "@/components/provider/OnboardingChecklist";
+import { BusinessProfileForm } from "@/components/provider/BusinessProfileForm";
+import { InsuranceVaultForm } from "@/components/provider/InsuranceVaultForm";
+import { TaxInfoForm } from "@/components/provider/TaxInfoForm";
+import { BankSetupForm } from "@/components/provider/BankSetupForm";
+import { TermsAcceptanceForm } from "@/components/provider/TermsAcceptanceForm";
 import { useProviderProfile } from "@/hooks/useProviderProfile";
+import { useProviderOnboarding } from "@/hooks/useProviderOnboarding";
 import BottomNav from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
 
 const ProviderDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isProvider, setIsProvider] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const navigate = useNavigate();
   const { profile, toggleAvailability } = useProviderProfile();
+  const { 
+    profile: onboardingProfile, 
+    canAccessJobBoard, 
+    refetch: refetchOnboarding 
+  } = useProviderOnboarding();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -44,6 +58,15 @@ const ProviderDashboard = () => {
     checkAuth();
   }, [navigate]);
 
+  const handleNavigateToSection = (section: string) => {
+    setActiveSection(section);
+  };
+
+  const handleSectionComplete = () => {
+    setActiveSection(null);
+    refetchOnboarding();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -51,6 +74,29 @@ const ProviderDashboard = () => {
       </div>
     );
   }
+
+  const isActive = onboardingProfile?.onboarding_status === "active";
+  const canViewJobs = canAccessJobBoard();
+
+  // Render section forms based on activeSection
+  const renderSectionContent = () => {
+    switch (activeSection) {
+      case "business_profile":
+        return <BusinessProfileForm onComplete={handleSectionComplete} />;
+      case "service_menu":
+        return <ServiceCatalogManager />;
+      case "insurance":
+        return <InsuranceVaultForm onComplete={handleSectionComplete} />;
+      case "tax_info":
+        return <TaxInfoForm onComplete={handleSectionComplete} />;
+      case "bank_setup":
+        return <BankSetupForm onComplete={handleSectionComplete} />;
+      case "terms":
+        return <TermsAcceptanceForm onComplete={handleSectionComplete} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -61,7 +107,13 @@ const ProviderDashboard = () => {
               variant="ghost" 
               size="icon" 
               className="text-primary-foreground"
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                if (activeSection) {
+                  setActiveSection(null);
+                } else {
+                  navigate(-1);
+                }
+              }}
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -78,7 +130,7 @@ const ProviderDashboard = () => {
             </div>
           </div>
           
-          {profile && (
+          {profile && isActive && (
             <div className="flex items-center gap-2">
               <Badge 
                 variant={profile.is_available ? "default" : "secondary"}
@@ -96,66 +148,97 @@ const ProviderDashboard = () => {
       </header>
 
       <main className="px-4 py-6">
-        <Tabs defaultValue={profile ? "jobs" : "profile"} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="jobs" className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4" />
-              Jobs
-            </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              Services
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Profile
-            </TabsTrigger>
-          </TabsList>
+        {/* Show section form if a section is selected */}
+        {activeSection ? (
+          <div className="space-y-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => setActiveSection(null)}
+              className="mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Checklist
+            </Button>
+            {renderSectionContent()}
+          </div>
+        ) : (
+          <Tabs defaultValue={isActive ? "jobs" : "setup"} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="setup" className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" />
+                <span className="hidden sm:inline">Setup</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="jobs" 
+                className="flex items-center gap-2"
+                disabled={!canViewJobs}
+              >
+                {!canViewJobs && <Lock className="w-3 h-3" />}
+                <Briefcase className="w-4 h-4" />
+                <span className="hidden sm:inline">Jobs</span>
+              </TabsTrigger>
+              <TabsTrigger value="services" className="flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                <span className="hidden sm:inline">Services</span>
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">Profile</span>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="jobs">
-            {!profile ? (
-              <div className="text-center py-12">
-                <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">Complete Your Profile First</h3>
-                <p className="text-muted-foreground mb-4">
-                  Set up your provider profile to start seeing available jobs
-                </p>
-                <Button onClick={() => {
-                  const profileTab = document.querySelector('[value="profile"]');
-                  if (profileTab) (profileTab as HTMLElement).click();
-                }}>
-                  Go to Profile
-                </Button>
-              </div>
-            ) : (
-              <JobBoard />
-            )}
-          </TabsContent>
+            <TabsContent value="setup">
+              <OnboardingChecklist onNavigateToSection={handleNavigateToSection} />
+            </TabsContent>
 
-          <TabsContent value="services">
-            {!profile ? (
-              <div className="text-center py-12">
-                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">Complete Your Profile First</h3>
-                <p className="text-muted-foreground mb-4">
-                  Set up your provider profile before adding services
-                </p>
-                <Button onClick={() => {
-                  const profileTab = document.querySelector('[value="profile"]');
-                  if (profileTab) (profileTab as HTMLElement).click();
-                }}>
-                  Go to Profile
-                </Button>
-              </div>
-            ) : (
-              <ServiceCatalogManager />
-            )}
-          </TabsContent>
+            <TabsContent value="jobs">
+              {!canViewJobs ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold text-lg mb-2">Job Board Locked</h3>
+                    <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                      Complete your setup checklist and get approved by an admin before 
+                      you can view and quote on jobs.
+                    </p>
+                    <Button onClick={() => {
+                      const setupTab = document.querySelector('[value="setup"]');
+                      if (setupTab) (setupTab as HTMLElement).click();
+                    }}>
+                      Complete Setup
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <JobBoard />
+              )}
+            </TabsContent>
 
-          <TabsContent value="profile">
-            <ProviderProfileForm />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="services">
+              {!profile ? (
+                <div className="text-center py-12">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold text-lg mb-2">Complete Your Profile First</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Set up your provider profile before adding services
+                  </p>
+                  <Button onClick={() => {
+                    const profileTab = document.querySelector('[value="profile"]');
+                    if (profileTab) (profileTab as HTMLElement).click();
+                  }}>
+                    Go to Profile
+                  </Button>
+                </div>
+              ) : (
+                <ServiceCatalogManager />
+              )}
+            </TabsContent>
+
+            <TabsContent value="profile">
+              <ProviderProfileForm />
+            </TabsContent>
+          </Tabs>
+        )}
       </main>
 
       <BottomNav />

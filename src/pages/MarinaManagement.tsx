@@ -10,6 +10,7 @@ import { ModuleToggle } from "@/components/marina/ModuleToggle";
 import { StagingDockView } from "@/components/marina/StagingDockView";
 import { SlipManager } from "@/components/marina/SlipManager";
 import { WelcomePacketManager } from "@/components/marina/WelcomePacketManager";
+import { AdminProviderReview } from "@/components/provider/AdminProviderReview";
 import BottomNav from "@/components/BottomNav";
 
 const ALL_MODULES: MarinaModule[] = ["dry_stack", "ship_store", "fuel_dock", "service_yard"];
@@ -125,6 +126,9 @@ const MarinaManagement = () => {
           onDelete={deleteFile}
           onToggleActive={toggleFileActive}
         />
+
+        {/* Admin Provider Review */}
+        {isAdmin && <AdminProviderReview />}
       </main>
 
       <BottomNav />
