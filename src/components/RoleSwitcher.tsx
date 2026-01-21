@@ -1,7 +1,7 @@
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Wrench, Building2, Loader2 } from "lucide-react";
+import { User, Wrench, Building2, HardHat, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 const ROLE_LABELS: Record<AppRole, string> = {
@@ -84,6 +84,21 @@ export default function RoleSwitcher() {
             <Building2 className="w-3 h-3 mr-1" />
           )}
           Manager
+        </Button>
+
+        <Button
+          size="sm"
+          variant={role === "marina_staff" ? "default" : "outline"}
+          onClick={() => handleSetRole("marina_staff")}
+          disabled={loading || switching !== null}
+          className="h-7 text-xs"
+        >
+          {switching === "marina_staff" ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <HardHat className="w-3 h-3 mr-1" />
+          )}
+          Staff
         </Button>
       </div>
     </div>
