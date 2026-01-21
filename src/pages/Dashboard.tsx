@@ -7,8 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import AddBoatForm from "@/components/AddBoatForm";
 
 interface Boat {
   id: string;
@@ -34,8 +35,32 @@ const Dashboard = () => {
   const [boats, setBoats] = useState<Boat[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
+  const [showAddBoatForm, setShowAddBoatForm] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const fetchBoats = useCallback(async () => {
+    if (!user) return;
+    const { data: boatsData } = await supabase
+      .from("boats")
+      .select(`
+        id,
+        name,
+        make,
+        model,
+        year,
+        boat_profiles (
+          slip_number,
+          gate_code,
+          marina_name
+        )
+      `)
+      .eq("owner_id", user.id);
+
+    if (boatsData) {
+      setBoats(boatsData as Boat[]);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -58,26 +83,8 @@ const Dashboard = () => {
           setProfile(profileData);
         }
 
-        // Fetch boats with profiles
-        const { data: boatsData } = await supabase
-          .from("boats")
-          .select(`
-            id,
-            name,
-            make,
-            model,
-            year,
-            boat_profiles (
-              slip_number,
-              gate_code,
-              marina_name
-            )
-          `)
-          .eq("owner_id", user.id);
-
-        if (boatsData) {
-          setBoats(boatsData as Boat[]);
-        }
+        // Fetch boats
+        await fetchBoats();
       } catch (err) {
         console.error("Dashboard: data fetch failed", err);
       } finally {
@@ -86,7 +93,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, fetchBoats]);
 
   const handleLogout = async () => {
     await signOut();
@@ -177,7 +184,12 @@ const Dashboard = () => {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold tracking-tight">My Boats</h2>
-            <Button variant="outline" size="sm" className="font-medium">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="font-medium"
+              onClick={() => setShowAddBoatForm(true)}
+            >
               <Plus className="w-4 h-4 mr-1.5" />
               Add Boat
             </Button>
@@ -189,7 +201,10 @@ const Dashboard = () => {
                 <Ship className="w-12 h-12 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
                 <h3 className="font-semibold text-lg mb-2">No boats yet</h3>
                 <p className="text-muted-foreground text-sm mb-4">Add your first vessel to get started</p>
-                <Button className="bg-primary font-semibold touch-target">
+                <Button 
+                  className="bg-primary font-semibold touch-target"
+                  onClick={() => setShowAddBoatForm(true)}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your Boat
                 </Button>
@@ -256,6 +271,16 @@ const Dashboard = () => {
 
       {/* Bottom Navigation */}
       <BottomNav />
+
+      {/* Add Boat Modal */}
+      {user && (
+        <AddBoatForm
+          open={showAddBoatForm}
+          onOpenChange={setShowAddBoatForm}
+          onSuccess={fetchBoats}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };
