@@ -8,9 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Briefcase, DollarSign, FileText, Loader2, CheckCircle2, Lock, AlertCircle } from "lucide-react";
+import { Briefcase, DollarSign, FileText, Loader2, CheckCircle2, Lock, AlertCircle, Phone } from "lucide-react";
 import { useProviderProfile, ProviderProfile } from "@/hooks/useProviderProfile";
 import { cn } from "@/lib/utils";
+import { PhoneInput, isValidPhone } from "@/components/ui/phone-input";
 
 interface ProviderProfileFormProps {
   onComplete?: () => void;
@@ -22,6 +23,7 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
   const [formData, setFormData] = useState({
     business_name: "",
     bio: "",
+    primary_contact_phone: "",
     hourly_rate: "",
     rate_per_foot: "",
     diagnostic_fee: "",
@@ -30,12 +32,14 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
     rates_agreed: false,
   });
   const [saving, setSaving] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     if (profile) {
       setFormData({
         business_name: profile.business_name || "",
         bio: profile.bio || "",
+        primary_contact_phone: profile.primary_contact_phone || "",
         hourly_rate: profile.hourly_rate?.toString() || "",
         rate_per_foot: profile.rate_per_foot?.toString() || "",
         diagnostic_fee: profile.diagnostic_fee?.toString() || "",
@@ -57,10 +61,18 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
 
   const canEditRates = !areRatesLocked || isAdmin;
   const isOnboarding = !profile;
-  const canGoLive = formData.business_name && formData.service_categories.length > 0;
+  const hasValidPhone = formData.primary_contact_phone && isValidPhone(formData.primary_contact_phone);
+  const canGoLive = formData.business_name && formData.service_categories.length > 0 && hasValidPhone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate phone number
+    if (!formData.primary_contact_phone || !isValidPhone(formData.primary_contact_phone)) {
+      setPhoneError("Please enter a valid phone number in (XXX) XXX-XXXX format");
+      return;
+    }
+    setPhoneError("");
     
     // Validation: must agree to rates before going live
     if (!profile && formData.is_available && !formData.rates_agreed) {
@@ -72,6 +84,7 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
     const profileData: Partial<ProviderProfile> = {
       business_name: formData.business_name || null,
       bio: formData.bio || null,
+      primary_contact_phone: formData.primary_contact_phone || null,
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
       rate_per_foot: formData.rate_per_foot ? parseFloat(formData.rate_per_foot) : null,
       diagnostic_fee: formData.diagnostic_fee ? parseFloat(formData.diagnostic_fee) : null,
@@ -127,6 +140,28 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
               onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="primary_contact_phone" className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              Mobile Phone Number <span className="text-destructive">*</span>
+            </Label>
+            <PhoneInput
+              id="primary_contact_phone"
+              value={formData.primary_contact_phone}
+              onChange={(value) => {
+                setFormData(prev => ({ ...prev, primary_contact_phone: value }));
+                if (phoneError) setPhoneError("");
+              }}
+              required
+            />
+            {phoneError && (
+              <p className="text-sm text-destructive">{phoneError}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Required for job coordination. Boat owners and marina staff can contact you at this number.
+            </p>
           </div>
 
           <div className="flex items-center justify-between">

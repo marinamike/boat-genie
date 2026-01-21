@@ -10,6 +10,7 @@ export interface ProviderProfile {
   insurance_doc_url: string | null;
   insurance_expiry: string | null;
   bio: string | null;
+  primary_contact_phone: string | null;
   hourly_rate: number | null;
   rate_per_foot: number | null;
   diagnostic_fee: number | null;
@@ -87,6 +88,7 @@ export function useProviderProfile() {
           business_name: profileData.business_name || null,
           service_categories: profileData.service_categories || [],
           bio: profileData.bio || null,
+          primary_contact_phone: profileData.primary_contact_phone || null,
           hourly_rate: profileData.hourly_rate || null,
           rate_per_foot: profileData.rate_per_foot || null,
           diagnostic_fee: profileData.diagnostic_fee || null,
@@ -119,6 +121,7 @@ export function useProviderProfile() {
         business_name: updates.business_name,
         service_categories: updates.service_categories,
         bio: updates.bio,
+        primary_contact_phone: updates.primary_contact_phone,
         is_available: updates.is_available,
       };
 

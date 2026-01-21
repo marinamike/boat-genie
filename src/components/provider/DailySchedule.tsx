@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   Loader2,
   Clock,
-  QrCode
+  QrCode,
+  Wrench
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +20,14 @@ import { ActiveWorkOrder } from "@/hooks/useProviderMetrics";
 import { QRScanner } from "./QRScanner";
 import { ManualCheckInDialog } from "./ManualCheckInDialog";
 import { useQRCheckIn } from "@/hooks/useQRCheckIn";
+import { PhoneLink } from "@/components/ui/phone-link";
 
 interface DailyScheduleProps {
   workOrders: ActiveWorkOrder[];
   onNotifyArrival: (workOrderId: string, ownerId: string | null) => Promise<boolean>;
   onUpdateStatus: (workOrderId: string, status: string) => Promise<boolean>;
   onRefresh: () => void;
+  showProviderContact?: boolean; // For marina staff view
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -38,7 +41,7 @@ const priorityLabels: Record<number, string> = {
   3: "Urgent",
 };
 
-export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onRefresh }: DailyScheduleProps) {
+export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onRefresh, showProviderContact = false }: DailyScheduleProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [scanningWorkOrder, setScanningWorkOrder] = useState<ActiveWorkOrder | null>(null);
   const [manualCheckInWorkOrder, setManualCheckInWorkOrder] = useState<ActiveWorkOrder | null>(null);
@@ -159,6 +162,21 @@ export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onR
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
                     <span>{format(new Date(wo.scheduled_date), "EEEE, MMMM d, yyyy")}</span>
+                  </div>
+                )}
+
+                {/* Provider Contact - For marina staff */}
+                {showProviderContact && wo.provider_name && (
+                  <div className="flex items-start gap-2 text-sm bg-muted/50 rounded-md p-2">
+                    <Wrench className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="font-medium">{wo.provider_name}</p>
+                      <PhoneLink 
+                        phone={wo.provider_phone} 
+                        fallbackText="Phone not available"
+                        className="text-sm"
+                      />
+                    </div>
                   </div>
                 )}
 
