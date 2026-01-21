@@ -217,13 +217,22 @@ export function useJobBoard() {
 
       if (wishError) throw wishError;
 
+      // Get provider's current rates for snapshot
+      const { data: providerProfile, error: profileError } = await supabase
+        .from("provider_profiles")
+        .select("hourly_rate, rate_per_foot, diagnostic_fee")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
       // Calculate pricing
       const basePrice = quoteData.laborCost + quoteData.materialsCost;
       const serviceFee = basePrice * 0.10; // 10% platform fee
       const totalOwnerPrice = basePrice + serviceFee;
       const totalProviderReceives = basePrice - (basePrice * 0.03); // 3% lead fee
 
-      // Create work order first
+      // Create work order with rate snapshot
       const { data: workOrder, error: woError } = await supabase
         .from("work_orders")
         .insert({
@@ -238,13 +247,17 @@ export function useJobBoard() {
           wholesale_price: basePrice,
           retail_price: totalOwnerPrice,
           escrow_status: "pending_quote",
+          // Snapshot provider rates at time of quote
+          provider_hourly_rate: providerProfile.hourly_rate,
+          provider_rate_per_foot: providerProfile.rate_per_foot,
+          provider_diagnostic_fee: providerProfile.diagnostic_fee,
         })
         .select()
         .single();
 
       if (woError) throw woError;
 
-      // Create quote
+      // Create quote with rate snapshot
       const { error: quoteError } = await supabase
         .from("quotes")
         .insert({
@@ -258,6 +271,10 @@ export function useJobBoard() {
           notes: quoteData.notes || null,
           status: "pending",
           is_emergency: wish.urgency === "urgent",
+          // Snapshot provider rates at time of quote
+          provider_hourly_rate: providerProfile.hourly_rate,
+          provider_rate_per_foot: providerProfile.rate_per_foot,
+          provider_diagnostic_fee: providerProfile.diagnostic_fee,
         });
 
       if (quoteError) throw quoteError;

@@ -619,11 +619,15 @@ export type Database = {
           bio: string | null
           business_name: string | null
           created_at: string
+          diagnostic_fee: number | null
           hourly_rate: number | null
           id: string
           insurance_doc_url: string | null
           insurance_expiry: string | null
           is_available: boolean
+          rate_per_foot: number | null
+          rates_agreed: boolean
+          rates_locked_at: string | null
           service_categories: string[]
           updated_at: string
           user_id: string
@@ -632,11 +636,15 @@ export type Database = {
           bio?: string | null
           business_name?: string | null
           created_at?: string
+          diagnostic_fee?: number | null
           hourly_rate?: number | null
           id?: string
           insurance_doc_url?: string | null
           insurance_expiry?: string | null
           is_available?: boolean
+          rate_per_foot?: number | null
+          rates_agreed?: boolean
+          rates_locked_at?: string | null
           service_categories?: string[]
           updated_at?: string
           user_id: string
@@ -645,11 +653,15 @@ export type Database = {
           bio?: string | null
           business_name?: string | null
           created_at?: string
+          diagnostic_fee?: number | null
           hourly_rate?: number | null
           id?: string
           insurance_doc_url?: string | null
           insurance_expiry?: string | null
           is_available?: boolean
+          rate_per_foot?: number | null
+          rates_agreed?: boolean
+          rates_locked_at?: string | null
           service_categories?: string[]
           updated_at?: string
           user_id?: string
@@ -665,7 +677,10 @@ export type Database = {
           is_emergency: boolean
           lead_fee: number
           notes: string | null
+          provider_diagnostic_fee: number | null
+          provider_hourly_rate: number | null
           provider_id: string
+          provider_rate_per_foot: number | null
           service_fee: number
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["quote_status"]
@@ -683,7 +698,10 @@ export type Database = {
           is_emergency?: boolean
           lead_fee?: number
           notes?: string | null
+          provider_diagnostic_fee?: number | null
+          provider_hourly_rate?: number | null
           provider_id: string
+          provider_rate_per_foot?: number | null
           service_fee?: number
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["quote_status"]
@@ -701,7 +719,10 @@ export type Database = {
           is_emergency?: boolean
           lead_fee?: number
           notes?: string | null
+          provider_diagnostic_fee?: number | null
+          provider_hourly_rate?: number | null
           provider_id?: string
+          provider_rate_per_foot?: number | null
           service_fee?: number
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["quote_status"]
@@ -944,7 +965,10 @@ export type Database = {
           lead_fee: number | null
           photos_uploaded_at: string | null
           priority: number | null
+          provider_diagnostic_fee: number | null
+          provider_hourly_rate: number | null
           provider_id: string | null
+          provider_rate_per_foot: number | null
           retail_price: number | null
           scheduled_date: string | null
           service_fee: number | null
@@ -969,7 +993,10 @@ export type Database = {
           lead_fee?: number | null
           photos_uploaded_at?: string | null
           priority?: number | null
+          provider_diagnostic_fee?: number | null
+          provider_hourly_rate?: number | null
           provider_id?: string | null
+          provider_rate_per_foot?: number | null
           retail_price?: number | null
           scheduled_date?: string | null
           service_fee?: number | null
@@ -994,7 +1021,10 @@ export type Database = {
           lead_fee?: number | null
           photos_uploaded_at?: string | null
           priority?: number | null
+          provider_diagnostic_fee?: number | null
+          provider_hourly_rate?: number | null
           provider_id?: string | null
+          provider_rate_per_foot?: number | null
           retail_price?: number | null
           scheduled_date?: string | null
           service_fee?: number | null
