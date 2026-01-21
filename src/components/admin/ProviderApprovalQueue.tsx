@@ -19,17 +19,17 @@ import {
   CheckCircle, 
   XCircle, 
   Eye,
-  Shield,
-  FileText,
   CreditCard,
   Calendar,
   Mail,
   Phone,
-  UserCheck
+  UserCheck,
+  AlertTriangle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { DocumentViewer } from "./DocumentViewer";
 
 interface ProviderProfile {
   id: string;
@@ -50,6 +50,11 @@ interface ProviderProfile {
   submitted_for_review_at: string | null;
 }
 
+interface DocumentVerification {
+  coiVerified: boolean;
+  w9Verified: boolean;
+}
+
 export function ProviderApprovalQueue() {
   const [pendingProviders, setPendingProviders] = useState<ProviderProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,11 +62,20 @@ export function ProviderApprovalQueue() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [verification, setVerification] = useState<DocumentVerification>({
+    coiVerified: false,
+    w9Verified: false,
+  });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchPendingProviders();
   }, []);
+
+  // Reset verification when provider changes
+  useEffect(() => {
+    setVerification({ coiVerified: false, w9Verified: false });
+  }, [selectedProvider?.id]);
 
   const fetchPendingProviders = async () => {
     try {
@@ -80,7 +94,31 @@ export function ProviderApprovalQueue() {
     }
   };
 
+  const canApprove = () => {
+    if (!selectedProvider) return false;
+    
+    // Both documents must be uploaded AND verified
+    const hasInsurance = !!selectedProvider.insurance_doc_url;
+    const hasW9 = !!selectedProvider.w9_doc_url;
+    
+    // If document exists, it must be verified
+    const insuranceOk = !hasInsurance || verification.coiVerified;
+    const w9Ok = !hasW9 || verification.w9Verified;
+    
+    // At minimum, require both documents to exist and be verified
+    return hasInsurance && hasW9 && verification.coiVerified && verification.w9Verified;
+  };
+
   const handleApprove = async (provider: ProviderProfile) => {
+    if (!canApprove()) {
+      toast({
+        title: "Verification Required",
+        description: "Please verify all documents before approving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setProcessing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -213,7 +251,7 @@ export function ProviderApprovalQueue() {
               Review Application
             </DialogTitle>
             <DialogDescription>
-              Review documentation and approve or reject
+              Review and verify documentation before approving
             </DialogDescription>
           </DialogHeader>
 
@@ -244,32 +282,25 @@ export function ProviderApprovalQueue() {
               </div>
 
               <div className="space-y-3">
-                <h4 className="font-medium">Verification Status</h4>
+                <h4 className="font-medium">Document Verification</h4>
+                <p className="text-sm text-muted-foreground">
+                  Click "View Document" to review each file, then check "Verified" to confirm.
+                </p>
                 
-                <div className="grid gap-2">
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      <span>Insurance (COI)</span>
-                    </div>
-                    {selectedProvider.insurance_doc_url ? (
-                      <Badge className="bg-green-500/20 text-green-700">Uploaded</Badge>
-                    ) : (
-                      <Badge variant="destructive">Missing</Badge>
-                    )}
-                  </div>
+                <div className="space-y-2">
+                  <DocumentViewer
+                    documentUrl={selectedProvider.insurance_doc_url}
+                    label="Insurance (COI)"
+                    verified={verification.coiVerified}
+                    onVerifiedChange={(v) => setVerification(prev => ({ ...prev, coiVerified: v }))}
+                  />
 
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      <span>W-9 Form</span>
-                    </div>
-                    {selectedProvider.w9_doc_url ? (
-                      <Badge className="bg-green-500/20 text-green-700">Uploaded</Badge>
-                    ) : (
-                      <Badge variant="destructive">Missing</Badge>
-                    )}
-                  </div>
+                  <DocumentViewer
+                    documentUrl={selectedProvider.w9_doc_url}
+                    label="W-9 Form"
+                    verified={verification.w9Verified}
+                    onVerifiedChange={(v) => setVerification(prev => ({ ...prev, w9Verified: v }))}
+                  />
 
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -296,6 +327,15 @@ export function ProviderApprovalQueue() {
                   </div>
                 </div>
               </div>
+
+              {!canApprove() && (
+                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-700">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                  <p className="text-sm">
+                    You must verify both Insurance (COI) and W-9 documents before approving.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -310,7 +350,7 @@ export function ProviderApprovalQueue() {
             </Button>
             <Button
               onClick={() => selectedProvider && handleApprove(selectedProvider)}
-              disabled={processing}
+              disabled={processing || !canApprove()}
             >
               {processing ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
