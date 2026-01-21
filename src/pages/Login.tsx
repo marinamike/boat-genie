@@ -20,15 +20,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Prevent infinite "Signing in..." if something downstream hangs.
-      const result = await Promise.race([
-        supabase.auth.signInWithPassword({ email, password }),
-        new Promise<{ data: null; error: { message: string } }>((_, reject) =>
-          setTimeout(() => reject(new Error("Login timed out. Please try again.")), 12000)
-        ),
-      ]);
-
-      const { error } = result as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) {
         toast({
@@ -36,37 +31,32 @@ const Login = () => {
           description: error.message,
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
-      // Ensure the session is actually present before navigating.
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
+      if (data.session) {
         toast({
-          title: "Signed in, but session missing",
-          description: "Please refresh and try again.",
+          title: "Welcome back!",
+          description: "You have been logged in successfully.",
+        });
+        // Use replace to prevent back-button loops
+        navigate("/dashboard", { replace: true });
+      } else {
+        toast({
+          title: "Login issue",
+          description: "Session not created. Please try again.",
           variant: "destructive",
         });
-        return;
+        setLoading(false);
       }
-
-      toast({
-        title: "Welcome back!",
-        description: "You have been logged in successfully.",
-      });
-      navigate("/dashboard", { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Login failed.";
-      console.error("Login: sign-in failed", err);
+      console.error("Login error:", err);
       toast({
         title: "Error",
-        description: message,
+        description: "An unexpected error occurred.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };

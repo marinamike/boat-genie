@@ -1,18 +1,14 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Anchor, Ship, Plus, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Anchor, Ship, Plus, Eye, EyeOff, Sparkles, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import FloatingActionButton from "@/components/FloatingActionButton";
-
-interface Profile {
-  full_name: string | null;
-  membership_tier: "standard" | "genie";
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Boat {
   id: string;
@@ -27,28 +23,35 @@ interface Boat {
   } | null;
 }
 
+interface Profile {
+  full_name: string | null;
+  membership_tier: "standard" | "genie";
+}
+
 const Dashboard = () => {
+  const { user, role, loading: authLoading, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [boats, setBoats] = useState<Boat[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          navigate("/login", { replace: true });
-          return;
-        }
+    if (authLoading) return;
 
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
         // Fetch profile
         const { data: profileData } = await supabase
           .from("profiles")
           .select("full_name, membership_tier")
-          .eq("id", session.user.id)
+          .eq("id", user.id)
           .maybeSingle();
 
         if (profileData) {
@@ -70,35 +73,28 @@ const Dashboard = () => {
               marina_name
             )
           `)
-          .eq("owner_id", session.user.id);
+          .eq("owner_id", user.id);
 
         if (boatsData) {
           setBoats(boatsData as Boat[]);
         }
-      } catch (error) {
-        console.error("Dashboard: auth/data fetch failed", error);
+      } catch (err) {
+        console.error("Dashboard: data fetch failed", err);
       } finally {
-        setLoading(false);
+        setDataLoading(false);
       }
     };
 
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") {
-        navigate("/login", { replace: true });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    fetchData();
+  }, [user, authLoading, navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     toast({
       title: "Signed out",
       description: "You have been logged out successfully.",
     });
+    navigate("/login", { replace: true });
   };
 
   const toggleSensitive = (boatId: string) => {
@@ -117,7 +113,7 @@ const Dashboard = () => {
     });
   };
 
-  if (loading) {
+  if (authLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
@@ -127,10 +123,21 @@ const Dashboard = () => {
     );
   }
 
+  // Role-based redirect (optional - you can customize this)
+  if (role === "admin") {
+    navigate("/marina", { replace: true });
+    return null;
+  }
+
+  if (role === "provider") {
+    navigate("/provider", { replace: true });
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background border-b border-border">
+      <header className="sticky top-10 z-40 bg-background border-b border-border">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
@@ -143,19 +150,24 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <Badge 
-            variant={profile?.membership_tier === "genie" ? "default" : "secondary"} 
-            className={profile?.membership_tier === "genie" ? "bg-gradient-gold text-foreground font-semibold" : "font-medium"}
-          >
-            {profile?.membership_tier === "genie" ? (
-              <>
-                <Sparkles className="w-3 h-3 mr-1" />
-                Genie
-              </>
-            ) : (
-              "Standard"
-            )}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge 
+              variant={profile?.membership_tier === "genie" ? "default" : "secondary"} 
+              className={profile?.membership_tier === "genie" ? "bg-gradient-gold text-foreground font-semibold" : "font-medium"}
+            >
+              {profile?.membership_tier === "genie" ? (
+                <>
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Genie
+                </>
+              ) : (
+                "Standard"
+              )}
+            </Badge>
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
