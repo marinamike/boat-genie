@@ -337,6 +337,7 @@ Generated on ${format(new Date(), "PPP 'at' p")}
           specsWarrantyContent={
             <SpecsWarrantyTab
               boatId={selectedBoatId}
+              boatName={selectedBoat?.name}
               boatMake={selectedBoat?.make}
               boatModel={selectedBoat?.model}
               boatYear={selectedBoat?.year}

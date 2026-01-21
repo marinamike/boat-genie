@@ -21,6 +21,14 @@ export interface VesselSpec {
   shore_power: string | null;
   max_hp: number | null;
   engine_options: string[] | null;
+  // New fields for spec sheet
+  loa_ft: number | null;
+  draft_engines_up_ft: number | null;
+  draft_engines_down_ft: number | null;
+  livewell_capacity_gal: number | null;
+  cruise_speed_knots: number | null;
+  max_speed_knots: number | null;
+  hull_type: string | null;
 }
 
 export interface WarrantyDefault {
