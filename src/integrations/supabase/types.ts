@@ -68,6 +68,69 @@ export type Database = {
           },
         ]
       }
+      boat_equipment: {
+        Row: {
+          boat_id: string
+          brand: string
+          created_at: string
+          current_hours: number | null
+          equipment_spec_id: string | null
+          equipment_type: string
+          id: string
+          manual_url: string | null
+          model: string
+          position_label: string | null
+          position_order: number | null
+          serial_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          boat_id: string
+          brand: string
+          created_at?: string
+          current_hours?: number | null
+          equipment_spec_id?: string | null
+          equipment_type: string
+          id?: string
+          manual_url?: string | null
+          model: string
+          position_label?: string | null
+          position_order?: number | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string
+          brand?: string
+          created_at?: string
+          current_hours?: number | null
+          equipment_spec_id?: string | null
+          equipment_type?: string
+          id?: string
+          manual_url?: string | null
+          model?: string
+          position_label?: string | null
+          position_order?: number | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_equipment_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_equipment_equipment_spec_id_fkey"
+            columns: ["equipment_spec_id"]
+            isOneToOne: false
+            referencedRelation: "master_equipment_specs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boat_log_photos: {
         Row: {
           boat_log_id: string
@@ -430,6 +493,7 @@ export type Database = {
       }
       maintenance_recommendations: {
         Row: {
+          boat_equipment_id: string | null
           boat_id: string
           completed_at: string | null
           converted_to_wish_id: string | null
@@ -445,6 +509,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          boat_equipment_id?: string | null
           boat_id: string
           completed_at?: string | null
           converted_to_wish_id?: string | null
@@ -460,6 +525,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          boat_equipment_id?: string | null
           boat_id?: string
           completed_at?: string | null
           converted_to_wish_id?: string | null
@@ -475,6 +541,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "maintenance_recommendations_boat_equipment_id_fkey"
+            columns: ["boat_equipment_id"]
+            isOneToOne: false
+            referencedRelation: "boat_equipment"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "maintenance_recommendations_boat_id_fkey"
             columns: ["boat_id"]

@@ -15,6 +15,7 @@ export interface EquipmentSpec {
 export interface MaintenanceRecommendation {
   id: string;
   boat_id: string;
+  boat_equipment_id: string | null;
   equipment_spec_id: string | null;
   equipment_type: string;
   title: string;
