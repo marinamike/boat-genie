@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import {
   Sheet,
@@ -25,7 +25,8 @@ import {
   Building2,
   AlertTriangle,
 } from "lucide-react";
-import { WorkOrderWithDetails, QCChecklistItem, useBoatLog } from "@/hooks/useBoatLog";
+import { supabase } from "@/integrations/supabase/client";
+import { QCChecklistItem, WorkOrderWithDetails } from "@/hooks/useBoatLog";
 import { formatPrice } from "@/lib/pricing";
 
 interface WorkOrderDetailSheetProps {
@@ -39,11 +40,103 @@ export function WorkOrderDetailSheet({
   open,
   onOpenChange,
 }: WorkOrderDetailSheetProps) {
-  const { fetchQCChecklist, fetchWorkOrderPhotos } = useBoatLog();
   const [qcItems, setQcItems] = useState<QCChecklistItem[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  // NOTE: We intentionally do NOT call useBoatLog() here.
+  // This sheet only needs work-order details; creating a second BoatLog hook instance
+  // can trigger extra boat fetching / URL syncing and cause the sheet to behave oddly.
+  const fetchQCChecklist = useCallback(async (workOrderId: string): Promise<QCChecklistItem[]> => {
+    const { data, error } = await supabase
+      .from("qc_checklist_items")
+      .select("*")
+      .eq("work_order_id", workOrderId)
+      .order("sort_order");
+
+    if (error) {
+      console.error("Error fetching QC checklist:", error);
+      return [];
+    }
+
+    return data || [];
+  }, []);
+
+  const fetchWorkOrderPhotos = useCallback(async (workOrderId: string): Promise<string[]> => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("image_url")
+      .eq("work_order_id", workOrderId)
+      .not("image_url", "is", null);
+
+    if (error) {
+      console.error("Error fetching work order photos:", error);
+      return [];
+    }
+
+    if (!data || data.length === 0) return [];
+
+    const tryExtractBucketAndPath = (
+      rawUrl: string
+    ): { bucket: string; path: string } | null => {
+      try {
+        const u = new URL(rawUrl);
+        const parts = u.pathname.split("/").filter(Boolean);
+
+        // Expected patterns:
+        // /storage/v1/object/sign/<bucket>/<path...>
+        // /storage/v1/object/public/<bucket>/<path...>
+        const storageIdx = parts.findIndex((p) => p === "storage");
+        if (storageIdx === -1) return null;
+        if (parts[storageIdx + 1] !== "v1") return null;
+        if (parts[storageIdx + 2] !== "object") return null;
+        const mode = parts[storageIdx + 3];
+        if (mode !== "sign" && mode !== "public") return null;
+
+        const bucket = parts[storageIdx + 4];
+        const pathParts = parts.slice(storageIdx + 5);
+        if (!bucket || pathParts.length === 0) return null;
+
+        return { bucket, path: decodeURIComponent(pathParts.join("/")) };
+      } catch {
+        return null;
+      }
+    };
+
+    const urls: string[] = [];
+    for (const row of data) {
+      const raw = row.image_url;
+      if (!raw) continue;
+
+      try {
+        if (raw.startsWith("http")) {
+          const extracted = tryExtractBucketAndPath(raw);
+          if (!extracted) {
+            urls.push(raw);
+            continue;
+          }
+
+          const { data: signedData, error: signError } = await supabase.storage
+            .from(extracted.bucket)
+            .createSignedUrl(extracted.path, 3600);
+
+          if (signedData?.signedUrl && !signError) urls.push(signedData.signedUrl);
+          continue;
+        }
+
+        const { data: signedData, error: signError } = await supabase.storage
+          .from("chat-images")
+          .createSignedUrl(raw, 3600);
+
+        if (signedData?.signedUrl && !signError) urls.push(signedData.signedUrl);
+      } catch (e) {
+        console.error("Error processing image URL:", e);
+      }
+    }
+
+    return urls;
+  }, []);
 
   useEffect(() => {
     if (open && workOrder) {
