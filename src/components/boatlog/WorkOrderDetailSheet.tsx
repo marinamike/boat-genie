@@ -48,10 +48,12 @@ export function WorkOrderDetailSheet({
   useEffect(() => {
     if (open && workOrder) {
       setLoading(true);
-      Promise.all([
+      Promise.allSettled([
         fetchQCChecklist(workOrder.id),
         fetchWorkOrderPhotos(workOrder.id),
-      ]).then(([qc, ph]) => {
+      ]).then((results) => {
+        const qc = results[0].status === "fulfilled" ? results[0].value : [];
+        const ph = results[1].status === "fulfilled" ? results[1].value : [];
         setQcItems(qc);
         setPhotos(ph);
         setLoading(false);

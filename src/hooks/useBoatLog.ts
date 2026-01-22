@@ -286,6 +286,33 @@ export function useBoatLog(initialBoatId?: string) {
 
     if (!data || data.length === 0) return [];
 
+    const tryExtractBucketAndPath = (
+      rawUrl: string
+    ): { bucket: string; path: string } | null => {
+      try {
+        const u = new URL(rawUrl);
+        const parts = u.pathname.split("/").filter(Boolean);
+
+        // Expected patterns:
+        // /storage/v1/object/sign/<bucket>/<path...>
+        // /storage/v1/object/public/<bucket>/<path...>
+        const storageIdx = parts.findIndex((p) => p === "storage");
+        if (storageIdx === -1) return null;
+        if (parts[storageIdx + 1] !== "v1") return null;
+        if (parts[storageIdx + 2] !== "object") return null;
+        const mode = parts[storageIdx + 3];
+        if (mode !== "sign" && mode !== "public") return null;
+
+        const bucket = parts[storageIdx + 4];
+        const pathParts = parts.slice(storageIdx + 5);
+        if (!bucket || pathParts.length === 0) return null;
+
+        return { bucket, path: decodeURIComponent(pathParts.join("/")) };
+      } catch {
+        return null;
+      }
+    };
+
     // For each image URL, try to generate a signed URL if it's a storage path
     const validUrls: string[] = [];
     
@@ -293,21 +320,37 @@ export function useBoatLog(initialBoatId?: string) {
       if (!msg.image_url) continue;
       
       try {
-        // Check if it's a storage path (not a full URL)
-        if (msg.image_url.startsWith('http')) {
-          // Already a full URL, use as-is
-          validUrls.push(msg.image_url);
-        } else {
-          // It's a storage path, generate signed URL
+        // If it's already a URL, it might be an expired signed URL.
+        // Attempt to extract bucket+path from known storage URL patterns and re-sign.
+        if (msg.image_url.startsWith("http")) {
+          const extracted = tryExtractBucketAndPath(msg.image_url);
+          if (!extracted) {
+            validUrls.push(msg.image_url);
+            continue;
+          }
+
           const { data: signedData, error } = await supabase.storage
-            .from('chat-images')
-            .createSignedUrl(msg.image_url, 3600); // 1 hour expiry
-          
+            .from(extracted.bucket)
+            .createSignedUrl(extracted.path, 3600);
+
           if (signedData?.signedUrl && !error) {
             validUrls.push(signedData.signedUrl);
           } else {
-            console.error('Error generating signed URL:', error);
+            console.error("Error generating signed URL:", error);
           }
+
+          continue;
+        }
+
+        // Otherwise assume it's a storage path in the chat-images bucket (legacy behavior)
+        const { data: signedData, error } = await supabase.storage
+          .from("chat-images")
+          .createSignedUrl(msg.image_url, 3600); // 1 hour expiry
+
+        if (signedData?.signedUrl && !error) {
+          validUrls.push(signedData.signedUrl);
+        } else {
+          console.error("Error generating signed URL:", error);
         }
       } catch (error) {
         console.error('Error processing image URL:', error);
