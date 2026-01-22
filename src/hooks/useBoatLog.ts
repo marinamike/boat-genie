@@ -276,7 +276,7 @@ export function useBoatLog(initialBoatId?: string) {
     return data || [];
   };
 
-  // Fetch photos from messages for a work order
+  // Fetch photos from messages for a work order with signed URL generation
   const fetchWorkOrderPhotos = async (workOrderId: string): Promise<string[]> => {
     const { data } = await supabase
       .from("messages")
@@ -284,7 +284,38 @@ export function useBoatLog(initialBoatId?: string) {
       .eq("work_order_id", workOrderId)
       .not("image_url", "is", null);
 
-    return (data || []).map(m => m.image_url).filter(Boolean) as string[];
+    if (!data || data.length === 0) return [];
+
+    // For each image URL, try to generate a signed URL if it's a storage path
+    const validUrls: string[] = [];
+    
+    for (const msg of data) {
+      if (!msg.image_url) continue;
+      
+      try {
+        // Check if it's a storage path (not a full URL)
+        if (msg.image_url.startsWith('http')) {
+          // Already a full URL, use as-is
+          validUrls.push(msg.image_url);
+        } else {
+          // It's a storage path, generate signed URL
+          const { data: signedData, error } = await supabase.storage
+            .from('chat-images')
+            .createSignedUrl(msg.image_url, 3600); // 1 hour expiry
+          
+          if (signedData?.signedUrl && !error) {
+            validUrls.push(signedData.signedUrl);
+          } else {
+            console.error('Error generating signed URL:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error processing image URL:', error);
+        // Skip invalid URLs silently
+      }
+    }
+
+    return validUrls;
   };
 
   // Fetch boat log photos

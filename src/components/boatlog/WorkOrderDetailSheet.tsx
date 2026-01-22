@@ -265,6 +265,9 @@ Generated on ${format(new Date(), "PPP 'at' p")}
                           src={url}
                           alt={`Service photo ${i + 1}`}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </a>
                     ))}
