@@ -26,7 +26,7 @@ import { BoatLogTabs } from "@/components/boatlog/BoatLogTabs";
 import { MaintenanceRecommendation } from "@/hooks/useEquipmentSpecs";
 import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { formatPrice } from "@/lib/pricing";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by OwnerLayout
 import { useAuth } from "@/contexts/AuthContext";
 import { useVessel } from "@/contexts/VesselContext";
 
@@ -195,7 +195,7 @@ Generated on ${format(new Date(), "PPP 'at' p")}
           </Card>
         </main>
 
-        <BottomNav />
+        {/* BottomNav handled by OwnerLayout */}
       </div>
     );
   }
@@ -218,7 +218,7 @@ Generated on ${format(new Date(), "PPP 'at' p")}
 
         <VesselEmptyState vessels={vessels} onSelectVessel={handleVesselSelect} />
 
-        <BottomNav />
+        {/* BottomNav handled by OwnerLayout */}
       </div>
     );
   }
@@ -372,7 +372,7 @@ Generated on ${format(new Date(), "PPP 'at' p")}
         prefilledDescription={prefilledWishData?.description}
       />
 
-      <BottomNav />
+      {/* BottomNav handled by OwnerLayout */}
     </div>
   );
 };

@@ -10,7 +10,7 @@ import { Anchor, ArrowLeft, User, LogOut, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, AppRole } from "@/hooks/useUserRole";
 import { RoleSelector } from "@/components/onboarding/RoleSelector";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by role-specific layouts
 
 interface Profile {
   full_name: string | null;
@@ -244,7 +244,7 @@ const Profile = () => {
         </Button>
       </main>
 
-      <BottomNav />
+      {/* BottomNav handled by role-specific layouts */}
     </div>
   );
 };

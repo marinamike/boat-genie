@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Anchor, Ship, Plus, Sparkles, LogOut, Pencil, Lock, ChevronDown, MapPin, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by OwnerLayout
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVessel } from "@/contexts/VesselContext";
@@ -172,20 +172,7 @@ const Dashboard = () => {
     fetchData();
   }, [user, authLoading, navigate, fetchBoats, fetchWishes]);
 
-  // Role-based redirect (avoid navigate() during render which can cause update loops)
-  useEffect(() => {
-    if (authLoading || dataLoading) return;
-    if (!user) return;
-
-    if (role === "admin") {
-      navigate("/marina", { replace: true });
-      return;
-    }
-
-    if (role === "provider") {
-      navigate("/provider", { replace: true });
-    }
-  }, [authLoading, dataLoading, role, user, navigate]);
+  // Role-based redirects are now handled by App.tsx RoleBasedRoutes
 
   const handleLogout = async () => {
     await signOut();
@@ -445,8 +432,7 @@ const Dashboard = () => {
       {/* Floating Action Button */}
       <FloatingActionButton onClick={handleMakeWish} />
 
-      {/* Bottom Navigation */}
-      <BottomNav />
+      {/* Bottom Navigation handled by OwnerLayout */}
 
       {/* Add/Edit Boat Modal */}
       {user && (

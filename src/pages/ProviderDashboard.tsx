@@ -23,7 +23,7 @@ import { useProviderProfile } from "@/hooks/useProviderProfile";
 import { useProviderOnboarding } from "@/hooks/useProviderOnboarding";
 import { useProviderMetrics } from "@/hooks/useProviderMetrics";
 import { useJobBoard } from "@/hooks/useJobBoard";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by ProviderLayout
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
@@ -333,7 +333,7 @@ const ProviderDashboard = () => {
         onSuccess={refetchMetrics}
       />
 
-      <BottomNav />
+      {/* BottomNav handled by ProviderLayout */}
     </div>
   );
 };

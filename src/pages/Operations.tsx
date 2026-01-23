@@ -15,7 +15,7 @@ import { QCQueueList } from "@/components/operations/QCQueueList";
 import { QCInspector } from "@/components/operations/QCInspector";
 import { JobBoardGlobal } from "@/components/operations/JobBoardGlobal";
 import { ProviderApprovalQueue } from "@/components/admin/ProviderApprovalQueue";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by StaffLayout
 import type { QCQueueItem } from "@/hooks/useQCQueue";
 
 export default function Operations() {
@@ -24,12 +24,7 @@ export default function Operations() {
   const { qcQueue, activeJobs, upcomingJobs, loading: queueLoading, refetch } = useQCQueue();
   const [selectedItem, setSelectedItem] = useState<QCQueueItem | null>(null);
 
-  // Redirect if user doesn't have operations access
-  useEffect(() => {
-    if (!roleLoading && !isAdmin && !isMarinaStaff) {
-      navigate("/dashboard");
-    }
-  }, [roleLoading, isAdmin, isMarinaStaff, navigate]);
+  // Role-based redirects are now handled by App.tsx RoleBasedRoutes
 
   if (roleLoading) {
     return (
@@ -146,7 +141,7 @@ export default function Operations() {
         )}
       </div>
 
-      <BottomNav />
+      {/* BottomNav handled by StaffLayout */}
     </div>
   );
 }

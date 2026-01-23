@@ -13,7 +13,7 @@ import { PublicQueueView } from "@/components/launch/PublicQueueView";
 import { QueueManager } from "@/components/launch/QueueManager";
 import { LaunchCardForm } from "@/components/launch/LaunchCardForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by StaffLayout
 import type { LaunchQueueItem } from "@/hooks/useLaunchQueue";
 
 const DryStackLaunch = () => {
@@ -170,7 +170,7 @@ const DryStackLaunch = () => {
         </DialogContent>
       </Dialog>
 
-      <BottomNav />
+      {/* BottomNav handled by StaffLayout */}
     </div>
   );
 };
