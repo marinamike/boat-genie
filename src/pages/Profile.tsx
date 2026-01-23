@@ -212,22 +212,11 @@ const Profile = () => {
           <CardHeader>
             <CardTitle>Account Type</CardTitle>
             <CardDescription>
-              {isAdmin && hasMarina
-                ? "You're registered as a Marina Manager"
-                : "Select your role to access the right features"}
+              Select your role to access the right features
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isAdmin && hasMarina ? (
-              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
-                <p className="font-medium text-primary">Marina Manager</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Access your marina dashboard from the bottom navigation
-                </p>
-              </div>
-            ) : (
-              <RoleSelector selectedRole={role} onSelect={handleRoleSelect} />
-            )}
+            <RoleSelector selectedRole={role} onSelect={handleRoleSelect} />
           </CardContent>
         </Card>
 
