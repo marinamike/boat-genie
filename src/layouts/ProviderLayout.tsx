@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { LayoutDashboard, Briefcase, ListOrdered, DollarSign, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const providerNavItems = [
-  { href: "/provider", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/provider", icon: LayoutDashboard, label: "Dashboard", tab: "dashboard" },
   { href: "/provider", icon: Briefcase, label: "My Jobs", tab: "schedule" },
   { href: "/provider", icon: ListOrdered, label: "Services", tab: "profile" },
   { href: "/provider", icon: DollarSign, label: "Payouts", tab: "earnings" },
@@ -13,6 +13,8 @@ const providerNavItems = [
 
 export function ProviderLayout() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "dashboard";
 
   return (
     <div className="min-h-screen pb-20">
@@ -23,12 +25,19 @@ export function ProviderLayout() {
         <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
           {providerNavItems.map((item, idx) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.href && !item.tab;
+            // For provider page items with tabs, check the tab param
+            // For other pages (like /profile), check the pathname
+            const isActive = item.tab 
+              ? location.pathname === "/provider" && currentTab === item.tab
+              : location.pathname === item.href;
+            
+            // Build the correct href with tab parameter if needed
+            const linkHref = item.tab ? `${item.href}?tab=${item.tab}` : item.href;
 
             return (
               <Link
                 key={`${item.href}-${idx}`}
-                to={item.href}
+                to={linkHref}
                 className={cn(
                   "flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors min-w-[64px]",
                   isActive
