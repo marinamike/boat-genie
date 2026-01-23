@@ -6,7 +6,6 @@ import { EscrowStatusBadge } from "@/components/EscrowStatusBadge";
 import StatusBadge from "@/components/StatusBadge";
 import { WorkOrderChat } from "@/components/chat/WorkOrderChat";
 import { AdminChatViewer } from "@/components/admin/AdminChatViewer";
-import { QCChecklist } from "@/components/qc/QCChecklist";
 import { RequestQCReview } from "@/components/qc/RequestQCReview";
 import { ProviderRatingDisplay } from "@/components/reviews/ProviderRatingDisplay";
 import { 
@@ -15,16 +14,18 @@ import {
   MapPin, 
   Eye, 
   EyeOff,
-  Camera,
-  DollarSign,
   ChevronRight,
-  Wrench
+  Wrench,
+  Flag
 } from "lucide-react";
 import { useState } from "react";
 import type { Database } from "@/integrations/supabase/types";
 
 type EscrowStatus = Database["public"]["Enums"]["escrow_status"];
 type WorkOrderStatus = Database["public"]["Enums"]["work_order_status"];
+
+// Explicit role type for this component
+type ViewerRole = "owner" | "provider" | "staff" | "admin";
 
 interface WorkOrderCardProps {
   workOrder: {
@@ -58,15 +59,12 @@ interface WorkOrderCardProps {
     id?: string;
     business_name: string | null;
   };
-  showSensitiveInfo?: boolean;
-  isProvider?: boolean;
-  isAdmin?: boolean;
-  isRunner?: boolean;
+  // Explicit role prop - determines exactly what UI elements to show
+  viewerRole: ViewerRole;
   membershipTier?: "standard" | "genie";
   onViewDetails?: () => void;
   onStartWork?: () => void;
-  onUploadPhotos?: () => void;
-  onReleaseFunds?: () => void;
+  onReportIssue?: () => void;
   onRefresh?: () => void;
 }
 
@@ -75,64 +73,91 @@ export function WorkOrderCard({
   boat,
   boatProfile,
   provider,
-  showSensitiveInfo = false,
-  isProvider = false,
-  isAdmin = false,
-  isRunner = false,
+  viewerRole,
   membershipTier = "standard",
   onViewDetails,
   onStartWork,
-  onUploadPhotos,
-  onReleaseFunds,
+  onReportIssue,
   onRefresh,
 }: WorkOrderCardProps) {
   const [showMasked, setShowMasked] = useState(false);
 
-  // Verifier can be Owner, Admin, or Runner (marina_staff)
-  const isVerifier = !isProvider && (isAdmin || isRunner || true); // Owner is always a verifier
+  // Role-based visibility flags
+  const isOwner = viewerRole === "owner";
+  const isProvider = viewerRole === "provider";
+  const isStaff = viewerRole === "staff";
+  const isAdmin = viewerRole === "admin";
+  const isOperations = isStaff || isAdmin;
 
+  // Can see boat details after job is approved
   const canSeeBoatDetails = 
-    showSensitiveInfo || 
+    isOwner || 
+    isOperations ||
     ["approved", "work_started", "pending_photos", "pending_release", "released"].includes(workOrder.escrow_status);
 
-  // Provider business name visible after job is accepted - NEVER show contact info to non-admins
+  // Provider business name visible to owners after job is accepted
   const canSeeProviderInfo = 
-    !isProvider && 
+    (isOwner || isOperations) && 
     ["approved", "work_started", "pending_photos", "pending_release", "released"].includes(workOrder.escrow_status);
 
+  // Price display based on membership
   const displayPrice = membershipTier === "genie" 
     ? workOrder.wholesale_price 
     : workOrder.retail_price;
 
-  const getActionButton = () => {
-    if (isProvider) {
-      switch (workOrder.escrow_status) {
-        case "approved":
-          return (
-            <Button size="sm" onClick={onStartWork} className="flex-1">
-              Start Work
-            </Button>
-          );
-        case "work_started":
-          return (
-            <RequestQCReview
-              workOrderId={workOrder.id}
-              boatId={workOrder.boat_id || boat?.id || ""}
-              serviceDescription={workOrder.description || workOrder.title}
-              onComplete={onRefresh}
-            />
-          );
-        default:
-          return null;
-      }
+  // OWNER-ONLY action: Report Issue button
+  const renderOwnerActions = () => {
+    if (!isOwner) return null;
+    
+    // Only show report issue for active work orders
+    if (!["work_started", "pending_photos", "pending_release"].includes(workOrder.escrow_status)) {
+      return null;
     }
-    return null;
+
+    return (
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={onReportIssue}
+        className="text-destructive border-destructive/50 hover:bg-destructive/10"
+      >
+        <Flag className="w-4 h-4 mr-1" />
+        Report Issue
+      </Button>
+    );
   };
 
-  // Calculate labor balance (escrow amount minus any released deposit)
-  const materialsDeposit = workOrder.materials_deposit || 0;
-  const laborBalance = (workOrder.escrow_amount || 0);
-  const showQCChecklist = ["pending_release", "disputed", "released"].includes(workOrder.escrow_status);
+  // PROVIDER-ONLY action: Start Work or Request QC
+  const renderProviderActions = () => {
+    if (!isProvider) return null;
+
+    switch (workOrder.escrow_status) {
+      case "approved":
+        return (
+          <Button size="sm" onClick={onStartWork} className="flex-1">
+            Start Work
+          </Button>
+        );
+      case "work_started":
+        return (
+          <RequestQCReview
+            workOrderId={workOrder.id}
+            boatId={workOrder.boat_id || boat?.id || ""}
+            serviceDescription={workOrder.description || workOrder.title}
+            onComplete={onRefresh}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  // STAFF/ADMIN-ONLY: QC review actions handled elsewhere
+  const renderOperationsActions = () => {
+    if (!isOperations) return null;
+    // Operations staff see QC checklists in the Operations page, not here
+    return null;
+  };
 
   return (
     <Card className={`overflow-hidden ${workOrder.is_emergency ? "border-destructive" : ""}`}>
@@ -226,7 +251,7 @@ export function WorkOrderCard({
           </div>
         )}
 
-        {/* Provider Info - Only business name visible to owners/staff. Contact info is NEVER exposed. */}
+        {/* Provider Info - Only visible to owners/staff after job accepted */}
         {canSeeProviderInfo && provider && (
           <div className="bg-muted/50 rounded-md p-3 space-y-2">
             <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
@@ -244,7 +269,7 @@ export function WorkOrderCard({
           </div>
         )}
 
-        {/* In-App Chat - Visible after job is accepted */}
+        {/* In-App Chat - Role-specific rendering */}
         {canSeeProviderInfo && (
           <div className="flex items-center gap-2">
             {isAdmin ? (
@@ -285,15 +310,24 @@ export function WorkOrderCard({
           </div>
         )}
 
-        {/* Actions */}
+        {/* Role-specific Actions - NEVER mix */}
         <div className="flex gap-2 pt-2">
-          {getActionButton()}
+          {/* Owner sees Report Issue */}
+          {renderOwnerActions()}
+          
+          {/* Provider sees Start Work / Request QC */}
+          {renderProviderActions()}
+          
+          {/* Staff/Admin actions */}
+          {renderOperationsActions()}
+          
+          {/* Everyone can view details */}
           {onViewDetails && (
             <Button 
               variant="outline" 
               size="sm" 
               onClick={onViewDetails}
-              className={getActionButton() ? "" : "flex-1"}
+              className="flex-1"
             >
               Details
               <ChevronRight className="w-4 h-4 ml-1" />

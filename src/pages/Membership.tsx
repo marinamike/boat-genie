@@ -17,7 +17,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by OwnerLayout
 import { PRICING_CONSTANTS } from "@/lib/pricing";
 
 interface Profile {
@@ -352,8 +352,7 @@ const Membership = () => {
         </Card>
       </main>
 
-      {/* Bottom Navigation */}
-      <BottomNav />
+      {/* BottomNav handled by OwnerLayout */}
     </div>
   );
 };

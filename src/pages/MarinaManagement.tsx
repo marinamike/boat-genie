@@ -12,7 +12,7 @@ import { SlipManager } from "@/components/marina/SlipManager";
 import { WelcomePacketManager } from "@/components/marina/WelcomePacketManager";
 import { QRCodeGenerator } from "@/components/marina/QRCodeGenerator";
 import { AdminProviderReview } from "@/components/provider/AdminProviderReview";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by StaffLayout
 
 const ALL_MODULES: MarinaModule[] = ["dry_stack", "ship_store", "fuel_dock", "service_yard"];
 
@@ -138,7 +138,7 @@ const MarinaManagement = () => {
         {isAdmin && <AdminProviderReview />}
       </main>
 
-      <BottomNav />
+      {/* BottomNav handled by StaffLayout */}
     </div>
   );
 };

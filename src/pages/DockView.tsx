@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useLaunchQueue } from "@/hooks/useLaunchQueue";
 import { LaunchStatusBadge } from "@/components/launch/LaunchStatusBadge";
-import BottomNav from "@/components/BottomNav";
+// BottomNav removed - handled by StaffLayout
 import { formatDistanceToNow } from "date-fns";
 
 interface DockTask {
@@ -66,27 +66,8 @@ const DockView = () => {
   ]);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-
-      // Check if marina staff
-      const { data: staffData } = await supabase.rpc("has_role", {
-        _user_id: session.user.id,
-        _role: "marina_staff",
-      });
-
-      if (!staffData) {
-        navigate("/dashboard");
-        return;
-      }
-
-      setIsStaff(true);
-
-      // Fetch marina info from settings
+    const loadData = async () => {
+      // Fetch marina info from settings (role-based redirects handled by App.tsx)
       const { data: settingsData } = await supabase
         .from("marina_settings")
         .select("marina_name")
@@ -101,11 +82,12 @@ const DockView = () => {
         });
       }
 
+      setIsStaff(true);
       setLoading(false);
     };
 
-    checkAuth();
-  }, [navigate]);
+    loadData();
+  }, []);
 
   if (loading) {
     return (
@@ -255,7 +237,7 @@ const DockView = () => {
         </Tabs>
       </main>
 
-      <BottomNav />
+      {/* BottomNav handled by StaffLayout */}
     </div>
   );
 };
