@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +34,7 @@ const ProviderDashboard = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [createJobDialogOpen, setCreateJobDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { profile, toggleAvailability } = useProviderProfile();
   const { 
     profile: onboardingProfile, 
@@ -209,7 +210,11 @@ const ProviderDashboard = () => {
               </div>
             )}
 
-            <Tabs defaultValue={isActive ? "schedule" : "setup"} className="space-y-6">
+            <Tabs 
+              value={searchParams.get("tab") || (isActive ? "schedule" : "setup")} 
+              onValueChange={(value) => setSearchParams({ tab: value })}
+              className="space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="setup" className="flex items-center gap-1">
                   <ClipboardList className="w-4 h-4" />
