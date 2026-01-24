@@ -15,6 +15,9 @@ import AddBoatForm, { BoatToEdit } from "@/components/AddBoatForm";
 import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { WishStatusCard } from "@/components/wish/WishStatusCard";
 import { PendingQuotesSection } from "@/components/owner/PendingQuotesSection";
+import { MarineWeatherWidget } from "@/components/weather/MarineWeatherWidget";
+import { TideChart } from "@/components/weather/TideChart";
+import { useMarineWeather } from "@/hooks/useMarineWeather";
 
 interface Boat {
   id: string;
@@ -270,6 +273,9 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="px-4 py-6">
+        {/* Marine Weather Section */}
+        <MarineWeatherSection boats={boats} />
+
         {/* Boats Section */}
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -465,5 +471,31 @@ const Dashboard = () => {
     </div>
   );
 };
+
+// Marine Weather Section Component
+function MarineWeatherSection({ boats }: { boats: Boat[] }) {
+  // Get location from first boat's marina if available
+  const firstBoatMarina = boats[0]?.boat_profiles?.marina_name;
+  
+  // Fort Lauderdale coordinates as default
+  const { data, loading, refetch } = useMarineWeather(
+    26.1224,
+    -80.1373,
+    firstBoatMarina || "Fort Lauderdale"
+  );
+
+  if (boats.length === 0) return null;
+
+  return (
+    <section className="mb-6 space-y-3">
+      <MarineWeatherWidget
+        data={data}
+        loading={loading}
+        onRefresh={refetch}
+      />
+      <TideChart data={data?.tides || null} loading={loading} />
+    </section>
+  );
+}
 
 export default Dashboard;
