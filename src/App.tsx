@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { VesselProvider } from "@/contexts/VesselContext";
 import RoleSwitcher from "@/components/RoleSwitcher";
-import { OwnerLayout, ProviderLayout, StaffLayout } from "@/layouts";
+import { OwnerLayout, ProviderLayout, StaffLayout, MarinaLayout } from "@/layouts";
 
 // Page imports
 import Index from "./pages/Index";
@@ -31,6 +31,13 @@ import DryStackLaunch from "./pages/DryStackLaunch";
 import RegisterMarina from "./pages/RegisterMarina";
 import AdminDashboard from "./pages/AdminDashboard";
 import Operations from "./pages/Operations";
+
+// Marina Dashboard pages
+import MarinaDashboard from "./pages/MarinaDashboard";
+import MarinaSlipsPage from "./pages/MarinaSlipsPage";
+import MarinaReservationsPage from "./pages/MarinaReservationsPage";
+import MarinaLeasesPage from "./pages/MarinaLeasesPage";
+import MarinaMessagesPage from "./pages/MarinaMessagesPage";
 
 const queryClient = new QueryClient();
 
@@ -128,22 +135,26 @@ function RoleBasedRoutes() {
     case "admin":
       return (
         <Routes>
-          {/* Admin/Marina Manager Layout - Full operations access */}
-          <Route element={<StaffLayout />}>
-            <Route path="/marina" element={<MarinaManagement />} />
+          {/* Marina Layout - Full marina management with dedicated nav */}
+          <Route element={<MarinaLayout />}>
+            <Route path="/marina" element={<MarinaDashboard />} />
+            <Route path="/marina/slips" element={<MarinaSlipsPage />} />
+            <Route path="/marina/reservations" element={<MarinaReservationsPage />} />
+            <Route path="/marina/leases" element={<MarinaLeasesPage />} />
+            <Route path="/marina/messages" element={<MarinaMessagesPage />} />
+            <Route path="/marina/settings" element={<MarinaManagement />} />
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/operations" element={<Operations />} />
-            <Route path="/dock" element={<DockView />} />
-            <Route path="/dry-stack" element={<DryStackLaunch />} />
             <Route path="/register-marina" element={<RegisterMarina />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
           {/* Public marina details page */}
           <Route path="/marina/:id" element={<MarinaDetails />} />
-          {/* Default landing for Marina Managers is /marina, not /admin */}
+          {/* Default landing for Marina Managers is /marina */}
           <Route path="/" element={<Navigate to="/marina" replace />} />
           <Route path="/dashboard" element={<Navigate to="/marina" replace />} />
           <Route path="/provider" element={<Navigate to="/marina" replace />} />
+          <Route path="/dock" element={<Navigate to="/marina" replace />} />
+          <Route path="/operations" element={<Navigate to="/marina" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       );
