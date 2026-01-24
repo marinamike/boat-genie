@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Loader2, 
   Crown, 
-  TrendingUp, 
   UserCheck, 
   Briefcase, 
   Users, 
@@ -26,11 +25,11 @@ import { ViewAsUserPanel } from "@/components/admin/ViewAsUserPanel";
 import { InsuranceExpiryAlerts } from "@/components/admin/InsuranceExpiryAlerts";
 import { DisputedJobsPanel } from "@/components/admin/DisputedJobsPanel";
 import { ReviewModerationPanel } from "@/components/admin/ReviewModerationPanel";
-import { MarinaSeedButton } from "@/components/marina/MarinaSeedButton";
 import { MarinaLeadTracker } from "@/components/admin/MarinaLeadTracker";
 import { WatchtowerMap } from "@/components/admin/WatchtowerMap";
 import { ComplianceQueue } from "@/components/admin/ComplianceQueue";
 import { StaleWorkOrderAlerts } from "@/components/admin/StaleWorkOrderAlerts";
+import { DemoDataSeeder } from "@/components/admin/DemoDataSeeder";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -186,7 +185,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="seed" className="space-y-6">
-            <MarinaSeedButton />
+            <DemoDataSeeder />
             <MarketplaceHealthCard health={marketplaceHealth} />
           </TabsContent>
         </Tabs>
