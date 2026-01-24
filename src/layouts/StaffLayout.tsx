@@ -13,8 +13,9 @@ export function StaffLayout() {
   const isMarinaManager = role === "admin";
 
   // Staff/Admin navigation - operations focused
+  // Marina Managers don't need QC Queue in their nav
   const staffNavItems = [
-    { href: "/operations", icon: ClipboardCheck, label: "QC Queue" },
+    ...(!isMarinaManager ? [{ href: "/operations", icon: ClipboardCheck, label: "QC Queue" }] : []),
     { href: "/dock", icon: Map, label: "Dock View" },
     ...(showGodModeNav ? [{ href: "/admin", icon: UserCheck, label: "Approvals" }] : []),
     ...(isMarinaManager ? [{ href: "/marina", icon: Building2, label: "Marina" }] : []),
