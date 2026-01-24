@@ -486,6 +486,124 @@ export type Database = {
         }
         Relationships: []
       }
+      dock_status: {
+        Row: {
+          boat_id: string
+          checked_in_at: string
+          checked_out_at: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          marina_id: string | null
+          reservation_id: string | null
+          slip_number: string | null
+          stay_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          boat_id: string
+          checked_in_at?: string
+          checked_out_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          marina_id?: string | null
+          reservation_id?: string | null
+          slip_number?: string | null
+          stay_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string
+          checked_in_at?: string
+          checked_out_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          marina_id?: string | null
+          reservation_id?: string | null
+          slip_number?: string | null
+          stay_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dock_status_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dock_status_marina_id_fkey"
+            columns: ["marina_id"]
+            isOneToOne: false
+            referencedRelation: "marinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dock_status_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "marina_reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dock_work_orders: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dock_status_id: string
+          id: string
+          is_active: boolean
+          provider_id: string
+          provider_name: string | null
+          service_type: string | null
+          started_at: string
+          work_order_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dock_status_id: string
+          id?: string
+          is_active?: boolean
+          provider_id: string
+          provider_name?: string | null
+          service_type?: string | null
+          started_at?: string
+          work_order_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dock_status_id?: string
+          id?: string
+          is_active?: boolean
+          provider_id?: string
+          provider_name?: string | null
+          service_type?: string | null
+          started_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dock_work_orders_dock_status_id_fkey"
+            columns: ["dock_status_id"]
+            isOneToOne: false
+            referencedRelation: "dock_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dock_work_orders_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       launch_cards: {
         Row: {
           additional_notes: string | null
@@ -726,6 +844,68 @@ export type Database = {
           },
         ]
       }
+      marina_leads: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          id: string
+          lead_status: string
+          marina_email: string | null
+          marina_id: string | null
+          marina_name: string
+          power_requirements: string | null
+          requested_dates: string | null
+          sent_at: string | null
+          stay_type: string | null
+          vessel_beam_ft: number | null
+          vessel_draft_ft: number | null
+          vessel_length_ft: number | null
+          vessel_type: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          lead_status?: string
+          marina_email?: string | null
+          marina_id?: string | null
+          marina_name: string
+          power_requirements?: string | null
+          requested_dates?: string | null
+          sent_at?: string | null
+          stay_type?: string | null
+          vessel_beam_ft?: number | null
+          vessel_draft_ft?: number | null
+          vessel_length_ft?: number | null
+          vessel_type: string
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          lead_status?: string
+          marina_email?: string | null
+          marina_id?: string | null
+          marina_name?: string
+          power_requirements?: string | null
+          requested_dates?: string | null
+          sent_at?: string | null
+          stay_type?: string | null
+          vessel_beam_ft?: number | null
+          vessel_draft_ft?: number | null
+          vessel_length_ft?: number | null
+          vessel_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marina_leads_marina_id_fkey"
+            columns: ["marina_id"]
+            isOneToOne: false
+            referencedRelation: "marinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marina_qr_codes: {
         Row: {
           code: string
@@ -773,6 +953,90 @@ export type Database = {
             columns: ["slip_id"]
             isOneToOne: false
             referencedRelation: "marina_slips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marina_reservations: {
+        Row: {
+          actual_arrival: string | null
+          actual_departure: string | null
+          admin_notes: string | null
+          assigned_dock_location: string | null
+          assigned_slip: string | null
+          boat_id: string
+          created_at: string
+          id: string
+          insurance_verified: boolean | null
+          marina_id: string | null
+          owner_id: string
+          power_requirements: string | null
+          registration_verified: boolean | null
+          rejection_reason: string | null
+          requested_arrival: string
+          requested_departure: string | null
+          special_requests: string | null
+          status: string
+          stay_type: string
+          updated_at: string
+        }
+        Insert: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          admin_notes?: string | null
+          assigned_dock_location?: string | null
+          assigned_slip?: string | null
+          boat_id: string
+          created_at?: string
+          id?: string
+          insurance_verified?: boolean | null
+          marina_id?: string | null
+          owner_id: string
+          power_requirements?: string | null
+          registration_verified?: boolean | null
+          rejection_reason?: string | null
+          requested_arrival: string
+          requested_departure?: string | null
+          special_requests?: string | null
+          status?: string
+          stay_type: string
+          updated_at?: string
+        }
+        Update: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          admin_notes?: string | null
+          assigned_dock_location?: string | null
+          assigned_slip?: string | null
+          boat_id?: string
+          created_at?: string
+          id?: string
+          insurance_verified?: boolean | null
+          marina_id?: string | null
+          owner_id?: string
+          power_requirements?: string | null
+          registration_verified?: boolean | null
+          rejection_reason?: string | null
+          requested_arrival?: string
+          requested_departure?: string | null
+          special_requests?: string | null
+          status?: string
+          stay_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marina_reservations_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marina_reservations_marina_id_fkey"
+            columns: ["marina_id"]
+            isOneToOne: false
+            referencedRelation: "marinas"
             referencedColumns: ["id"]
           },
         ]
@@ -920,43 +1184,82 @@ export type Database = {
       }
       marinas: {
         Row: {
+          accepts_longterm: boolean | null
+          accepts_transient: boolean | null
           address: string | null
           amenities: string[]
+          amenities_list: string[] | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
+          description: string | null
           id: string
+          is_claimed: boolean | null
           latitude: number | null
           longitude: number | null
           manager_id: string
           marina_name: string
+          max_beam_ft: number | null
+          max_draft_ft: number | null
+          max_length_ft: number | null
+          min_depth_ft: number | null
+          power_options: string[] | null
           staging_dock_linear_footage: number
           total_slips: number
           updated_at: string
+          website_url: string | null
         }
         Insert: {
+          accepts_longterm?: boolean | null
+          accepts_transient?: boolean | null
           address?: string | null
           amenities?: string[]
+          amenities_list?: string[] | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_claimed?: boolean | null
           latitude?: number | null
           longitude?: number | null
           manager_id: string
           marina_name: string
+          max_beam_ft?: number | null
+          max_draft_ft?: number | null
+          max_length_ft?: number | null
+          min_depth_ft?: number | null
+          power_options?: string[] | null
           staging_dock_linear_footage?: number
           total_slips?: number
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
+          accepts_longterm?: boolean | null
+          accepts_transient?: boolean | null
           address?: string | null
           amenities?: string[]
+          amenities_list?: string[] | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_claimed?: boolean | null
           latitude?: number | null
           longitude?: number | null
           manager_id?: string
           marina_name?: string
+          max_beam_ft?: number | null
+          max_draft_ft?: number | null
+          max_length_ft?: number | null
+          min_depth_ft?: number | null
+          power_options?: string[] | null
           staging_dock_linear_footage?: number
           total_slips?: number
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: []
       }

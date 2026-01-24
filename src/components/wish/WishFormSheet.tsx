@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, Loader2, MapPin } from "lucide-react";
 import { useWishForm, SERVICE_CATEGORIES, ServiceCategory, ServiceRate } from "@/hooks/useWishForm";
 import { useAllProviderServices, ProviderService } from "@/hooks/useProviderServices";
 import { formatPrice } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { ReservationRequestSheet } from "@/components/marina/ReservationRequestSheet";
 
 interface Boat {
   id: string;
@@ -32,12 +33,13 @@ interface WishFormSheetProps {
   onSuccess?: () => void;
 }
 
-type Step = "select-boat" | "select-category" | "form";
+type Step = "select-boat" | "select-category" | "form" | "find-marina";
 
-const categoryIcons = {
+const categoryIcons: Record<string, typeof Sparkles> = {
   wash_detail: Sparkles,
   mechanical: Wrench,
   visual_cosmetic: Paintbrush,
+  find_marina: MapPin,
 };
 
 // Map categories to provider service categories
@@ -59,6 +61,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [internalBoats, setInternalBoats] = useState<Boat[]>([]);
+  const [showMarinaReservation, setShowMarinaReservation] = useState(false);
 
   const { loading, serviceRates, fetchServiceRates, calculatePrice, uploadPhotos, submitWish } = useWishForm();
   
@@ -304,6 +307,22 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
             );
           }
         )}
+
+        {/* Find Marina Option */}
+        <Card
+          className="cursor-pointer transition-all hover:border-primary border-dashed"
+          onClick={() => setShowMarinaReservation(true)}
+        >
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+              <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <div className="font-medium">Find a Marina</div>
+              <div className="text-sm text-muted-foreground">Request a slip for transient or long-term stays</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -546,22 +565,41 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
-        <SheetHeader className="text-left">
-          <SheetTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            Make a Wish
-          </SheetTitle>
-          <SheetDescription>Request service for your boat</SheetDescription>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+          <SheetHeader className="text-left">
+            <SheetTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Make a Wish
+            </SheetTitle>
+            <SheetDescription>Request service for your boat</SheetDescription>
+          </SheetHeader>
 
-        <div className="mt-6">
-          {step === "select-boat" && renderBoatSelection()}
-          {step === "select-category" && renderCategorySelection()}
-          {step === "form" && renderForm()}
-        </div>
-      </SheetContent>
-    </Sheet>
+          <div className="mt-6">
+            {step === "select-boat" && renderBoatSelection()}
+            {step === "select-category" && renderCategorySelection()}
+            {step === "form" && renderForm()}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Marina Reservation Sheet */}
+      <ReservationRequestSheet
+        open={showMarinaReservation}
+        onOpenChange={(open) => {
+          setShowMarinaReservation(open);
+          if (!open) {
+            // Close main sheet when reservation is done
+          }
+        }}
+        boats={effectiveBoats}
+        onSuccess={() => {
+          setShowMarinaReservation(false);
+          onOpenChange(false);
+          onSuccess?.();
+        }}
+      />
+    </>
   );
 }

@@ -11,6 +11,9 @@ import { SlipManager } from "@/components/marina/SlipManager";
 import { WelcomePacketManager } from "@/components/marina/WelcomePacketManager";
 import { QRCodeGenerator } from "@/components/marina/QRCodeGenerator";
 import { AdminProviderReview } from "@/components/provider/AdminProviderReview";
+import { LiveDockList } from "@/components/marina/LiveDockList";
+import { ReservationManager } from "@/components/marina/ReservationManager";
+import { MarinaAdminPanel } from "@/components/marina/MarinaAdminPanel";
 // BottomNav removed - handled by StaffLayout
 
 
@@ -82,6 +85,11 @@ const MarinaManagement = () => {
       </header>
 
       <main className="px-4 py-6 space-y-6">
+        {/* Who's on Site - Live Dock List */}
+        <LiveDockList />
+
+        {/* Reservation Manager */}
+        <ReservationManager />
 
         {/* Staging Dock */}
         <StagingDockView
@@ -115,6 +123,9 @@ const MarinaManagement = () => {
           onDelete={deleteFile}
           onToggleActive={toggleFileActive}
         />
+
+        {/* Marina Admin Panel - For adding/managing marina listings */}
+        {isAdmin && <MarinaAdminPanel />}
 
         {/* Admin Provider Review */}
         {isAdmin && <AdminProviderReview />}
