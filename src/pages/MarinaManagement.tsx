@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Anchor, ArrowLeft, Settings } from "lucide-react";
-import { useMarinaSettings, MarinaModule } from "@/hooks/useMarinaSettings";
+import { Anchor, ArrowLeft } from "lucide-react";
+import { useMarinaSettings } from "@/hooks/useMarinaSettings";
 import { useWelcomePacket } from "@/hooks/useWelcomePacket";
-import { ModuleToggle } from "@/components/marina/ModuleToggle";
 import { StagingDockView } from "@/components/marina/StagingDockView";
 import { SlipManager } from "@/components/marina/SlipManager";
 import { WelcomePacketManager } from "@/components/marina/WelcomePacketManager";
@@ -14,7 +13,6 @@ import { QRCodeGenerator } from "@/components/marina/QRCodeGenerator";
 import { AdminProviderReview } from "@/components/provider/AdminProviderReview";
 // BottomNav removed - handled by StaffLayout
 
-const ALL_MODULES: MarinaModule[] = ["dry_stack", "ship_store", "fuel_dock", "service_yard"];
 
 const MarinaManagement = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -84,22 +82,6 @@ const MarinaManagement = () => {
       </header>
 
       <main className="px-4 py-6 space-y-6">
-        {/* Module Toggles */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Plug-ins
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ModuleToggle
-              modules={ALL_MODULES}
-              enabledModules={settings?.enabled_modules || []}
-              onToggle={toggleModule}
-            />
-          </CardContent>
-        </Card>
 
         {/* Staging Dock */}
         <StagingDockView
