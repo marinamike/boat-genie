@@ -6,10 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Anchor, ArrowLeft, User, LogOut, Save, Loader2 } from "lucide-react";
+import { Anchor, ArrowLeft, User, LogOut, Save, Loader2, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, AppRole } from "@/hooks/useUserRole";
 import { RoleSelector } from "@/components/onboarding/RoleSelector";
+import { ModuleToggle } from "@/components/marina/ModuleToggle";
+import { useMarinaSettings, MarinaModule } from "@/hooks/useMarinaSettings";
+
+const ALL_MODULES: MarinaModule[] = ["dry_stack", "ship_store", "fuel_dock", "service_yard"];
 // BottomNav removed - handled by role-specific layouts
 
 interface Profile {
@@ -29,6 +33,7 @@ const Profile = () => {
   const { toast } = useToast();
   
   const { role, isAdmin, hasMarina, updateRole, loading: roleLoading, refetch: refetchRole } = useUserRole();
+  const { settings, toggleModule, loading: marinaLoading } = useMarinaSettings();
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -129,7 +134,7 @@ const Profile = () => {
     navigate("/login");
   };
 
-  if ((loading || roleLoading) && !safetyTimeoutHit) {
+  if ((loading || roleLoading || marinaLoading) && !safetyTimeoutHit) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Anchor className="w-12 h-12 text-primary animate-pulse" />
@@ -219,6 +224,29 @@ const Profile = () => {
             <RoleSelector selectedRole={role} onSelect={handleRoleSelect} />
           </CardContent>
         </Card>
+
+        {/* Marina Plug-ins - Only for Marina Managers */}
+        {isAdmin && settings && (
+          <>
+            <Separator />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Plug-ins
+                </CardTitle>
+                <CardDescription>Enable or disable marina features</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ModuleToggle
+                  modules={ALL_MODULES}
+                  enabledModules={settings.enabled_modules || []}
+                  onToggle={toggleModule}
+                />
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         <Separator />
 
