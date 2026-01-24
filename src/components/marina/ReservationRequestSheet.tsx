@@ -9,7 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, AlertTriangle, CheckCircle, FileText, Upload, ChevronLeft, Anchor, Ship, Ruler, Waves, Zap } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, AlertTriangle, CheckCircle, FileText, Upload, ChevronLeft, Anchor, Ship, Ruler, Waves, Zap, MapPin, Search } from "lucide-react";
 import { useMarinaReservations, StayType } from "@/hooks/useMarinaReservations";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -35,9 +36,11 @@ interface Marina {
   id: string;
   marina_name: string;
   address: string | null;
-  accepts_transient: boolean;
-  accepts_longterm: boolean;
+  accepts_transient: boolean | null;
+  accepts_longterm: boolean | null;
   power_options: string[] | null;
+  max_length_ft?: number | null;
+  transient_rate_per_ft?: number | null;
 }
 
 interface ReservationRequestSheetProps {
@@ -49,7 +52,7 @@ interface ReservationRequestSheetProps {
   onSuccess?: () => void;
 }
 
-type Step = "select-boat" | "select-stay" | "vessel-specs" | "form" | "upload-docs";
+type Step = "select-boat" | "select-marina" | "select-stay" | "vessel-specs" | "form" | "upload-docs";
 
 const STAY_TYPES: { value: StayType; label: string; description: string; requiresDocs: boolean }[] = [
   {
@@ -89,6 +92,7 @@ export function ReservationRequestSheet({
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("select-boat");
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
+  const [selectedMarina, setSelectedMarina] = useState<Marina | null>(null);
   const [selectedStayType, setSelectedStayType] = useState<StayType | null>(null);
   const [arrivalDate, setArrivalDate] = useState("");
   const [departureDate, setDepartureDate] = useState("");
@@ -101,11 +105,16 @@ export function ReservationRequestSheet({
   const [fetchedMarina, setFetchedMarina] = useState<Marina | null>(null);
   const [boatSpecs, setBoatSpecs] = useState<BoatSpecs | null>(null);
   const [loadingSpecs, setLoadingSpecs] = useState(false);
+  
+  // Marina search state
+  const [marinaSearch, setMarinaSearch] = useState("");
+  const [availableMarinas, setAvailableMarinas] = useState<Marina[]>([]);
+  const [loadingMarinas, setLoadingMarinas] = useState(false);
 
   const { createReservation, checkDocumentsVerified } = useMarinaReservations();
 
-  // Use prop marina or fetched marina
-  const marina = marinaProp || fetchedMarina;
+  // Use prop marina, selected marina, or fetched marina
+  const marina = marinaProp || selectedMarina || fetchedMarina;
 
   // Fetch marina if preselectedMarinaId provided
   useEffect(() => {
@@ -113,7 +122,7 @@ export function ReservationRequestSheet({
       if (preselectedMarinaId && !marinaProp && open) {
         const { data } = await supabase
           .from("marinas")
-          .select("id, marina_name, address, accepts_transient, accepts_longterm, power_options")
+          .select("id, marina_name, address, accepts_transient, accepts_longterm, power_options, max_length_ft, transient_rate_per_ft")
           .eq("id", preselectedMarinaId)
           .single();
         if (data) {
@@ -123,6 +132,25 @@ export function ReservationRequestSheet({
     };
     fetchMarina();
   }, [preselectedMarinaId, marinaProp, open]);
+
+  // Fetch available marinas for search
+  useEffect(() => {
+    const fetchMarinas = async () => {
+      if (open && step === "select-marina") {
+        setLoadingMarinas(true);
+        const { data } = await supabase
+          .from("marinas")
+          .select("id, marina_name, address, accepts_transient, accepts_longterm, power_options, max_length_ft, transient_rate_per_ft")
+          .or("accepts_transient.eq.true,accepts_longterm.eq.true")
+          .order("marina_name");
+        if (data) {
+          setAvailableMarinas(data as Marina[]);
+        }
+        setLoadingMarinas(false);
+      }
+    };
+    fetchMarinas();
+  }, [open, step]);
 
   // Fetch boats if not provided
   useEffect(() => {
@@ -173,11 +201,20 @@ export function ReservationRequestSheet({
 
   const effectiveBoats = boats.length > 0 ? boats : internalBoats;
 
+  // Filter marinas by search
+  const filteredMarinas = marinaSearch
+    ? availableMarinas.filter(m => 
+        m.marina_name.toLowerCase().includes(marinaSearch.toLowerCase()) ||
+        m.address?.toLowerCase().includes(marinaSearch.toLowerCase())
+      )
+    : availableMarinas;
+
   // Reset when closed
   useEffect(() => {
     if (!open) {
       setStep("select-boat");
       setSelectedBoat(null);
+      setSelectedMarina(null);
       setSelectedStayType(null);
       setArrivalDate("");
       setDepartureDate("");
@@ -185,16 +222,22 @@ export function ReservationRequestSheet({
       setSpecialRequests("");
       setDocStatus(null);
       setBoatSpecs(null);
+      setMarinaSearch("");
     }
   }, [open]);
 
-  // Auto-select if only one boat
+  // Auto-select if only one boat and no marina pre-selected
   useEffect(() => {
     if (open && step === "select-boat" && effectiveBoats.length === 1) {
       setSelectedBoat(effectiveBoats[0]);
-      setStep("select-stay");
+      // If marina is already set, go to stay selection; otherwise go to marina selection
+      if (marinaProp || fetchedMarina) {
+        setStep("select-stay");
+      } else {
+        setStep("select-marina");
+      }
     }
-  }, [open, effectiveBoats, step]);
+  }, [open, effectiveBoats, step, marinaProp, fetchedMarina]);
 
   // Check documents when selecting long-term stay
   useEffect(() => {
@@ -264,7 +307,12 @@ export function ReservationRequestSheet({
             )}
             onClick={() => {
               setSelectedBoat(boat);
-              setStep("select-stay");
+              // If marina is already set, go to stay selection; otherwise go to marina selection
+              if (marinaProp || fetchedMarina) {
+                setStep("select-stay");
+              } else {
+                setStep("select-marina");
+              }
             }}
           >
             <CardContent className="p-4">
@@ -279,13 +327,109 @@ export function ReservationRequestSheet({
     </div>
   );
 
-  const renderStaySelection = () => (
+  const renderMarinaSelection = () => (
     <div className="space-y-4">
       <Button type="button" variant="ghost" size="sm" onClick={() => setStep("select-boat")} className="mb-2">
         <ChevronLeft className="w-4 h-4 mr-1" /> Back
       </Button>
       <div className="flex items-center gap-2 pb-2 border-b">
         <Badge variant="secondary">{selectedBoat?.name}</Badge>
+      </div>
+      
+      <p className="text-sm text-muted-foreground">Where would you like to dock?</p>
+      
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search marinas..."
+          value={marinaSearch}
+          onChange={(e) => setMarinaSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      {loadingMarinas ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : filteredMarinas.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <MapPin className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No marinas found</p>
+        </div>
+      ) : (
+        <ScrollArea className="h-[300px]">
+          <div className="space-y-2 pr-4">
+            {filteredMarinas.map((m) => {
+              const boatLength = selectedBoat?.length_ft || 0;
+              const fitsLength = !m.max_length_ft || boatLength <= m.max_length_ft;
+              
+              return (
+                <Card
+                  key={m.id}
+                  className={cn(
+                    "cursor-pointer transition-all hover:border-primary",
+                    selectedMarina?.id === m.id && "border-primary bg-primary/5",
+                    !fitsLength && "opacity-60"
+                  )}
+                  onClick={() => {
+                    setSelectedMarina(m);
+                    setStep("select-stay");
+                  }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{m.marina_name}</div>
+                        {m.address && (
+                          <div className="text-sm text-muted-foreground truncate">{m.address}</div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {m.accepts_transient && (
+                            <Badge variant="outline" className="text-xs">Transient</Badge>
+                          )}
+                          {m.accepts_longterm && (
+                            <Badge variant="outline" className="text-xs">Long-term</Badge>
+                          )}
+                          {m.transient_rate_per_ft && (
+                            <span className="text-xs text-muted-foreground">
+                              ${m.transient_rate_per_ft}/ft/night
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {!fitsLength && (
+                        <Badge variant="destructive" className="shrink-0 text-xs">
+                          Max {m.max_length_ft}ft
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      )}
+    </div>
+  );
+
+  const renderStaySelection = () => (
+    <div className="space-y-4">
+      <Button type="button" variant="ghost" size="sm" onClick={() => {
+        // Go back to marina selection if we selected one, otherwise back to boat
+        if (selectedMarina && !marinaProp && !fetchedMarina) {
+          setStep("select-marina");
+        } else {
+          setStep("select-boat");
+        }
+      }} className="mb-2">
+        <ChevronLeft className="w-4 h-4 mr-1" /> Back
+      </Button>
+      <div className="flex items-center gap-2 pb-2 border-b flex-wrap">
+        <Badge variant="secondary">{selectedBoat?.name}</Badge>
+        {marina && <Badge>{marina.marina_name}</Badge>}
       </div>
       <p className="text-sm text-muted-foreground">What type of stay are you requesting?</p>
       <div className="space-y-2">
@@ -556,6 +700,7 @@ export function ReservationRequestSheet({
           </SheetTitle>
           <SheetDescription>
             {step === "select-boat" && "Select your vessel"}
+            {step === "select-marina" && "Choose a marina"}
             {step === "select-stay" && "Choose your stay type"}
             {step === "upload-docs" && "Upload required documents"}
             {step === "vessel-specs" && "Confirm vessel specifications"}
@@ -564,6 +709,7 @@ export function ReservationRequestSheet({
         </SheetHeader>
 
         {step === "select-boat" && renderBoatSelection()}
+        {step === "select-marina" && renderMarinaSelection()}
         {step === "select-stay" && renderStaySelection()}
         {step === "upload-docs" && renderDocUpload()}
         {step === "vessel-specs" && renderVesselSpecs()}
