@@ -6,16 +6,18 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export function StaffLayout() {
   const location = useLocation();
-  const { role } = useAuth();
+  const { role, isGodModeUser, isPreviewMode } = useAuth();
   
-  const isAdmin = role === "admin";
+  // Only show God Mode-only navigation when actually in God Mode (not previewing another role).
+  const showGodModeNav = isGodModeUser && !isPreviewMode;
+  const isMarinaManager = role === "admin";
 
   // Staff/Admin navigation - operations focused
   const staffNavItems = [
     { href: "/operations", icon: ClipboardCheck, label: "QC Queue" },
     { href: "/dock", icon: Map, label: "Dock View" },
-    ...(isAdmin ? [{ href: "/admin", icon: UserCheck, label: "Approvals" }] : []),
-    ...(isAdmin ? [{ href: "/marina", icon: Building2, label: "Marina" }] : []),
+    ...(showGodModeNav ? [{ href: "/admin", icon: UserCheck, label: "Approvals" }] : []),
+    ...(isMarinaManager ? [{ href: "/marina", icon: Building2, label: "Marina" }] : []),
     { href: "/profile", icon: User, label: "Profile" },
   ];
 
