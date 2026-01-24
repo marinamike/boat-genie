@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Anchor, Ship, Plus, Sparkles, LogOut, Pencil, Lock, ChevronDown, MapPin, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-// BottomNav removed - handled by OwnerLayout
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVessel } from "@/contexts/VesselContext";
@@ -18,6 +17,7 @@ import { PendingQuotesSection } from "@/components/owner/PendingQuotesSection";
 import { MarineWeatherWidget } from "@/components/weather/MarineWeatherWidget";
 import { TideChart } from "@/components/weather/TideChart";
 import { useMarineWeather } from "@/hooks/useMarineWeather";
+import { MarineLoadingScreen } from "@/components/ui/marine-loading";
 
 interface Boat {
   id: string;
@@ -225,13 +225,7 @@ const Dashboard = () => {
   };
 
   if (authLoading || dataLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse">
-          <Anchor className="w-12 h-12 text-primary" />
-        </div>
-      </div>
-    );
+    return <MarineLoadingScreen message="Preparing your dashboard..." />;
   }
 
   return (

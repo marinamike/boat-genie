@@ -49,6 +49,10 @@ export default function RoleSwitcher() {
     // Save to localStorage
     localStorage.setItem(PREVIEW_ROLE_KEY, newRole);
     
+    // Clear React Query cache to ensure fresh data for new role
+    // This ensures Mapbox filters and all queries refresh
+    window.localStorage.setItem("role_switch_pending", "true");
+    
     // Navigate to the appropriate dashboard for that role
     const targetRoute = ROLE_ROUTES[newRole];
     window.location.href = targetRoute;

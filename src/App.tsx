@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { VesselProvider } from "@/contexts/VesselContext";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { OwnerLayout, ProviderLayout, StaffLayout, MarinaLayout } from "@/layouts";
+import { MarineLoadingScreen } from "@/components/ui/marine-loading";
 
 // Page imports
 import Index from "./pages/Index";
@@ -39,7 +40,23 @@ import MarinaReservationsPage from "./pages/MarinaReservationsPage";
 import MarinaLeasesPage from "./pages/MarinaLeasesPage";
 import MarinaMessagesPage from "./pages/MarinaMessagesPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      staleTime: 30 * 1000,
+    },
+  },
+});
+
+// Clear cache on role switch to ensure fresh data
+if (typeof window !== "undefined") {
+  const roleSwitchPending = localStorage.getItem("role_switch_pending");
+  if (roleSwitchPending) {
+    localStorage.removeItem("role_switch_pending");
+    queryClient.clear();
+  }
+}
 
 /**
  * Role-based route renderer with strict layout isolation.
@@ -48,13 +65,9 @@ const queryClient = new QueryClient();
 function RoleBasedRoutes() {
   const { role, loading, user } = useAuth();
 
-  // Show nothing while auth is loading
+  // Show marine-themed loading while auth is loading
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <MarineLoadingScreen message="Preparing your dashboard..." />;
   }
 
   // Public routes for unauthenticated users
