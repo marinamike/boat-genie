@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Crown, TrendingUp, UserCheck, Briefcase, Users, Shield, AlertTriangle, MessageSquare, Database } from "lucide-react";
+import { Loader2, Crown, TrendingUp, UserCheck, Briefcase, Users, Shield, AlertTriangle, MessageSquare, Database, Mail } from "lucide-react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { MarketplaceHealthCard } from "@/components/admin/MarketplaceHealthCard";
 import { ProviderApprovalQueue } from "@/components/admin/ProviderApprovalQueue";
@@ -12,6 +12,7 @@ import { InsuranceExpiryAlerts } from "@/components/admin/InsuranceExpiryAlerts"
 import { DisputedJobsPanel } from "@/components/admin/DisputedJobsPanel";
 import { ReviewModerationPanel } from "@/components/admin/ReviewModerationPanel";
 import { MarinaSeedButton } from "@/components/marina/MarinaSeedButton";
+import { MarinaLeadTracker } from "@/components/admin/MarinaLeadTracker";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
         />
 
         <Tabs defaultValue="health" className="space-y-6">
-          <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+          <TabsList className="grid grid-cols-8 w-full max-w-4xl">
             <TabsTrigger value="health" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">Health</span>
@@ -114,6 +115,10 @@ export default function AdminDashboard() {
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
             </TabsTrigger>
+            <TabsTrigger value="leads" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              <span className="hidden sm:inline">Leads</span>
+            </TabsTrigger>
             <TabsTrigger value="seed" className="flex items-center gap-2">
               <Database className="w-4 h-4" />
               <span className="hidden sm:inline">Seed</span>
@@ -142,6 +147,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="users" className="space-y-6">
             <UserManagement users={users} onUpdateRole={updateUserRole} />
+          </TabsContent>
+
+          <TabsContent value="leads" className="space-y-6">
+            <MarinaLeadTracker />
           </TabsContent>
 
           <TabsContent value="seed" className="space-y-6">

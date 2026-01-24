@@ -48,6 +48,15 @@ interface CreateReservationParams {
   requestedDeparture?: string;
   powerRequirements?: string;
   specialRequests?: string;
+  // Vessel specs for lead email
+  vesselSpecs?: {
+    loa: number | null;
+    beam: number | null;
+    draft: number | null;
+    power: string | null;
+    vesselType: string;
+    imageUrl: string | null;
+  };
 }
 
 export function useMarinaReservations(role: "owner" | "marina" = "owner") {
@@ -129,24 +138,99 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("marina_reservations").insert({
-        marina_id: params.marinaId || null,
-        boat_id: params.boatId,
-        owner_id: user.id,
-        stay_type: params.stayType,
-        requested_arrival: params.requestedArrival,
-        requested_departure: params.requestedDeparture || null,
-        power_requirements: params.powerRequirements || null,
-        special_requests: params.specialRequests || null,
-        status: "pending",
-      });
+      // Insert the reservation
+      const { data: reservation, error } = await supabase
+        .from("marina_reservations")
+        .insert({
+          marina_id: params.marinaId || null,
+          boat_id: params.boatId,
+          owner_id: user.id,
+          stay_type: params.stayType,
+          requested_arrival: params.requestedArrival,
+          requested_departure: params.requestedDeparture || null,
+          power_requirements: params.powerRequirements || null,
+          special_requests: params.specialRequests || null,
+          status: "pending",
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast({
-        title: "Reservation Submitted",
-        description: "Your reservation request has been sent",
-      });
+      // Check if marina is a subscriber (has is_claimed = true)
+      let isMarinaSubscriber = false;
+      let marinaData: { marina_name: string; contact_email: string | null; is_claimed: boolean } | null = null;
+
+      if (params.marinaId) {
+        const { data: marina } = await supabase
+          .from("marinas")
+          .select("marina_name, contact_email, is_claimed")
+          .eq("id", params.marinaId)
+          .single();
+        
+        marinaData = marina;
+        isMarinaSubscriber = marina?.is_claimed === true;
+      }
+
+      if (isMarinaSubscriber && marinaData) {
+        // Marina is a subscriber - create notification for dockmaster
+        const { data: marinaRow } = await supabase
+          .from("marinas")
+          .select("manager_id")
+          .eq("id", params.marinaId)
+          .single();
+
+        if (marinaRow?.manager_id) {
+          await supabase.from("notifications").insert({
+            user_id: marinaRow.manager_id,
+            type: "reservation_request",
+            title: "New Reservation Request",
+            message: `A ${params.vesselSpecs?.loa || "?"}ft vessel has requested a ${params.stayType} stay arriving ${params.requestedArrival}`,
+            related_id: reservation.id,
+          });
+        }
+
+        toast({
+          title: "Reservation Submitted",
+          description: `Your request has been sent to ${marinaData.marina_name}`,
+        });
+      } else if (marinaData?.contact_email) {
+        // Marina is NOT a subscriber - send lead email
+        try {
+          await supabase.functions.invoke("send-marina-lead", {
+            body: {
+              reservationId: reservation.id,
+              marinaName: marinaData.marina_name,
+              marinaEmail: marinaData.contact_email,
+              vesselSpecs: params.vesselSpecs || {
+                loa: null,
+                beam: null,
+                draft: null,
+                power: params.powerRequirements || null,
+                vesselType: "Vessel",
+                imageUrl: null,
+              },
+              dates: {
+                arrival: params.requestedArrival,
+                departure: params.requestedDeparture || null,
+              },
+              stayType: params.stayType,
+            },
+          });
+        } catch (leadError) {
+          console.error("Error sending lead email:", leadError);
+        }
+
+        toast({
+          title: "Request Submitted",
+          description: "We've notified the marina about your interest. They'll reach out if a slip is available.",
+        });
+      } else {
+        toast({
+          title: "Reservation Submitted",
+          description: "Your reservation request has been recorded",
+        });
+      }
 
       fetchReservations();
       return true;
@@ -168,6 +252,13 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
     adminNotes?: string
   ) => {
     try {
+      // Get reservation details first
+      const { data: reservation } = await supabase
+        .from("marina_reservations")
+        .select("owner_id, marina_id")
+        .eq("id", reservationId)
+        .single();
+
       const { error } = await supabase
         .from("marina_reservations")
         .update({
@@ -180,9 +271,32 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
 
       if (error) throw error;
 
+      // Get marina name for notification
+      let marinaName = "the marina";
+      if (reservation?.marina_id) {
+        const { data: marina } = await supabase
+          .from("marinas")
+          .select("marina_name")
+          .eq("id", reservation.marina_id)
+          .single();
+        if (marina) marinaName = marina.marina_name;
+      }
+
+      // Notify the owner
+      if (reservation?.owner_id) {
+        const slipMessage = assignedSlip ? ` at Slip ${assignedSlip}` : "";
+        await supabase.from("notifications").insert({
+          user_id: reservation.owner_id,
+          type: "reservation_approved",
+          title: "Reservation Approved! 🎉",
+          message: `Great news! ${marinaName} has approved your stay${slipMessage}.`,
+          related_id: reservationId,
+        });
+      }
+
       toast({
         title: "Reservation Approved",
-        description: "The reservation has been approved",
+        description: "The reservation has been approved and the owner has been notified",
       });
 
       fetchReservations();
