@@ -8,9 +8,9 @@ import {
   ArrowLeft,
   Ship,
   Sparkles,
-  Loader2,
   Download,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { useBoatLog, WorkOrderWithDetails } from "@/hooks/useBoatLog";
 import { WorkOrderDetailSheet } from "@/components/boatlog/WorkOrderDetailSheet";
@@ -26,7 +26,7 @@ import { BoatLogTabs } from "@/components/boatlog/BoatLogTabs";
 import { MaintenanceRecommendation } from "@/hooks/useEquipmentSpecs";
 import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { formatPrice } from "@/lib/pricing";
-// BottomNav removed - handled by OwnerLayout
+import { MarineLoadingScreen, TimelineSkeleton } from "@/components/ui/marine-loading";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVessel } from "@/contexts/VesselContext";
 
@@ -159,11 +159,7 @@ Generated on ${format(new Date(), "PPP 'at' p")}
   };
 
   if (loading || vesselsLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-      </div>
-    );
+    return <MarineLoadingScreen message="Loading your vessel history..." />;
   }
 
   // Empty state - no boats at all

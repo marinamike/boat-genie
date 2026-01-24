@@ -1,13 +1,14 @@
 import { Outlet } from "react-router-dom";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { LayoutDashboard, Briefcase, DollarSign, User } from "lucide-react";
+import { LayoutDashboard, Briefcase, ClipboardList, DollarSign, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Provider Navigation per spec: Dashboard, Service Menu, Active Jobs, Payouts
 const providerNavItems = [
   { href: "/provider", icon: LayoutDashboard, label: "Dashboard", tab: "dashboard" },
-  { href: "/provider", icon: Briefcase, label: "My Jobs", tab: "schedule" },
+  { href: "/provider", icon: ClipboardList, label: "Services", tab: "setup" },
+  { href: "/provider", icon: Briefcase, label: "Jobs", tab: "schedule" },
   { href: "/provider", icon: DollarSign, label: "Payouts", tab: "earnings" },
-  { href: "/provider", icon: User, label: "Profile", tab: "setup" },
 ];
 
 export function ProviderLayout() {
@@ -20,17 +21,14 @@ export function ProviderLayout() {
       <Outlet />
       
       {/* Provider-specific bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg">
         <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
           {providerNavItems.map((item, idx) => {
             const Icon = item.icon;
-            // For provider page items with tabs, check the tab param
-            // For other pages (like /profile), check the pathname
             const isActive = item.tab 
               ? location.pathname === "/provider" && currentTab === item.tab
               : location.pathname === item.href;
             
-            // Build the correct href with tab parameter if needed
             const linkHref = item.tab ? `${item.href}?tab=${item.tab}` : item.href;
 
             return (

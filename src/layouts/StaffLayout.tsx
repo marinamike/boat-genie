@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
-import { ClipboardCheck, Map, UserCheck, Building2, User } from "lucide-react";
+import { ClipboardCheck, Map, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -8,17 +8,10 @@ export function StaffLayout() {
   const location = useLocation();
   const { role, isGodModeUser, isPreviewMode } = useAuth();
   
-  // Only show God Mode-only navigation when actually in God Mode (not previewing another role).
-  const showGodModeNav = isGodModeUser && !isPreviewMode;
-  const isMarinaManager = role === "admin";
-
-  // Staff/Admin navigation - operations focused
-  // Marina Managers don't need QC Queue in their nav
+  // Staff Navigation: QC Queue, Dock View, Profile
   const staffNavItems = [
-    ...(!isMarinaManager ? [{ href: "/operations", icon: ClipboardCheck, label: "QC Queue" }] : []),
+    { href: "/operations", icon: ClipboardCheck, label: "QC Queue" },
     { href: "/dock", icon: Map, label: "Dock View" },
-    ...(showGodModeNav ? [{ href: "/admin", icon: UserCheck, label: "Approvals" }] : []),
-    ...(isMarinaManager ? [{ href: "/marina", icon: Building2, label: "Marina" }] : []),
     { href: "/profile", icon: User, label: "Profile" },
   ];
 
@@ -26,8 +19,8 @@ export function StaffLayout() {
     <div className="min-h-screen pb-20">
       <Outlet />
       
-      {/* Staff/Admin-specific bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
+      {/* Staff-specific bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg">
         <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
           {staffNavItems.map((item) => {
             const Icon = item.icon;

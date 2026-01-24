@@ -1,12 +1,13 @@
 import { Outlet } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Book, Sparkles, Wallet, User } from "lucide-react";
+import { Home, Book, Sparkles, Wallet, User, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Owner Navigation per spec: Home, Boat Log, Marina Search, My Wishes, Wallet
 const ownerNavItems = [
   { href: "/dashboard", icon: Home, label: "Home" },
   { href: "/boat-log", icon: Book, label: "Boat Log" },
-  { href: "/dashboard", icon: Sparkles, label: "Wish", action: "wish" },
+  { href: "/dashboard", icon: Sparkles, label: "Wishes", action: "wish" },
   { href: "/membership", icon: Wallet, label: "Wallet" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
@@ -19,7 +20,7 @@ export function OwnerLayout() {
       <Outlet />
       
       {/* Owner-specific bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg">
         <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
           {ownerNavItems.map((item) => {
             const Icon = item.icon;

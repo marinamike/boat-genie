@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Anchor, MessageSquare, Settings, RefreshCw } from "lucide-react";
+import { Anchor, MessageSquare, Settings, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { PendingReservationsCard } from "@/components/marina/dashboard/PendingReservationsCard";
 import { ArrivalsDepaturesCard } from "@/components/marina/dashboard/ArrivalsDepatures";
@@ -16,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { MarineLoadingScreen } from "@/components/ui/marine-loading";
 
 interface Marina {
   id: string;
@@ -97,11 +96,7 @@ const MarinaDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Anchor className="w-12 h-12 text-primary animate-pulse" />
-      </div>
-    );
+    return <MarineLoadingScreen message="Loading command center..." />;
   }
 
   return (

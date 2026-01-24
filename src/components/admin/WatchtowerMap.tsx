@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Map, RefreshCw, Loader2, Building2, Briefcase } from "lucide-react";
+import { Map, Building2, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { MapSkeleton } from "@/components/ui/marine-loading";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -220,9 +220,7 @@ export function WatchtowerMap() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex items-center justify-center h-[400px]">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
+          <MapSkeleton className="h-[400px]" />
         ) : (
           <div className="relative">
             <div 
