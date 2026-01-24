@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+export type PricingModel = "per_foot" | "flat_rate" | "per_hour";
+
 export interface ProviderService {
   id: string;
   provider_id: string;
   service_name: string;
-  pricing_model: "per_foot" | "flat_rate";
+  pricing_model: PricingModel;
   price: number;
   description: string | null;
   category: string;
@@ -26,6 +28,7 @@ const SERVICE_CATEGORIES = [
   "Canvas & Upholstery",
   "Fiberglass & Gelcoat",
   "Bottom Work",
+  "Captain/Crew",
   "General",
 ] as const;
 
@@ -76,7 +79,7 @@ export function useProviderServices(providerId?: string) {
       // Cast the pricing_model to our type
       const typedServices = (data || []).map(service => ({
         ...service,
-        pricing_model: service.pricing_model as "per_foot" | "flat_rate"
+        pricing_model: service.pricing_model as PricingModel
       }));
       
       setServices(typedServices);
@@ -255,10 +258,13 @@ export function useProviderServices(providerId?: string) {
     }
   };
 
-  // Calculate price based on service and boat length
-  const calculatePrice = (service: ProviderService, boatLengthFt?: number): number => {
+  // Calculate price based on service and boat length or hours
+  const calculatePrice = (service: ProviderService, boatLengthFt?: number, hours?: number): number => {
     if (service.pricing_model === "flat_rate") {
       return service.price;
+    }
+    if (service.pricing_model === "per_hour") {
+      return service.price * (hours || 1);
     }
     return service.price * (boatLengthFt || 0);
   };
@@ -306,7 +312,7 @@ export function useAllProviderServices(category?: string) {
         
         const typedServices = (data || []).map(service => ({
           ...service,
-          pricing_model: service.pricing_model as "per_foot" | "flat_rate",
+          pricing_model: service.pricing_model as PricingModel,
           provider: Array.isArray(service.provider) ? service.provider[0] : service.provider
         }));
         

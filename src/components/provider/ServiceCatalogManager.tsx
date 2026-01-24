@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Lock, Trash2, Edit2, DollarSign, Loader2, Package, AlertCircle } from "lucide-react";
-import { useProviderServices, ProviderService, NewProviderService } from "@/hooks/useProviderServices";
+import { useProviderServices, ProviderService, NewProviderService, PricingModel } from "@/hooks/useProviderServices";
 import { cn } from "@/lib/utils";
 
 export function ServiceCatalogManager() {
@@ -177,7 +177,7 @@ export function ServiceCatalogManager() {
                         <Label htmlFor="pricing_model">Pricing Model</Label>
                         <Select 
                           value={formData.pricing_model} 
-                          onValueChange={(value: "per_foot" | "flat_rate") => setFormData(prev => ({ ...prev, pricing_model: value }))}
+                          onValueChange={(value: PricingModel) => setFormData(prev => ({ ...prev, pricing_model: value }))}
                           disabled={editingService?.is_locked && !isAdmin}
                         >
                           <SelectTrigger className={cn(editingService?.is_locked && !isAdmin && "bg-muted cursor-not-allowed")}>
@@ -185,6 +185,7 @@ export function ServiceCatalogManager() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="per_foot">Per Foot</SelectItem>
+                            <SelectItem value="per_hour">Per Hour</SelectItem>
                             <SelectItem value="flat_rate">Flat Rate</SelectItem>
                           </SelectContent>
                         </Select>
@@ -193,7 +194,7 @@ export function ServiceCatalogManager() {
                       <div className="space-y-2">
                         <Label htmlFor="price" className="flex items-center gap-1">
                           <DollarSign className="w-3 h-3" />
-                          Price {formData.pricing_model === "per_foot" ? "(per ft)" : ""}
+                          Price {formData.pricing_model === "per_foot" ? "(per ft)" : formData.pricing_model === "per_hour" ? "(per hr)" : ""}
                         </Label>
                         <Input
                           id="price"
@@ -300,9 +301,12 @@ export function ServiceCatalogManager() {
                               {service.pricing_model === "per_foot" && (
                                 <span className="text-sm font-normal text-muted-foreground">/ft</span>
                               )}
+                              {service.pricing_model === "per_hour" && (
+                                <span className="text-sm font-normal text-muted-foreground">/hr</span>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {service.pricing_model === "per_foot" ? "Per Foot" : "Flat Rate"}
+                              {service.pricing_model === "per_foot" ? "Per Foot" : service.pricing_model === "per_hour" ? "Per Hour" : "Flat Rate"}
                             </div>
                           </div>
                           <div className="flex gap-1">
