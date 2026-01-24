@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Anchor, MessageSquare, Settings, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { PendingReservationsCard } from "@/components/marina/dashboard/PendingReservationsCard";
-import { UpcomingArrivalsCard } from "@/components/marina/dashboard/UpcomingArrivalsCard";
 import { ArrivalsDepaturesCard } from "@/components/marina/dashboard/ArrivalsDepatures";
 import { ActiveProvidersCard } from "@/components/marina/dashboard/ActiveProvidersCard";
 import { LeaseVaultCard } from "@/components/marina/dashboard/LeaseVaultCard";
@@ -145,9 +144,6 @@ const MarinaDashboard = () => {
             onApprove={handleApproveClick}
             onReject={handleRejectClick}
           />
-
-          {/* Upcoming Arrivals - Approved reservations awaiting check-in */}
-          <UpcomingArrivalsCard />
 
           {/* Arrivals & Departures - Today/Tomorrow */}
           <ArrivalsDepaturesCard />

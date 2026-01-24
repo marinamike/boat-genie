@@ -16,11 +16,10 @@ export function MarinaLayout() {
   
   const showAdminNav = isGodModeUser && !isPreviewMode;
 
-  // Marina Navigation per spec: Command Center, Slip Grid, On-Site Providers, Profile Settings
   const marinaNavItems = [
     { href: "/marina", icon: LayoutDashboard, label: "Command" },
     { href: "/marina/slips", icon: Ship, label: "Slips" },
-    { href: "/marina/reservations", icon: Users, label: "On-Site" },
+    { href: "/marina/reservations", icon: Users, label: "Reservations" },
     { href: "/marina/settings", icon: Settings, label: "Settings" },
     ...(showAdminNav ? [{ href: "/admin", icon: Crown, label: "God Mode" }] : []),
   ];
