@@ -14,6 +14,7 @@ import AddBoatForm, { BoatToEdit } from "@/components/AddBoatForm";
 import { WishFormSheet } from "@/components/wish/WishFormSheet";
 import { WishStatusCard } from "@/components/wish/WishStatusCard";
 import { PendingQuotesSection } from "@/components/owner/PendingQuotesSection";
+import { ReservationsSection } from "@/components/owner/ReservationsSection";
 import { MarineWeatherWidget } from "@/components/weather/MarineWeatherWidget";
 import { TideChart } from "@/components/weather/TideChart";
 import { useMarineWeather } from "@/hooks/useMarineWeather";
@@ -415,6 +416,9 @@ const Dashboard = () => {
             onQuoteAction={fetchWishes}
           />
         )}
+
+        {/* Reservations Section */}
+        {user && <ReservationsSection userId={user.id} />}
 
         {/* Active Wishes Section */}
         {wishes.length > 0 && (
