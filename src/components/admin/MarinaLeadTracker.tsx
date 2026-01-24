@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Mail, 
   Ship, 
@@ -10,9 +13,12 @@ import {
   TrendingUp, 
   ExternalLink,
   Loader2,
-  Anchor
+  Anchor,
+  CheckCircle,
+  Building2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 interface MarinaLead {
@@ -37,55 +43,113 @@ interface LeadStats {
   pending: number;
   sent: number;
   claimed: number;
-  topMarinas: { name: string; count: number }[];
+  topMarinas: { name: string; count: number; email?: string }[];
 }
 
 export function MarinaLeadTracker() {
   const [leads, setLeads] = useState<MarinaLead[]>([]);
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [claimDialog, setClaimDialog] = useState<{ name: string; email?: string } | null>(null);
+  const [managerEmail, setManagerEmail] = useState("");
+  const [claiming, setClaiming] = useState(false);
+  const { toast } = useToast();
+
+  const fetchLeads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("marina_leads")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setLeads((data as MarinaLead[]) || []);
+
+      // Calculate stats
+      if (data) {
+        const marinaCounts: Record<string, { count: number; email?: string }> = {};
+        data.forEach((lead) => {
+          if (!marinaCounts[lead.marina_name]) {
+            marinaCounts[lead.marina_name] = { count: 0, email: lead.marina_email || undefined };
+          }
+          marinaCounts[lead.marina_name].count++;
+        });
+
+        const topMarinas = Object.entries(marinaCounts)
+          .map(([name, data]) => ({ name, count: data.count, email: data.email }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+
+        setStats({
+          total: data.length,
+          pending: data.filter((l) => l.lead_status === "pending").length,
+          sent: data.filter((l) => l.sent_at).length,
+          claimed: data.filter((l) => l.claimed_at).length,
+          topMarinas,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching marina leads:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("marina_leads")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(100);
-
-        if (error) throw error;
-        setLeads((data as MarinaLead[]) || []);
-
-        // Calculate stats
-        if (data) {
-          const marinaCounts: Record<string, number> = {};
-          data.forEach((lead) => {
-            marinaCounts[lead.marina_name] = (marinaCounts[lead.marina_name] || 0) + 1;
-          });
-
-          const topMarinas = Object.entries(marinaCounts)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-
-          setStats({
-            total: data.length,
-            pending: data.filter((l) => l.lead_status === "pending").length,
-            sent: data.filter((l) => l.sent_at).length,
-            claimed: data.filter((l) => l.claimed_at).length,
-            topMarinas,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching marina leads:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchLeads();
   }, []);
+
+  const handleManualClaim = async () => {
+    if (!claimDialog || !managerEmail) return;
+    setClaiming(true);
+
+    try {
+      // Create a new marina record
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // First, check if a marina with this name already exists
+      const { data: existingMarina } = await supabase
+        .from("marinas")
+        .select("id")
+        .eq("marina_name", claimDialog.name)
+        .maybeSingle();
+
+      if (existingMarina) {
+        // Update existing marina as claimed
+        await supabase
+          .from("marinas")
+          .update({ is_claimed: true })
+          .eq("id", existingMarina.id);
+      } else {
+        // Create new marina record
+        await supabase.from("marinas").insert({
+          marina_name: claimDialog.name,
+          contact_email: claimDialog.email || managerEmail,
+          manager_id: user?.id, // Temporarily assign to admin
+          is_claimed: true,
+        });
+      }
+
+      // Mark all leads for this marina as claimed
+      await supabase
+        .from("marina_leads")
+        .update({ 
+          lead_status: "claimed",
+          claimed_at: new Date().toISOString(),
+        })
+        .eq("marina_name", claimDialog.name);
+
+      toast({ title: "Marina claimed successfully" });
+      setClaimDialog(null);
+      setManagerEmail("");
+      fetchLeads();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -137,13 +201,13 @@ export function MarinaLeadTracker() {
         </div>
       )}
 
-      {/* Top Unclaimed Marinas */}
+      {/* Top Unclaimed Marinas - Sales Targets */}
       {stats && stats.topMarinas.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
-              Top Unclaimed Marina Targets
+              Hot Sales Targets (Sorted by Request Volume)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -151,15 +215,30 @@ export function MarinaLeadTracker() {
               {stats.topMarinas.map((marina, index) => (
                 <div
                   key={marina.name}
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-muted-foreground w-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-muted-foreground w-8">
                       #{index + 1}
                     </span>
-                    <span className="font-medium">{marina.name}</span>
+                    <div>
+                      <span className="font-medium">{marina.name}</span>
+                      {marina.email && (
+                        <p className="text-xs text-muted-foreground">{marina.email}</p>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant="secondary">{marina.count} leads</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{marina.count} leads</Badge>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setClaimDialog({ name: marina.name, email: marina.email })}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Claim
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -248,6 +327,42 @@ export function MarinaLeadTracker() {
           )}
         </CardContent>
       </Card>
+
+      {/* Manual Claim Dialog */}
+      <Dialog open={!!claimDialog} onOpenChange={() => setClaimDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Manually Claim Marina
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Claiming <strong>{claimDialog?.name}</strong> will mark all leads for this marina as claimed and create a marina profile.
+            </p>
+            <div className="space-y-2">
+              <Label>Marina Manager Email</Label>
+              <Input
+                type="email"
+                placeholder="dockmaster@marina.com"
+                value={managerEmail}
+                onChange={(e) => setManagerEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                This email will receive an invite to manage their marina profile.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClaimDialog(null)}>Cancel</Button>
+            <Button onClick={handleManualClaim} disabled={claiming || !managerEmail}>
+              {claiming && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Claim Marina
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
