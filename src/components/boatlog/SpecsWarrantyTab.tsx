@@ -14,8 +14,11 @@ import {
 } from "lucide-react";
 import { useBoatWarranties, useWarrantyDefaults, BoatWarranty } from "@/hooks/useVesselSpecs";
 import { useBoatEquipment } from "@/hooks/useBoatEquipment";
+import { useBoatSpecs } from "@/hooks/useBoatSpecs";
+import { useMarineWeather } from "@/hooks/useMarineWeather";
 import { WarrantyEditSheet } from "./WarrantyEditSheet";
 import { VesselSpecSheet } from "./VesselSpecSheet";
+import { BridgeClearanceCalculator } from "@/components/weather/BridgeClearanceCalculator";
 import { format, isAfter, parseISO, addMonths } from "date-fns";
 
 interface SpecsWarrantyTabProps {
@@ -30,6 +33,10 @@ export function SpecsWarrantyTab({ boatId, boatName, boatMake, boatModel, boatYe
   const { warranties, loading: warrantiesLoading, createWarranty, updateWarranty, deleteWarranty, refetch } = useBoatWarranties(boatId);
   const { getWarrantyForBrand } = useWarrantyDefaults();
   const { equipment } = useBoatEquipment(boatId);
+  const { mergedSpecs } = useBoatSpecs(boatId, boatMake, boatModel);
+  
+  // Get tide data for bridge clearance calculator
+  const { data: weatherData } = useMarineWeather(26.1224, -80.1373, "Fort Lauderdale");
   
   const [editingWarranty, setEditingWarranty] = useState<BoatWarranty | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -131,7 +138,7 @@ export function SpecsWarrantyTab({ boatId, boatName, boatMake, boatModel, boatYe
           <TabsTrigger value="warranty">Warranty</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="specs" className="mt-4">
+        <TabsContent value="specs" className="mt-4 space-y-4">
           <VesselSpecSheet
             boatId={boatId}
             boatName={boatName}
@@ -139,6 +146,14 @@ export function SpecsWarrantyTab({ boatId, boatName, boatMake, boatModel, boatYe
             boatModel={boatModel}
             boatYear={boatYear}
           />
+          
+          {/* Bridge Clearance Calculator - only show if boat has bridge clearance data */}
+          {mergedSpecs.bridge_clearance_ft && weatherData?.tides && (
+            <BridgeClearanceCalculator
+              boatBridgeClearance={mergedSpecs.bridge_clearance_ft}
+              currentTideHeight={weatherData.tides.currentHeight}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="warranty" className="space-y-4 mt-4">

@@ -30,6 +30,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReservationRequestSheet } from "@/components/marina/ReservationRequestSheet";
+import { MarineWeatherWidget } from "@/components/weather/MarineWeatherWidget";
+import { TideChart } from "@/components/weather/TideChart";
+import { useMarineWeather } from "@/hooks/useMarineWeather";
 
 interface Marina {
   id: string;
@@ -78,6 +81,13 @@ export default function MarinaDetails() {
   const [loading, setLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [reservationOpen, setReservationOpen] = useState(false);
+
+  // Marine weather based on marina coordinates
+  const { data: weatherData, loading: weatherLoading, refetch: refetchWeather } = useMarineWeather(
+    marina?.latitude || null,
+    marina?.longitude || null,
+    marina?.marina_name
+  );
 
   useEffect(() => {
     const fetchMarina = async () => {
@@ -241,6 +251,16 @@ export default function MarinaDetails() {
               </a>
             </Button>
           )}
+        </div>
+
+        {/* Marine Weather & Tides */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <MarineWeatherWidget
+            data={weatherData}
+            loading={weatherLoading}
+            onRefresh={refetchWeather}
+          />
+          <TideChart data={weatherData?.tides || null} loading={weatherLoading} />
         </div>
 
         {/* Description */}
