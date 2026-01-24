@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Anchor, MessageSquare, Settings, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { PendingReservationsCard } from "@/components/marina/dashboard/PendingReservationsCard";
+import { UpcomingArrivalsCard } from "@/components/marina/dashboard/UpcomingArrivalsCard";
 import { ArrivalsDepaturesCard } from "@/components/marina/dashboard/ArrivalsDepatures";
 import { ActiveProvidersCard } from "@/components/marina/dashboard/ActiveProvidersCard";
 import { LeaseVaultCard } from "@/components/marina/dashboard/LeaseVaultCard";
@@ -140,14 +141,15 @@ const MarinaDashboard = () => {
       <main className="px-4 py-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Pending Reservations - Priority */}
-          <div className="md:col-span-2 lg:col-span-1">
-            <PendingReservationsCard 
-              onApprove={handleApproveClick}
-              onReject={handleRejectClick}
-            />
-          </div>
+          <PendingReservationsCard 
+            onApprove={handleApproveClick}
+            onReject={handleRejectClick}
+          />
 
-          {/* Arrivals & Departures */}
+          {/* Upcoming Arrivals - Approved reservations awaiting check-in */}
+          <UpcomingArrivalsCard />
+
+          {/* Arrivals & Departures - Today/Tomorrow */}
           <ArrivalsDepaturesCard />
 
           {/* Active Providers On-Site */}
