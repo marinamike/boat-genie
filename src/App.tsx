@@ -125,20 +125,20 @@ function RoleBasedRoutes() {
     case "admin":
       return (
         <Routes>
-          {/* Admin/Staff Layout - Full operations access */}
+          {/* Admin/Marina Manager Layout - Full operations access */}
           <Route element={<StaffLayout />}>
+            <Route path="/marina" element={<MarinaManagement />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/operations" element={<Operations />} />
-            <Route path="/marina" element={<MarinaManagement />} />
             <Route path="/dock" element={<DockView />} />
             <Route path="/dry-stack" element={<DryStackLaunch />} />
             <Route path="/register-marina" element={<RegisterMarina />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
-          {/* Redirect any non-admin routes to admin dashboard */}
-          <Route path="/" element={<Navigate to="/admin" replace />} />
-          <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-          <Route path="/provider" element={<Navigate to="/admin" replace />} />
+          {/* Default landing for Marina Managers is /marina, not /admin */}
+          <Route path="/" element={<Navigate to="/marina" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/marina" replace />} />
+          <Route path="/provider" element={<Navigate to="/marina" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       );
