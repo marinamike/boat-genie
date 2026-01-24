@@ -281,7 +281,7 @@ export function ReservationRequestSheet({
 
   const renderStaySelection = () => (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => setStep("select-boat")} className="mb-2">
+      <Button type="button" variant="ghost" size="sm" onClick={() => setStep("select-boat")} className="mb-2">
         <ChevronLeft className="w-4 h-4 mr-1" /> Back
       </Button>
       <div className="flex items-center gap-2 pb-2 border-b">
@@ -324,7 +324,7 @@ export function ReservationRequestSheet({
 
   const renderDocUpload = () => (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => setStep("select-stay")} className="mb-2">
+      <Button type="button" variant="ghost" size="sm" onClick={() => setStep("select-stay")} className="mb-2">
         <ChevronLeft className="w-4 h-4 mr-1" /> Back
       </Button>
 
@@ -369,6 +369,7 @@ export function ReservationRequestSheet({
 
       <div className="space-y-3">
         <Button
+          type="button"
           variant="outline"
           className="w-full"
           onClick={() => navigate("/boat-log")}
@@ -378,7 +379,7 @@ export function ReservationRequestSheet({
         </Button>
 
         {docStatus?.hasInsurance && docStatus?.hasRegistration && (
-          <Button className="w-full" onClick={() => setStep("vessel-specs")}>
+          <Button type="button" className="w-full" onClick={() => setStep("vessel-specs")}>
             Continue to Request
           </Button>
         )}
@@ -388,7 +389,7 @@ export function ReservationRequestSheet({
 
   const renderVesselSpecs = () => (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => setStep("select-stay")} className="mb-2">
+      <Button type="button" variant="ghost" size="sm" onClick={() => setStep("select-stay")} className="mb-2">
         <ChevronLeft className="w-4 h-4 mr-1" /> Back
       </Button>
 
@@ -449,7 +450,7 @@ export function ReservationRequestSheet({
             </AlertDescription>
           </Alert>
 
-          <Button className="w-full" onClick={() => setStep("form")}>
+          <Button type="button" className="w-full" onClick={() => setStep("form")}>
             Continue to Dates
           </Button>
         </>
@@ -459,7 +460,7 @@ export function ReservationRequestSheet({
 
   const renderForm = () => (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => setStep("vessel-specs")} className="mb-2">
+      <Button type="button" variant="ghost" size="sm" onClick={() => setStep("vessel-specs")} className="mb-2">
         <ChevronLeft className="w-4 h-4 mr-1" /> Back
       </Button>
 
@@ -528,6 +529,7 @@ export function ReservationRequestSheet({
       </div>
 
       <Button
+        type="button"
         className="w-full"
         onClick={handleSubmit}
         disabled={submitting || !arrivalDate}
