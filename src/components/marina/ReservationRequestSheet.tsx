@@ -239,10 +239,15 @@ export function ReservationRequestSheet({
     }
   }, [open, effectiveBoats, step, marinaProp, fetchedMarina]);
 
-  // Check documents when selecting long-term stay
+  // Check documents ONLY when the user is on the stay selection step.
+  // Otherwise this effect can override manual navigation (e.g. clicking "Continue to Dates").
   useEffect(() => {
     const checkDocs = async () => {
-      if (selectedBoat && selectedStayType && selectedStayType !== "transient") {
+      if (!open) return;
+      if (step !== "select-stay") return;
+      if (!selectedBoat || !selectedStayType) return;
+
+      if (selectedStayType !== "transient") {
         setCheckingDocs(true);
         const status = await checkDocumentsVerified(selectedBoat.id);
         setDocStatus(status);
@@ -254,15 +259,13 @@ export function ReservationRequestSheet({
         } else {
           setStep("vessel-specs");
         }
-      } else if (selectedStayType === "transient") {
+      } else {
         setStep("vessel-specs");
       }
     };
 
-    if (selectedStayType) {
-      checkDocs();
-    }
-  }, [selectedBoat, selectedStayType, checkDocumentsVerified]);
+    void checkDocs();
+  }, [open, step, selectedBoat, selectedStayType, checkDocumentsVerified]);
 
   const handleSubmit = async () => {
     if (!selectedBoat || !selectedStayType || !arrivalDate) return;
