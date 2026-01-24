@@ -36,6 +36,7 @@ interface ReservationRequestSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   marina?: Marina | null;
+  preselectedMarinaId?: string;
   boats?: Boat[];
   onSuccess?: () => void;
 }
@@ -72,7 +73,8 @@ const STAY_TYPES: { value: StayType; label: string; description: string; require
 export function ReservationRequestSheet({
   open,
   onOpenChange,
-  marina,
+  marina: marinaProp,
+  preselectedMarinaId,
   boats = [],
   onSuccess,
 }: ReservationRequestSheetProps) {
@@ -88,8 +90,29 @@ export function ReservationRequestSheet({
   const [docStatus, setDocStatus] = useState<{ hasInsurance: boolean; hasRegistration: boolean } | null>(null);
   const [checkingDocs, setCheckingDocs] = useState(false);
   const [internalBoats, setInternalBoats] = useState<Boat[]>([]);
+  const [fetchedMarina, setFetchedMarina] = useState<Marina | null>(null);
 
   const { createReservation, checkDocumentsVerified } = useMarinaReservations();
+
+  // Use prop marina or fetched marina
+  const marina = marinaProp || fetchedMarina;
+
+  // Fetch marina if preselectedMarinaId provided
+  useEffect(() => {
+    const fetchMarina = async () => {
+      if (preselectedMarinaId && !marinaProp && open) {
+        const { data } = await supabase
+          .from("marinas")
+          .select("id, marina_name, address, accepts_transient, accepts_longterm, power_options")
+          .eq("id", preselectedMarinaId)
+          .single();
+        if (data) {
+          setFetchedMarina(data as Marina);
+        }
+      }
+    };
+    fetchMarina();
+  }, [preselectedMarinaId, marinaProp, open]);
 
   // Fetch boats if not provided
   useEffect(() => {

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Anchor, ArrowLeft } from "lucide-react";
 import { useMarinaSettings } from "@/hooks/useMarinaSettings";
 import { useWelcomePacket } from "@/hooks/useWelcomePacket";
@@ -13,14 +12,50 @@ import { QRCodeGenerator } from "@/components/marina/QRCodeGenerator";
 import { AdminProviderReview } from "@/components/provider/AdminProviderReview";
 import { LiveDockList } from "@/components/marina/LiveDockList";
 import { ReservationManager } from "@/components/marina/ReservationManager";
-import { MarinaAdminPanel } from "@/components/marina/MarinaAdminPanel";
+import { MarinaProfileEditor } from "@/components/marina/MarinaProfileEditor";
+import { MarinaSeedButton } from "@/components/marina/MarinaSeedButton";
+import { useAuth } from "@/contexts/AuthContext";
 // BottomNav removed - handled by StaffLayout
 
 
+interface Marina {
+  id: string;
+  marina_name: string;
+  address: string | null;
+  description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  website_url: string | null;
+  max_length_ft: number | null;
+  max_beam_ft: number | null;
+  max_draft_ft: number | null;
+  min_depth_ft: number | null;
+  power_options: string[] | null;
+  transient_rate_per_ft: number | null;
+  monthly_base_rate: number | null;
+  require_insurance_long_term: boolean;
+  require_registration: boolean;
+  auto_approve_transient: boolean;
+  fuel_gas: boolean;
+  fuel_diesel: boolean;
+  has_pool: boolean;
+  has_pumpout: boolean;
+  has_laundry: boolean;
+  has_restaurant: boolean;
+  has_security: boolean;
+  has_wifi: boolean;
+  photos: string[];
+  accepts_transient: boolean;
+  accepts_longterm: boolean;
+}
+
 const MarinaManagement = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [marina, setMarina] = useState<Marina | null>(null);
   const navigate = useNavigate();
+  const { isGodModeUser } = useAuth();
 
   const { 
     settings, 
@@ -42,19 +77,32 @@ const MarinaManagement = () => {
     toggleFileActive,
   } = useWelcomePacket();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
+  const fetchMarina = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
-      const { data } = await supabase.rpc("is_admin");
-      setIsAdmin(!!data);
-      setLoading(false);
-    };
-    checkAuth();
+    // Fetch marina managed by this user
+    const { data } = await supabase
+      .from("marinas")
+      .select("*")
+      .eq("manager_id", user.id)
+      .maybeSingle();
+
+    if (data) {
+      const marinaData = data as any;
+      setMarina({
+        ...marinaData,
+        photos: Array.isArray(marinaData.photos) ? marinaData.photos : [],
+      });
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchMarina();
   }, [navigate]);
 
   if (loading || settingsLoading) {
@@ -77,7 +125,7 @@ const MarinaManagement = () => {
               <Anchor className="w-5 h-5 text-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-lg">{settings?.marina_name || "Marina Management"}</h1>
+              <h1 className="font-bold text-lg">{marina?.marina_name || settings?.marina_name || "Marina Management"}</h1>
               <p className="text-sm text-primary-foreground/80">Manager Dashboard</p>
             </div>
           </div>
@@ -85,6 +133,11 @@ const MarinaManagement = () => {
       </header>
 
       <main className="px-4 py-6 space-y-6">
+        {/* Marina Profile Editor - Only show if user has a marina */}
+        {marina && (
+          <MarinaProfileEditor marina={marina} onSave={fetchMarina} />
+        )}
+
         {/* Who's on Site - Live Dock List */}
         <LiveDockList />
 
@@ -111,7 +164,7 @@ const MarinaManagement = () => {
 
         {/* QR Code Generator */}
         <QRCodeGenerator
-          marinaId={settings?.id || null}
+          marinaId={settings?.id || marina?.id || null}
           slips={slips}
         />
 
@@ -124,11 +177,11 @@ const MarinaManagement = () => {
           onToggleActive={toggleFileActive}
         />
 
-        {/* Marina Admin Panel - For adding/managing marina listings */}
-        {isAdmin && <MarinaAdminPanel />}
+        {/* God Mode: Marina Seed Button */}
+        {isGodModeUser && <MarinaSeedButton />}
 
-        {/* Admin Provider Review */}
-        {isAdmin && <AdminProviderReview />}
+        {/* God Mode: Admin Provider Review */}
+        {isGodModeUser && <AdminProviderReview />}
       </main>
 
       {/* BottomNav handled by StaffLayout */}
