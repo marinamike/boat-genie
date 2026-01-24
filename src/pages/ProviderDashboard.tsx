@@ -214,22 +214,24 @@ const ProviderDashboard = () => {
               onValueChange={(value) => setSearchParams({ tab: value })}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger 
-                  value="schedule" 
-                  className="flex items-center gap-1"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Schedule</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="leads" 
-                  className="flex items-center gap-1"
-                >
-                  <Briefcase className="w-4 h-4" />
-                  <span>Leads</span>
-                </TabsTrigger>
-              </TabsList>
+              {(searchParams.get("tab") === "dashboard" || searchParams.get("tab") === "schedule" || searchParams.get("tab") === "leads" || !searchParams.get("tab")) && (
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger 
+                    value="schedule" 
+                    className="flex items-center gap-1"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Schedule</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="leads" 
+                    className="flex items-center gap-1"
+                  >
+                    <Briefcase className="w-4 h-4" />
+                    <span>Leads</span>
+                  </TabsTrigger>
+                </TabsList>
+              )}
 
               <TabsContent value="schedule">
                 {!canViewJobs ? (
