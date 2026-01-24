@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, AlertTriangle, CheckCircle, FileText, Upload, ChevronLeft, Anchor } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, FileText, Upload, ChevronLeft, Anchor, Ship, Ruler, Waves, Zap } from "lucide-react";
 import { useMarinaReservations, StayType } from "@/hooks/useMarinaReservations";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,14 @@ interface Boat {
   length_ft: number | null;
   make: string | null;
   model: string | null;
+  image_url?: string | null;
+}
+
+interface BoatSpecs {
+  loa_ft: number | null;
+  beam_ft: number | null;
+  draft_engines_down_ft: number | null;
+  shore_power: string | null;
 }
 
 interface Marina {
@@ -41,7 +49,7 @@ interface ReservationRequestSheetProps {
   onSuccess?: () => void;
 }
 
-type Step = "select-boat" | "select-stay" | "form" | "upload-docs";
+type Step = "select-boat" | "select-stay" | "vessel-specs" | "form" | "upload-docs";
 
 const STAY_TYPES: { value: StayType; label: string; description: string; requiresDocs: boolean }[] = [
   {
@@ -91,6 +99,8 @@ export function ReservationRequestSheet({
   const [checkingDocs, setCheckingDocs] = useState(false);
   const [internalBoats, setInternalBoats] = useState<Boat[]>([]);
   const [fetchedMarina, setFetchedMarina] = useState<Marina | null>(null);
+  const [boatSpecs, setBoatSpecs] = useState<BoatSpecs | null>(null);
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
 
   const { createReservation, checkDocumentsVerified } = useMarinaReservations();
 
@@ -122,7 +132,7 @@ export function ReservationRequestSheet({
         if (user) {
           const { data } = await supabase
             .from("boats")
-            .select("id, name, length_ft, make, model")
+            .select("id, name, length_ft, make, model, image_url")
             .eq("owner_id", user.id);
           if (data) {
             setInternalBoats(data as Boat[]);
@@ -132,6 +142,34 @@ export function ReservationRequestSheet({
     };
     fetchBoats();
   }, [boats, open]);
+
+  // Fetch boat specs when boat is selected
+  useEffect(() => {
+    const fetchSpecs = async () => {
+      if (selectedBoat && open) {
+        setLoadingSpecs(true);
+        const { data } = await supabase
+          .from("boat_specs")
+          .select("loa_ft, beam_ft, draft_engines_down_ft, shore_power")
+          .eq("boat_id", selectedBoat.id)
+          .maybeSingle();
+        
+        if (data) {
+          setBoatSpecs(data as BoatSpecs);
+        } else {
+          // Use boat length as fallback for LOA
+          setBoatSpecs({
+            loa_ft: selectedBoat.length_ft,
+            beam_ft: null,
+            draft_engines_down_ft: null,
+            shore_power: null,
+          });
+        }
+        setLoadingSpecs(false);
+      }
+    };
+    fetchSpecs();
+  }, [selectedBoat, open]);
 
   const effectiveBoats = boats.length > 0 ? boats : internalBoats;
 
@@ -146,6 +184,7 @@ export function ReservationRequestSheet({
       setPowerRequirements("");
       setSpecialRequests("");
       setDocStatus(null);
+      setBoatSpecs(null);
     }
   }, [open]);
 
@@ -170,10 +209,10 @@ export function ReservationRequestSheet({
         if (!status.hasInsurance || !status.hasRegistration) {
           setStep("upload-docs");
         } else {
-          setStep("form");
+          setStep("vessel-specs");
         }
       } else if (selectedStayType === "transient") {
-        setStep("form");
+        setStep("vessel-specs");
       }
     };
 
@@ -192,8 +231,16 @@ export function ReservationRequestSheet({
       stayType: selectedStayType,
       requestedArrival: arrivalDate,
       requestedDeparture: departureDate || undefined,
-      powerRequirements: powerRequirements || undefined,
+      powerRequirements: powerRequirements || boatSpecs?.shore_power || undefined,
       specialRequests: specialRequests || undefined,
+      vesselSpecs: {
+        loa: boatSpecs?.loa_ft || selectedBoat.length_ft,
+        beam: boatSpecs?.beam_ft,
+        draft: boatSpecs?.draft_engines_down_ft,
+        power: powerRequirements || boatSpecs?.shore_power,
+        vesselType: `${selectedBoat.make || ""} ${selectedBoat.model || ""}`.trim() || "Vessel",
+        imageUrl: selectedBoat.image_url || null,
+      },
     });
 
     setSubmitting(false);
@@ -331,7 +378,7 @@ export function ReservationRequestSheet({
         </Button>
 
         {docStatus?.hasInsurance && docStatus?.hasRegistration && (
-          <Button className="w-full" onClick={() => setStep("form")}>
+          <Button className="w-full" onClick={() => setStep("vessel-specs")}>
             Continue to Request
           </Button>
         )}
@@ -339,7 +386,7 @@ export function ReservationRequestSheet({
     </div>
   );
 
-  const renderForm = () => (
+  const renderVesselSpecs = () => (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={() => setStep("select-stay")} className="mb-2">
         <ChevronLeft className="w-4 h-4 mr-1" /> Back
@@ -348,7 +395,81 @@ export function ReservationRequestSheet({
       <div className="flex items-center gap-2 pb-2 border-b flex-wrap">
         <Badge variant="secondary">{selectedBoat?.name}</Badge>
         <Badge variant="outline">{selectedStayType}</Badge>
+      </div>
+
+      {loadingSpecs ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <>
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4">
+              <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                <Ship className="w-4 h-4" />
+                Vessel Specifications
+              </h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <Ruler className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">LOA:</span>
+                  <span className="font-medium">
+                    {boatSpecs?.loa_ft || selectedBoat?.length_ft || "—"}ft
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Ruler className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Beam:</span>
+                  <span className="font-medium">
+                    {boatSpecs?.beam_ft || "—"}ft
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Waves className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Draft:</span>
+                  <span className="font-medium">
+                    {boatSpecs?.draft_engines_down_ft || "—"}ft
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Power:</span>
+                  <span className="font-medium">
+                    {boatSpecs?.shore_power || "—"}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Alert>
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>
+              These specs will be shared with the marina for slip compatibility.
+            </AlertDescription>
+          </Alert>
+
+          <Button className="w-full" onClick={() => setStep("form")}>
+            Continue to Dates
+          </Button>
+        </>
+      )}
+    </div>
+  );
+
+  const renderForm = () => (
+    <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => setStep("vessel-specs")} className="mb-2">
+        <ChevronLeft className="w-4 h-4 mr-1" /> Back
+      </Button>
+
+      <div className="flex items-center gap-2 pb-2 border-b flex-wrap">
+        <Badge variant="secondary">{selectedBoat?.name}</Badge>
+        <Badge variant="outline">{selectedStayType}</Badge>
         {marina && <Badge>{marina.marina_name}</Badge>}
+        <Badge variant="outline" className="text-xs">
+          {boatSpecs?.loa_ft || selectedBoat?.length_ft || "?"}ft LOA
+        </Badge>
       </div>
 
       <div className="space-y-4">
@@ -435,6 +556,7 @@ export function ReservationRequestSheet({
             {step === "select-boat" && "Select your vessel"}
             {step === "select-stay" && "Choose your stay type"}
             {step === "upload-docs" && "Upload required documents"}
+            {step === "vessel-specs" && "Confirm vessel specifications"}
             {step === "form" && "Complete your reservation details"}
           </SheetDescription>
         </SheetHeader>
@@ -442,6 +564,7 @@ export function ReservationRequestSheet({
         {step === "select-boat" && renderBoatSelection()}
         {step === "select-stay" && renderStaySelection()}
         {step === "upload-docs" && renderDocUpload()}
+        {step === "vessel-specs" && renderVesselSpecs()}
         {step === "form" && renderForm()}
       </SheetContent>
     </Sheet>
