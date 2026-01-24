@@ -2340,7 +2340,7 @@ export type Database = {
         | "cancelled"
       marina_module: "dry_stack" | "ship_store" | "fuel_dock" | "service_yard"
       membership_tier: "standard" | "genie"
-      pricing_model: "per_foot" | "flat_rate"
+      pricing_model: "per_foot" | "flat_rate" | "per_hour"
       quote_status: "pending" | "accepted" | "rejected" | "expired"
       service_type: "genie_service" | "pro_service"
       wish_form_status:
@@ -2507,7 +2507,7 @@ export const Constants = {
       ],
       marina_module: ["dry_stack", "ship_store", "fuel_dock", "service_yard"],
       membership_tier: ["standard", "genie"],
-      pricing_model: ["per_foot", "flat_rate"],
+      pricing_model: ["per_foot", "flat_rate", "per_hour"],
       quote_status: ["pending", "accepted", "rejected", "expired"],
       service_type: ["genie_service", "pro_service"],
       wish_form_status: [
