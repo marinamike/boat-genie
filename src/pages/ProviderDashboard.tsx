@@ -210,47 +210,26 @@ const ProviderDashboard = () => {
             )}
 
             <Tabs 
-              value={searchParams.get("tab") || (isActive ? "schedule" : "setup")} 
+              value={searchParams.get("tab") || "schedule"} 
               onValueChange={(value) => setSearchParams({ tab: value })}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="setup" className="flex items-center gap-1">
-                  <ClipboardList className="w-4 h-4" />
-                  <span className="hidden sm:inline">Setup</span>
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger 
                   value="schedule" 
                   className="flex items-center gap-1"
-                  disabled={!canViewJobs}
                 >
-                  {!canViewJobs && <Lock className="w-3 h-3" />}
                   <LayoutDashboard className="w-4 h-4" />
-                  <span className="hidden sm:inline">Schedule</span>
+                  <span>Schedule</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="leads" 
                   className="flex items-center gap-1"
-                  disabled={!canViewJobs}
                 >
-                  {!canViewJobs && <Lock className="w-3 h-3" />}
                   <Briefcase className="w-4 h-4" />
-                  <span className="hidden sm:inline">Leads</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="earnings" 
-                  className="flex items-center gap-1"
-                  disabled={!canViewJobs}
-                >
-                  {!canViewJobs && <Lock className="w-3 h-3" />}
-                  <DollarSign className="w-4 h-4" />
-                  <span className="hidden sm:inline">Earnings</span>
+                  <span>Leads</span>
                 </TabsTrigger>
               </TabsList>
-
-              <TabsContent value="setup">
-                <OnboardingChecklist onNavigateToSection={handleNavigateToSection} />
-              </TabsContent>
 
               <TabsContent value="schedule">
                 {!canViewJobs ? (
@@ -261,10 +240,7 @@ const ProviderDashboard = () => {
                       <p className="text-muted-foreground mb-4 max-w-md mx-auto">
                         Complete your setup checklist and get approved by an admin to access your operations dashboard.
                       </p>
-                      <Button onClick={() => {
-                        const setupTab = document.querySelector('[value="setup"]');
-                        if (setupTab) (setupTab as HTMLElement).click();
-                      }}>
+                      <Button onClick={() => setSearchParams({ tab: "setup" })}>
                         Complete Setup
                       </Button>
                     </CardContent>
@@ -298,6 +274,10 @@ const ProviderDashboard = () => {
                     submitting={submittingQuote}
                   />
                 )}
+              </TabsContent>
+
+              <TabsContent value="setup">
+                <OnboardingChecklist onNavigateToSection={handleNavigateToSection} />
               </TabsContent>
 
               <TabsContent value="earnings">
