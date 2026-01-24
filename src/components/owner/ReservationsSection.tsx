@@ -15,7 +15,7 @@ interface Reservation {
   assigned_slip: string | null;
   created_at: string;
   marina?: {
-    name: string;
+    marina_name: string;
   } | null;
   boat?: {
     name: string;
@@ -84,7 +84,7 @@ export function ReservationsSection({ userId }: ReservationsSectionProps) {
           requested_departure,
           assigned_slip,
           created_at,
-          marina:marinas(name),
+          marina:marinas(marina_name),
           boat:boats(name)
         `)
         .eq("owner_id", userId)
@@ -144,7 +144,7 @@ export function ReservationsSection({ userId }: ReservationsSectionProps) {
                     <div className="flex items-center gap-2 mb-1">
                       <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                       <span className="font-medium truncate">
-                        {reservation.marina?.name || "Marina Request"}
+                        {reservation.marina?.marina_name || "Marina Request"}
                       </span>
                     </div>
                     
