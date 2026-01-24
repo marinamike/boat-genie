@@ -26,6 +26,7 @@ import ProviderDashboard from "./pages/ProviderDashboard";
 // Staff/Admin pages
 import DockView from "./pages/DockView";
 import MarinaManagement from "./pages/MarinaManagement";
+import MarinaDetails from "./pages/MarinaDetails";
 import DryStackLaunch from "./pages/DryStackLaunch";
 import RegisterMarina from "./pages/RegisterMarina";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -73,6 +74,8 @@ function RoleBasedRoutes() {
             <Route path="/membership" element={<Membership />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
+          {/* Public marina details page accessible to owners */}
+          <Route path="/marina/:id" element={<MarinaDetails />} />
           {/* Redirect any non-owner routes to owner dashboard */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/provider" element={<Navigate to="/dashboard" replace />} />
@@ -135,6 +138,8 @@ function RoleBasedRoutes() {
             <Route path="/register-marina" element={<RegisterMarina />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
+          {/* Public marina details page */}
+          <Route path="/marina/:id" element={<MarinaDetails />} />
           {/* Default landing for Marina Managers is /marina, not /admin */}
           <Route path="/" element={<Navigate to="/marina" replace />} />
           <Route path="/dashboard" element={<Navigate to="/marina" replace />} />

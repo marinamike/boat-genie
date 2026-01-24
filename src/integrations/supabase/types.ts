@@ -1189,10 +1189,19 @@ export type Database = {
           address: string | null
           amenities: string[]
           amenities_list: string[] | null
+          auto_approve_transient: boolean | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
           description: string | null
+          fuel_diesel: boolean | null
+          fuel_gas: boolean | null
+          has_laundry: boolean | null
+          has_pool: boolean | null
+          has_pumpout: boolean | null
+          has_restaurant: boolean | null
+          has_security: boolean | null
+          has_wifi: boolean | null
           id: string
           is_claimed: boolean | null
           latitude: number | null
@@ -1203,9 +1212,14 @@ export type Database = {
           max_draft_ft: number | null
           max_length_ft: number | null
           min_depth_ft: number | null
+          monthly_base_rate: number | null
+          photos: Json | null
           power_options: string[] | null
+          require_insurance_long_term: boolean | null
+          require_registration: boolean | null
           staging_dock_linear_footage: number
           total_slips: number
+          transient_rate_per_ft: number | null
           updated_at: string
           website_url: string | null
         }
@@ -1215,10 +1229,19 @@ export type Database = {
           address?: string | null
           amenities?: string[]
           amenities_list?: string[] | null
+          auto_approve_transient?: boolean | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          fuel_diesel?: boolean | null
+          fuel_gas?: boolean | null
+          has_laundry?: boolean | null
+          has_pool?: boolean | null
+          has_pumpout?: boolean | null
+          has_restaurant?: boolean | null
+          has_security?: boolean | null
+          has_wifi?: boolean | null
           id?: string
           is_claimed?: boolean | null
           latitude?: number | null
@@ -1229,9 +1252,14 @@ export type Database = {
           max_draft_ft?: number | null
           max_length_ft?: number | null
           min_depth_ft?: number | null
+          monthly_base_rate?: number | null
+          photos?: Json | null
           power_options?: string[] | null
+          require_insurance_long_term?: boolean | null
+          require_registration?: boolean | null
           staging_dock_linear_footage?: number
           total_slips?: number
+          transient_rate_per_ft?: number | null
           updated_at?: string
           website_url?: string | null
         }
@@ -1241,10 +1269,19 @@ export type Database = {
           address?: string | null
           amenities?: string[]
           amenities_list?: string[] | null
+          auto_approve_transient?: boolean | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          fuel_diesel?: boolean | null
+          fuel_gas?: boolean | null
+          has_laundry?: boolean | null
+          has_pool?: boolean | null
+          has_pumpout?: boolean | null
+          has_restaurant?: boolean | null
+          has_security?: boolean | null
+          has_wifi?: boolean | null
           id?: string
           is_claimed?: boolean | null
           latitude?: number | null
@@ -1255,9 +1292,14 @@ export type Database = {
           max_draft_ft?: number | null
           max_length_ft?: number | null
           min_depth_ft?: number | null
+          monthly_base_rate?: number | null
+          photos?: Json | null
           power_options?: string[] | null
+          require_insurance_long_term?: boolean | null
+          require_registration?: boolean | null
           staging_dock_linear_footage?: number
           total_slips?: number
+          transient_rate_per_ft?: number | null
           updated_at?: string
           website_url?: string | null
         }
