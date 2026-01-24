@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, User, Wrench, Loader2, Package, ClipboardList, Lock, LayoutDashboard, DollarSign, Briefcase, Plus } from "lucide-react";
-import { ProviderProfileForm } from "@/components/provider/ProviderProfileForm";
+import { ArrowLeft, Wrench, Loader2, Package, ClipboardList, Lock, LayoutDashboard, DollarSign, Briefcase, Plus } from "lucide-react";
 import { ServiceCatalogManager } from "@/components/provider/ServiceCatalogManager";
 import { OnboardingChecklist } from "@/components/provider/OnboardingChecklist";
 import { BusinessProfileForm } from "@/components/provider/BusinessProfileForm";
@@ -215,7 +214,7 @@ const ProviderDashboard = () => {
               onValueChange={(value) => setSearchParams({ tab: value })}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="setup" className="flex items-center gap-1">
                   <ClipboardList className="w-4 h-4" />
                   <span className="hidden sm:inline">Setup</span>
@@ -246,10 +245,6 @@ const ProviderDashboard = () => {
                   {!canViewJobs && <Lock className="w-3 h-3" />}
                   <DollarSign className="w-4 h-4" />
                   <span className="hidden sm:inline">Earnings</span>
-                </TabsTrigger>
-                <TabsTrigger value="profile" className="flex items-center gap-1">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">Profile</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -324,9 +319,6 @@ const ProviderDashboard = () => {
                 )}
               </TabsContent>
 
-              <TabsContent value="profile">
-                <ProviderProfileForm />
-              </TabsContent>
             </Tabs>
           </>
         )}

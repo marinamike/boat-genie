@@ -1,14 +1,13 @@
 import { Outlet } from "react-router-dom";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { LayoutDashboard, Briefcase, ListOrdered, DollarSign, User } from "lucide-react";
+import { LayoutDashboard, Briefcase, DollarSign, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const providerNavItems = [
   { href: "/provider", icon: LayoutDashboard, label: "Dashboard", tab: "dashboard" },
   { href: "/provider", icon: Briefcase, label: "My Jobs", tab: "schedule" },
-  { href: "/provider", icon: ListOrdered, label: "Services", tab: "profile" },
   { href: "/provider", icon: DollarSign, label: "Payouts", tab: "earnings" },
-  { href: "/profile", icon: User, label: "Profile" },
+  { href: "/provider", icon: User, label: "Profile", tab: "setup" },
 ];
 
 export function ProviderLayout() {
