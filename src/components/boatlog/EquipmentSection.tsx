@@ -21,11 +21,11 @@ import { useEquipmentSpecs } from "@/hooks/useEquipmentSpecs";
 import { UseFormReturn } from "react-hook-form";
 
 const ENGINE_POSITION_LABELS = [
-  "Port Engine",
-  "Starboard Engine",
-  "Center Engine",
-  "Port Outboard",
-  "Starboard Outboard",
+  "Port",
+  "Port Center",
+  "Center",
+  "Starboard Center",
+  "Starboard",
 ];
 
 interface EngineEntry {
@@ -52,7 +52,7 @@ export function EquipmentSection({ form, onEquipmentMatch, onEnginesChange }: Eq
 
   // Multiple engines state
   const [engines, setEngines] = useState<EngineEntry[]>([
-    { id: crypto.randomUUID(), brand: "", model: "", hours: "", position_label: "Port Engine" }
+    { id: crypto.randomUUID(), brand: "", model: "", hours: "", position_label: "Port" }
   ]);
 
   const [generatorMatch, setGeneratorMatch] = useState<boolean | null>(null);

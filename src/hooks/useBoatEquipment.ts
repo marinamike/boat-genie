@@ -20,7 +20,7 @@ export interface BoatEquipment {
 
 export type NewEquipment = Omit<BoatEquipment, "id" | "created_at" | "updated_at">;
 
-export const ENGINE_POSITION_LABELS = ["Center Engine", "Port Engine", "Starboard Engine", "Port Outboard", "Starboard Outboard"];
+export const ENGINE_POSITION_LABELS = ["Port", "Port Center", "Center", "Starboard Center", "Starboard"];
 export const GENERATOR_POSITION_LABELS = ["Primary Generator", "Secondary Generator", "Backup Generator"];
 export const SEAKEEPER_POSITION_LABELS = ["Primary Seakeeper", "Secondary Seakeeper"];
 
