@@ -53,7 +53,7 @@ const formSchema = z.object({
   slip_number: z.string().optional(),
   gate_code: z.string().optional(),
   special_instructions: z.string().optional(),
-  // Equipment fields
+  // Equipment fields (legacy - for backwards compatibility)
   engine_brand: z.string().optional(),
   engine_model: z.string().optional(),
   engine_hours: z.coerce.number().min(0).optional().or(z.literal("")),
@@ -65,6 +65,14 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+interface EngineEntry {
+  id: string;
+  brand: string;
+  model: string;
+  hours: number | "";
+  position_label: string;
+}
 
 export interface BoatToEdit {
   id: string;
@@ -111,6 +119,7 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
     generator: { specId: null, manualUrl: null },
     seakeeper: { specId: null, manualUrl: null },
   });
+  const [pendingEngines, setPendingEngines] = useState<EngineEntry[]>([]);
   const { toast } = useToast();
   const { findSpec, specs } = useEquipmentSpecs();
 
@@ -181,6 +190,7 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
         seakeeper_model: "",
         seakeeper_hours: "",
       });
+      setPendingEngines([]);
     }
   }, [open, boatToEdit, form]);
 
@@ -193,6 +203,10 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
     },
     []
   );
+
+  const handleEnginesChange = useCallback((engines: EngineEntry[]) => {
+    setPendingEngines(engines);
+  }, []);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -253,7 +267,8 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
           description: `${data.name} has been updated.`,
         });
       } else {
-        // Create new boat
+        // Create new boat - use first engine for legacy fields
+        const firstEngine = pendingEngines[0];
         const { data: boat, error: boatError } = await supabase
           .from("boats")
           .insert({
@@ -263,9 +278,9 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
             model: data.model || null,
             year: data.year ? Number(data.year) : null,
             length_ft: data.length_ft ? Number(data.length_ft) : null,
-            engine_brand: data.engine_brand || null,
-            engine_model: data.engine_model || null,
-            engine_hours: data.engine_hours ? Number(data.engine_hours) : 0,
+            engine_brand: firstEngine?.brand || null,
+            engine_model: firstEngine?.model || null,
+            engine_hours: firstEngine?.hours ? Number(firstEngine.hours) : 0,
             generator_brand: data.generator_brand || null,
             generator_model: data.generator_model || null,
             generator_hours: data.generator_hours ? Number(data.generator_hours) : 0,
@@ -293,6 +308,43 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
           if (profileError) {
             console.error("Failed to create boat profile:", profileError);
           }
+
+          // Create boat_equipment records for all engines
+          for (let i = 0; i < pendingEngines.length; i++) {
+            const engine = pendingEngines[i];
+            if (engine.brand && engine.model) {
+              const spec = specs.find(
+                (s) =>
+                  s.equipment_type === "engine" &&
+                  s.brand.toLowerCase() === engine.brand.toLowerCase() &&
+                  s.model.toLowerCase() === engine.model.toLowerCase()
+              );
+
+              const { data: equipmentRecord, error: eqError } = await supabase
+                .from("boat_equipment")
+                .insert({
+                  boat_id: boat.id,
+                  equipment_type: "engine",
+                  brand: engine.brand,
+                  model: engine.model,
+                  current_hours: engine.hours ? Number(engine.hours) : 0,
+                  position_label: engine.position_label,
+                  position_order: i + 1,
+                  equipment_spec_id: spec?.id || null,
+                  manual_url: spec?.manual_url || null,
+                })
+                .select("id")
+                .single();
+
+              if (eqError) {
+                console.error("Failed to create engine equipment:", eqError);
+              } else if (spec && equipmentRecord) {
+                // Add manual and recommendations
+                await addManualToDigitalLocker(boat.id, userId, spec);
+                await createMaintenanceRecommendations(boat.id, spec, engine.hours ? Number(engine.hours) : 0);
+              }
+            }
+          }
         }
 
         toast({
@@ -301,9 +353,9 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
         });
       }
 
-      // Auto-add manuals and create maintenance recommendations for matched equipment
+      // Auto-add manuals and create maintenance recommendations for generator/seakeeper
       const processEquipment = async (
-        type: "engine" | "generator" | "seakeeper",
+        type: "generator" | "seakeeper",
         brand: string | undefined,
         model: string | undefined,
         hours: number
@@ -324,7 +376,6 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
       };
 
       await Promise.all([
-        processEquipment("engine", data.engine_brand, data.engine_model, Number(data.engine_hours) || 0),
         processEquipment("generator", data.generator_brand, data.generator_model, Number(data.generator_hours) || 0),
         processEquipment("seakeeper", "Seakeeper", data.seakeeper_model, Number(data.seakeeper_hours) || 0),
       ]);
@@ -489,8 +540,13 @@ export default function AddBoatForm({ open, onOpenChange, onSuccess, userId, boa
             {isEditMode && boatToEdit ? (
               <EquipmentManager boatId={boatToEdit.id} ownerId={userId} />
             ) : (
-              <EquipmentSection form={form} onEquipmentMatch={handleEquipmentMatch} />
+              <EquipmentSection 
+                form={form} 
+                onEquipmentMatch={handleEquipmentMatch} 
+                onEnginesChange={handleEnginesChange}
+              />
             )}
+
 
             <Separator className="my-4" />
 
