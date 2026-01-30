@@ -14,6 +14,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Briefcase, 
   Clock, 
@@ -301,7 +308,16 @@ function QuickQuoteDialog({
   const [materialsCost, setMaterialsCost] = useState("");
   const [materialsDeposit, setMaterialsDeposit] = useState("");
   const [estimatedDate, setEstimatedDate] = useState("");
+  const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Generate arrival time options by hour
+  const arrivalTimeOptions = Array.from({ length: 12 }, (_, i) => {
+    const hour = i + 6; // 6 AM to 5 PM
+    const hour12 = hour > 12 ? hour - 12 : hour;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    return { value: `${hour}:00`, label: `${hour12}:00 ${ampm}` };
+  });
 
   // Reset form when dialog opens with new wish
   const handleOpenChange = (isOpen: boolean) => {
@@ -310,6 +326,7 @@ function QuickQuoteDialog({
       setLaborCost(amount > 0 ? amount.toString() : "");
       setMaterialsCost("");
       setMaterialsDeposit("");
+      setEstimatedArrivalTime("");
       setNotes("");
     }
     onOpenChange(isOpen);
@@ -372,6 +389,22 @@ function QuickQuoteDialog({
                 onChange={(e) => setEstimatedDate(e.target.value)}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="arrivalTime">Estimated Arrival Time</Label>
+              <Select value={estimatedArrivalTime} onValueChange={setEstimatedArrivalTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select arrival time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {arrivalTimeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
