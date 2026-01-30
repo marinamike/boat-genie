@@ -17,6 +17,7 @@ export interface WishFormItem {
     name: string;
     make: string | null;
     model: string | null;
+    year: number | null;
     length_ft: number | null;
     image_url: string | null;
   } | null;
@@ -140,7 +141,8 @@ export function useJobBoard() {
             id, 
             name, 
             make, 
-            model, 
+            model,
+            year,
             length_ft, 
             image_url,
             boat_profiles(marina_name, slip_number)
