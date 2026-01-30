@@ -2429,6 +2429,7 @@ export type Database = {
           emergency_fee: number | null
           escrow_amount: number | null
           escrow_status: Database["public"]["Enums"]["escrow_status"]
+          estimated_arrival_time: string | null
           funds_released_at: string | null
           id: string
           is_emergency: boolean
@@ -2474,6 +2475,7 @@ export type Database = {
           emergency_fee?: number | null
           escrow_amount?: number | null
           escrow_status?: Database["public"]["Enums"]["escrow_status"]
+          estimated_arrival_time?: string | null
           funds_released_at?: string | null
           id?: string
           is_emergency?: boolean
@@ -2519,6 +2521,7 @@ export type Database = {
           emergency_fee?: number | null
           escrow_amount?: number | null
           escrow_status?: Database["public"]["Enums"]["escrow_status"]
+          estimated_arrival_time?: string | null
           funds_released_at?: string | null
           id?: string
           is_emergency?: boolean

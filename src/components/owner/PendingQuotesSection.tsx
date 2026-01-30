@@ -32,6 +32,7 @@ interface PendingQuote {
     title: string;
     description: string | null;
     scheduled_date: string | null;
+    estimated_arrival_time: string | null;
     is_emergency: boolean;
     boat: {
       id: string;
@@ -99,6 +100,7 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
             title,
             description,
             scheduled_date,
+            estimated_arrival_time,
             is_emergency,
             boat:boats(id, name)
           `)
@@ -301,11 +303,22 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
               </div>
 
               {/* Meta Info */}
-              <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-4">
                 {quote.work_order?.scheduled_date && (
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Scheduled: {format(new Date(quote.work_order.scheduled_date), "MMM d, yyyy")}
+                  </span>
+                )}
+                {quote.work_order?.estimated_arrival_time && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Arrival: {(() => {
+                      const hour = parseInt(quote.work_order.estimated_arrival_time.split(':')[0]);
+                      const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                      const ampm = hour >= 12 ? "PM" : "AM";
+                      return `${hour12}:00 ${ampm}`;
+                    })()}
                   </span>
                 )}
                 <span className="flex items-center gap-1">
