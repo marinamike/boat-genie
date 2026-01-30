@@ -33,23 +33,24 @@ import { formatPrice, PRICING_CONSTANTS } from "@/lib/pricing";
 
 // Provider earnings breakdown component for lead cards
 function ProviderEarningsBreakdown({ 
-  basePrice, 
+  calculatedPrice, 
   isEmergency 
 }: { 
-  basePrice: number; 
+  calculatedPrice: number; 
   isEmergency: boolean;
 }) {
-  const leadFee = basePrice * PRICING_CONSTANTS.LEAD_FEE_RATE;
-  // Emergency fee: $150 standard, $50 for members - provider gets 100%
-  // We don't know membership here, so we show the standard emergency fee
+  // Emergency fee is already included in calculated_price, so we need to back it out
   const emergencyFee = isEmergency ? PRICING_CONSTANTS.EMERGENCY_FEE_STANDARD : 0;
+  const basePrice = calculatedPrice - emergencyFee;
+  const leadFee = basePrice * PRICING_CONSTANTS.LEAD_FEE_RATE;
+  // Provider gets: base price minus lead fee, plus 100% of emergency fee
   const providerReceives = basePrice - leadFee + emergencyFee;
 
   return (
     <div className="bg-muted/50 border rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">Customer Was Quoted</span>
-        <span className="text-lg font-bold text-primary">{formatPrice(basePrice + emergencyFee)}</span>
+        <span className="text-lg font-bold text-primary">{formatPrice(calculatedPrice)}</span>
       </div>
       
       <Separator className="my-2" />
@@ -202,7 +203,7 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                 {/* Pre-calculated price shown to customer with provider earnings breakdown */}
                 {hasPreCalculatedPrice && (
                   <ProviderEarningsBreakdown
-                    basePrice={wish.calculated_price!}
+                    calculatedPrice={wish.calculated_price!}
                     isEmergency={wish.is_emergency}
                   />
                 )}
@@ -330,10 +331,12 @@ function QuickQuoteDialog({
 
   // For pre-calculated prices, we show a simpler acceptance flow
   if (hasPreCalculatedPrice) {
-    const preCalcPrice = wish!.calculated_price!;
-    const preCalcLeadFee = preCalcPrice * PRICING_CONSTANTS.LEAD_FEE_RATE;
+    const preCalcTotal = wish!.calculated_price!;
     const preCalcEmergencyFee = wish!.is_emergency ? PRICING_CONSTANTS.EMERGENCY_FEE_STANDARD : 0;
-    const preCalcProviderReceives = preCalcPrice - preCalcLeadFee + preCalcEmergencyFee;
+    // Back out the emergency fee to get the true base price
+    const preCalcBasePrice = preCalcTotal - preCalcEmergencyFee;
+    const preCalcLeadFee = preCalcBasePrice * PRICING_CONSTANTS.LEAD_FEE_RATE;
+    const preCalcProviderReceives = preCalcBasePrice - preCalcLeadFee + preCalcEmergencyFee;
 
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -351,7 +354,7 @@ function QuickQuoteDialog({
 
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-2">
             <p className="text-sm font-medium text-primary">Customer Was Quoted</p>
-            <p className="text-2xl font-bold text-primary">{formatPrice(preCalcPrice + preCalcEmergencyFee)}</p>
+            <p className="text-2xl font-bold text-primary">{formatPrice(preCalcTotal)}</p>
             <p className="text-xs text-muted-foreground">
               This price was shown to the customer based on your locked rates
             </p>
@@ -384,7 +387,7 @@ function QuickQuoteDialog({
             <div className="bg-muted rounded-lg p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Base Price</span>
-                <span>{formatPrice(preCalcPrice)}</span>
+                <span>{formatPrice(preCalcBasePrice)}</span>
               </div>
               <div className="flex justify-between text-destructive">
                 <span>Lead Fee ({PRICING_CONSTANTS.LEAD_FEE_RATE * 100}%)</span>
