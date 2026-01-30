@@ -208,6 +208,16 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                   />
                 )}
 
+                {/* Requested service date */}
+                {wish.preferred_date && (
+                  <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                    <Calendar className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm font-medium text-amber-700">
+                      Requested by {format(new Date(wish.preferred_date), "MMMM d, yyyy")}
+                    </span>
+                  </div>
+                )}
+
                 {/* Location - hidden until job accepted */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="w-4 h-4" />
@@ -215,17 +225,9 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                 </div>
 
                 {/* Timing */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {formatDistanceToNow(new Date(wish.created_at), { addSuffix: true })}
-                  </span>
-                  {wish.preferred_date && (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {format(new Date(wish.preferred_date), "MMM d")}
-                    </span>
-                  )}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  <span>Submitted {formatDistanceToNow(new Date(wish.created_at), { addSuffix: true })}</span>
                 </div>
 
                 {/* Quick Quote Button */}
