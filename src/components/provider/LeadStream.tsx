@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,58 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { WishFormItem, QuoteFormData } from "@/hooks/useJobBoard";
 import { ProviderService } from "@/hooks/useProviderMetrics";
+import { formatPrice, PRICING_CONSTANTS } from "@/lib/pricing";
+
+// Provider earnings breakdown component for lead cards
+function ProviderEarningsBreakdown({ 
+  basePrice, 
+  isEmergency 
+}: { 
+  basePrice: number; 
+  isEmergency: boolean;
+}) {
+  const leadFee = basePrice * PRICING_CONSTANTS.LEAD_FEE_RATE;
+  // Emergency fee: $150 standard, $50 for members - provider gets 100%
+  // We don't know membership here, so we show the standard emergency fee
+  const emergencyFee = isEmergency ? PRICING_CONSTANTS.EMERGENCY_FEE_STANDARD : 0;
+  const providerReceives = basePrice - leadFee + emergencyFee;
+
+  return (
+    <div className="bg-muted/50 border rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">Customer Was Quoted</span>
+        <span className="text-lg font-bold text-primary">{formatPrice(basePrice + emergencyFee)}</span>
+      </div>
+      
+      <Separator className="my-2" />
+      
+      <div className="space-y-1 text-sm">
+        <div className="flex justify-between text-muted-foreground">
+          <span>Base Price</span>
+          <span>{formatPrice(basePrice)}</span>
+        </div>
+        <div className="flex justify-between text-destructive">
+          <span>Lead Fee ({PRICING_CONSTANTS.LEAD_FEE_RATE * 100}%)</span>
+          <span>-{formatPrice(leadFee)}</span>
+        </div>
+        {isEmergency && (
+          <div className="flex justify-between text-green-600">
+            <span className="flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              Emergency Fee (100% yours)
+            </span>
+            <span>+{formatPrice(emergencyFee)}</span>
+          </div>
+        )}
+        <Separator className="my-1" />
+        <div className="flex justify-between font-semibold text-green-600">
+          <span>You Receive</span>
+          <span>{formatPrice(providerReceives)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface LeadStreamProps {
   wishes: WishFormItem[];
@@ -146,17 +199,12 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                   {wish.description}
                 </p>
 
-                {/* Pre-calculated price shown to customer */}
+                {/* Pre-calculated price shown to customer with provider earnings breakdown */}
                 {hasPreCalculatedPrice && (
-                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-primary">Customer Was Quoted</span>
-                      <span className="text-lg font-bold text-primary">${wish.calculated_price!.toFixed(2)}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      This price was calculated from your locked rates
-                    </p>
-                  </div>
+                  <ProviderEarningsBreakdown
+                    basePrice={wish.calculated_price!}
+                    isEmergency={wish.is_emergency}
+                  />
                 )}
 
                 {/* Location - hidden until job accepted */}
@@ -276,14 +324,16 @@ function QuickQuoteDialog({
   };
 
   const totalCost = (parseFloat(laborCost) || 0) + (parseFloat(materialsCost) || 0);
-  const leadFee = totalCost * 0.05; // 5% lead fee
-  const providerReceives = totalCost - leadFee;
+  const leadFee = totalCost * PRICING_CONSTANTS.LEAD_FEE_RATE;
+  const emergencyFee = wish?.is_emergency ? PRICING_CONSTANTS.EMERGENCY_FEE_STANDARD : 0;
+  const providerReceives = totalCost - leadFee + emergencyFee;
 
   // For pre-calculated prices, we show a simpler acceptance flow
   if (hasPreCalculatedPrice) {
     const preCalcPrice = wish!.calculated_price!;
-    const preCalcLeadFee = preCalcPrice * 0.05;
-    const preCalcProviderReceives = preCalcPrice - preCalcLeadFee;
+    const preCalcLeadFee = preCalcPrice * PRICING_CONSTANTS.LEAD_FEE_RATE;
+    const preCalcEmergencyFee = wish!.is_emergency ? PRICING_CONSTANTS.EMERGENCY_FEE_STANDARD : 0;
+    const preCalcProviderReceives = preCalcPrice - preCalcLeadFee + preCalcEmergencyFee;
 
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -300,8 +350,8 @@ function QuickQuoteDialog({
           </DialogHeader>
 
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-2">
-            <p className="text-sm font-medium text-primary">Pre-Calculated Price</p>
-            <p className="text-2xl font-bold text-primary">${preCalcPrice.toFixed(2)}</p>
+            <p className="text-sm font-medium text-primary">Customer Was Quoted</p>
+            <p className="text-2xl font-bold text-primary">{formatPrice(preCalcPrice + preCalcEmergencyFee)}</p>
             <p className="text-xs text-muted-foreground">
               This price was shown to the customer based on your locked rates
             </p>
@@ -333,16 +383,25 @@ function QuickQuoteDialog({
             {/* Price breakdown */}
             <div className="bg-muted rounded-lg p-4 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Job Total</span>
-                <span>${preCalcPrice.toFixed(2)}</span>
+                <span className="text-muted-foreground">Base Price</span>
+                <span>{formatPrice(preCalcPrice)}</span>
               </div>
               <div className="flex justify-between text-destructive">
-                <span>Lead Fee (5%)</span>
-                <span>-${preCalcLeadFee.toFixed(2)}</span>
+                <span>Lead Fee ({PRICING_CONSTANTS.LEAD_FEE_RATE * 100}%)</span>
+                <span>-{formatPrice(preCalcLeadFee)}</span>
               </div>
+              {wish!.is_emergency && (
+                <div className="flex justify-between text-green-600">
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Emergency Fee (100% yours)
+                  </span>
+                  <span>+{formatPrice(preCalcEmergencyFee)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-semibold pt-2 border-t text-green-600">
                 <span>You Receive</span>
-                <span>${preCalcProviderReceives.toFixed(2)}</span>
+                <span>{formatPrice(preCalcProviderReceives)}</span>
               </div>
             </div>
 
@@ -466,15 +525,24 @@ function QuickQuoteDialog({
           <div className="bg-muted rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Your Quote</span>
-              <span>${totalCost.toFixed(2)}</span>
+              <span>{formatPrice(totalCost)}</span>
             </div>
             <div className="flex justify-between text-destructive">
-              <span>Lead Fee (5%)</span>
-              <span>-${leadFee.toFixed(2)}</span>
+              <span>Lead Fee ({PRICING_CONSTANTS.LEAD_FEE_RATE * 100}%)</span>
+              <span>-{formatPrice(leadFee)}</span>
             </div>
+            {wish?.is_emergency && (
+              <div className="flex justify-between text-green-600">
+                <span className="flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Emergency Fee (100% yours)
+                </span>
+                <span>+{formatPrice(emergencyFee)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-semibold pt-2 border-t text-green-600">
               <span>You Receive</span>
-              <span>${providerReceives.toFixed(2)}</span>
+              <span>{formatPrice(providerReceives)}</span>
             </div>
           </div>
 

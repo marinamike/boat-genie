@@ -108,8 +108,8 @@ export function calculatePricing(input: PricingInput): PricingBreakdown {
   // Total for boat owner
   const totalOwnerPrice = basePrice + serviceFee + emergencyFee;
 
-  // Total provider receives (base price minus lead fee)
-  const totalProviderReceives = basePrice - leadFee;
+  // Total provider receives (base price minus lead fee, plus 100% of emergency fee)
+  const totalProviderReceives = basePrice - leadFee + emergencyFee;
 
   return {
     basePrice,
