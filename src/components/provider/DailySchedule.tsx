@@ -20,6 +20,7 @@ import { ActiveWorkOrder } from "@/hooks/useProviderMetrics";
 import { QRScanner } from "./QRScanner";
 import { ManualCheckInDialog } from "./ManualCheckInDialog";
 import { useQRCheckIn } from "@/hooks/useQRCheckIn";
+import { WorkTimer } from "./WorkTimer";
 
 interface DailyScheduleProps {
   workOrders: ActiveWorkOrder[];
@@ -186,7 +187,16 @@ export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onR
                   </Badge>
                 )}
 
-                {/* Action Buttons */}
+                {/* Work Timer - Shows when checked in */}
+                {wo.status === "in_progress" && wo.provider_checked_in_at && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Time on job:</span>
+                    <WorkTimer 
+                      startTime={wo.provider_checked_in_at} 
+                      isRunning={true} 
+                    />
+                  </div>
+                )}
                 <div className="flex gap-2 pt-2">
                   <Button
                     variant="outline"

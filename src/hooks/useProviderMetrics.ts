@@ -30,6 +30,7 @@ export interface ActiveWorkOrder {
   owner_id: string | null;
   provider_phone: string | null;
   provider_name: string | null;
+  provider_checked_in_at: string | null;
 }
 
 export interface CompletedJob {
@@ -108,6 +109,7 @@ export function useProviderMetrics() {
           created_at,
           boat_id,
           provider_id,
+          provider_checked_in_at,
           boat:boats(
             id,
             name,
@@ -148,6 +150,7 @@ export function useProviderMetrics() {
           owner_id: wo.boat?.owner_id || null,
           provider_phone: wo.provider?.primary_contact_phone || null,
           provider_name: wo.provider?.business_name || null,
+          provider_checked_in_at: wo.provider_checked_in_at || null,
         };
       });
 
