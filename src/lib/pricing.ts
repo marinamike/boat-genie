@@ -34,7 +34,7 @@ interface PricingBreakdown {
 // Fee constants
 const SERVICE_FEE_RATE = 0.05; // 5% for standard users
 const LEAD_FEE_RATE = 0.05; // 5% for all providers
-const EMERGENCY_FEE_STANDARD = 150;
+const EMERGENCY_FEE_STANDARD = 50;
 const EMERGENCY_FEE_MEMBER = 50;
 
 /**
