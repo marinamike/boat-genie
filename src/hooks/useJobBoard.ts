@@ -10,6 +10,8 @@ export interface WishFormItem {
   preferred_date: string | null;
   status: string;
   created_at: string;
+  is_emergency: boolean;
+  calculated_price: number | null;
   boat?: {
     id: string;
     name: string;
@@ -132,6 +134,8 @@ export function useJobBoard() {
           preferred_date,
           status,
           created_at,
+          is_emergency,
+          calculated_price,
           boat:boats(
             id, 
             name, 

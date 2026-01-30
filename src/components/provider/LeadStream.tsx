@@ -103,6 +103,7 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
 
         {wishes.map((wish) => {
           const matchedService = getMatchingService(wish.service_type, providerServices);
+          const hasPreCalculatedPrice = wish.calculated_price != null && wish.calculated_price > 0;
           
           return (
             <Card key={wish.id}>
@@ -124,18 +125,38 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                       {wish.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
                     </CardDescription>
                   </div>
-                  {wish.urgency && wish.urgency !== "normal" && (
-                    <Badge className={urgencyColors[wish.urgency] || urgencyColors.normal}>
-                      {wish.urgency === "urgent" && <AlertTriangle className="w-3 h-3 mr-1" />}
-                      {wish.urgency}
-                    </Badge>
-                  )}
+                  <div className="flex flex-col items-end gap-1">
+                    {wish.is_emergency && (
+                      <Badge className={urgencyColors.urgent}>
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        Emergency
+                      </Badge>
+                    )}
+                    {wish.urgency && wish.urgency !== "normal" && !wish.is_emergency && (
+                      <Badge className={urgencyColors[wish.urgency] || urgencyColors.normal}>
+                        {wish.urgency}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground line-clamp-2">
                   {wish.description}
                 </p>
+
+                {/* Pre-calculated price shown to customer */}
+                {hasPreCalculatedPrice && (
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-primary">Customer Was Quoted</span>
+                      <span className="text-lg font-bold text-primary">${wish.calculated_price!.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This price was calculated from your locked rates
+                    </p>
+                  </div>
+                )}
 
                 {/* Location */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -163,10 +184,10 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                   className="w-full"
                 >
                   <Zap className="w-4 h-4 mr-2" />
-                  Quick Quote
-                  {matchedService && (
+                  {hasPreCalculatedPrice ? "Accept Job" : "Submit Quote"}
+                  {matchedService && !hasPreCalculatedPrice && (
                     <span className="ml-2 text-xs opacity-80">
-                      (${matchedService.price}/{matchedService.pricing_model === "per_foot" ? "ft" : "hr"})
+                      (${matchedService.price}/{matchedService.pricing_model === "per_foot" ? "ft" : matchedService.pricing_model === "per_hour" ? "hr" : "flat"})
                     </span>
                   )}
                 </Button>
@@ -204,8 +225,16 @@ function QuickQuoteDialog({
   onSubmit: (data: QuoteFormData) => void;
   submitting: boolean;
 }) {
+  // Check if wish has a pre-calculated price (fixed-rate or per-foot)
+  const hasPreCalculatedPrice = wish?.calculated_price != null && wish.calculated_price > 0;
+  
   // Auto-fill labor cost based on matching service and boat length
   const calculateAutoFill = () => {
+    // If wish has pre-calculated price, use that
+    if (hasPreCalculatedPrice) {
+      return wish!.calculated_price!;
+    }
+    
     if (!matchingService || !wish?.boat?.length_ft) return 0;
     
     if (matchingService.pricing_model === "per_foot") {
@@ -224,9 +253,12 @@ function QuickQuoteDialog({
 
   // Reset form when dialog opens with new wish
   const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && matchingService) {
-      setLaborCost(autoFillAmount > 0 ? autoFillAmount.toString() : "");
+    if (isOpen) {
+      const amount = calculateAutoFill();
+      setLaborCost(amount > 0 ? amount.toString() : "");
+      setMaterialsCost("");
       setMaterialsDeposit("");
+      setNotes("");
     }
     onOpenChange(isOpen);
   };
@@ -243,19 +275,110 @@ function QuickQuoteDialog({
   };
 
   const totalCost = (parseFloat(laborCost) || 0) + (parseFloat(materialsCost) || 0);
-  const depositAmount = parseFloat(materialsDeposit) || 0;
   const leadFee = totalCost * 0.05; // 5% lead fee
   const providerReceives = totalCost - leadFee;
-  const serviceFee = totalCost * 0.10;
-  const ownerTotal = totalCost + serviceFee;
 
+  // For pre-calculated prices, we show a simpler acceptance flow
+  if (hasPreCalculatedPrice) {
+    const preCalcPrice = wish!.calculated_price!;
+    const preCalcLeadFee = preCalcPrice * 0.05;
+    const preCalcProviderReceives = preCalcPrice - preCalcLeadFee;
+
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              Accept Job
+            </DialogTitle>
+            <DialogDescription>
+              {wish?.service_type} • {wish?.boat?.make} {wish?.boat?.model}
+              {wish?.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-2">
+            <p className="text-sm font-medium text-primary">Pre-Calculated Price</p>
+            <p className="text-2xl font-bold text-primary">${preCalcPrice.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">
+              This price was shown to the customer based on your locked rates
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Estimated Completion Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={estimatedDate}
+                onChange={(e) => setEstimatedDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Any additional details..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+              />
+            </div>
+
+            {/* Price breakdown */}
+            <div className="bg-muted rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Job Total</span>
+                <span>${preCalcPrice.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-destructive">
+                <span>Lead Fee (5%)</span>
+                <span>-${preCalcLeadFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold pt-2 border-t text-green-600">
+                <span>You Receive</span>
+                <span>${preCalcProviderReceives.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting || !estimatedDate}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Accepting...
+                  </>
+                ) : (
+                  "Accept Job"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // For custom quotes (no pre-calculated price), show full quote form
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            Quick Quote
+            Submit Quote
           </DialogTitle>
           <DialogDescription>
             {wish?.service_type} • {wish?.boat?.make} {wish?.boat?.model}
@@ -270,7 +393,7 @@ function QuickQuoteDialog({
               Auto-filled from your Service Menu
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {matchingService.service_name}: ${matchingService.price}/{matchingService.pricing_model === "per_foot" ? "ft" : "hr"}
+              {matchingService.service_name}: ${matchingService.price}/{matchingService.pricing_model === "per_foot" ? "ft" : matchingService.pricing_model === "per_hour" ? "hr" : "flat"}
               {matchingService.pricing_model === "per_foot" && wish?.boat?.length_ft && (
                 <> × {wish.boat.length_ft}ft = ${autoFillAmount.toFixed(2)}</>
               )}
@@ -351,10 +474,6 @@ function QuickQuoteDialog({
             <div className="flex justify-between font-semibold pt-2 border-t text-green-600">
               <span>You Receive</span>
               <span>${providerReceives.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t">
-              <span>Owner Pays (incl. 10% platform fee)</span>
-              <span>${ownerTotal.toFixed(2)}</span>
             </div>
           </div>
 
