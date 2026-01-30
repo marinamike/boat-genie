@@ -58,6 +58,7 @@ export interface QuoteFormData {
   materialsCost: number;
   materialsDeposit: number;
   estimatedCompletionDate: string;
+  estimatedArrivalTime?: string;
   notes?: string;
 }
 
@@ -262,6 +263,7 @@ export function useJobBoard() {
           priority: wish.urgency === "urgent" ? 3 : wish.urgency === "high" ? 2 : 1,
           is_emergency: wish.urgency === "urgent",
           scheduled_date: quoteData.estimatedCompletionDate,
+          estimated_arrival_time: quoteData.estimatedArrivalTime || null,
           wholesale_price: basePrice,
           retail_price: totalOwnerPrice,
           escrow_status: "pending_quote",

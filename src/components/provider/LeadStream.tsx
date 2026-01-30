@@ -339,6 +339,7 @@ function QuickQuoteDialog({
       materialsCost: parseFloat(materialsCost) || 0,
       materialsDeposit: parseFloat(materialsDeposit) || 0,
       estimatedCompletionDate: estimatedDate,
+      estimatedArrivalTime: estimatedArrivalTime || undefined,
       notes: notes || undefined,
     });
   };
