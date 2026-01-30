@@ -121,7 +121,8 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                     </div>
                     <CardDescription className="flex items-center gap-2 mt-1">
                       <Ship className="w-4 h-4" />
-                      {[wish.boat?.make, wish.boat?.model].filter(Boolean).join(" ") || "Boat details hidden"}
+                      {wish.boat?.year && `${wish.boat.year} `}
+                      {[wish.boat?.make, wish.boat?.model].filter(Boolean).join(" ") || "Vessel"}
                       {wish.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
                     </CardDescription>
                   </div>
@@ -158,10 +159,10 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                   </div>
                 )}
 
-                {/* Location */}
+                {/* Location - hidden until job accepted */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="w-4 h-4" />
-                  <span>{wish.boat_profile?.marina_name || "Location not specified"}</span>
+                  <span className="italic">Location revealed after acceptance</span>
                 </div>
 
                 {/* Timing */}
