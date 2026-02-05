@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { FuelPump, useFuelManagement } from "@/hooks/useFuelManagement";
-import { useBusiness } from "@/contexts/BusinessContext";
+import { FuelPump, FuelTransaction } from "@/hooks/useFuelManagement";
 import { Fuel, DollarSign, Ship } from "lucide-react";
 
 interface QuickSaleFormProps {
@@ -14,11 +13,18 @@ interface QuickSaleFormProps {
   onOpenChange: (open: boolean) => void;
   pumps: FuelPump[];
   defaultPricePerGallon?: number;
+  onRecordSale: (data: {
+    pump_id: string;
+    gallons_sold: number;
+    price_per_gallon: number;
+    vessel_name?: string;
+    vessel_id?: string;
+    reservation_id?: string;
+    notes?: string;
+  }) => Promise<FuelTransaction | null>;
 }
 
-export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon = 4.50 }: QuickSaleFormProps) {
-  const { recordSale } = useFuelManagement();
-  const { business } = useBusiness();
+export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon = 4.50, onRecordSale }: QuickSaleFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [pumpId, setPumpId] = useState("");
@@ -35,7 +41,7 @@ export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon
     if (!pumpId || !gallonsSold) return;
 
     setLoading(true);
-    const result = await recordSale({
+    const result = await onRecordSale({
       pump_id: pumpId,
       gallons_sold: parseFloat(gallonsSold),
       price_per_gallon: parseFloat(pricePerGallon),

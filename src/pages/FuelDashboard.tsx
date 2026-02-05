@@ -32,7 +32,13 @@ export default function FuelDashboard() {
     transactions, 
     deliveries, 
     reconciliations,
-    loading 
+    loading,
+    createTank,
+    updateTank,
+    createPump,
+    recordSale,
+    recordDelivery,
+    recordReconciliation,
   } = useFuelManagement();
 
   const [showSaleForm, setShowSaleForm] = useState(false);
@@ -328,34 +334,40 @@ export default function FuelDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Forms */}
+      {/* Forms - now receiving mutation handlers from single hook instance */}
       <QuickSaleForm 
         open={showSaleForm} 
         onOpenChange={setShowSaleForm} 
         pumps={pumps}
+        onRecordSale={recordSale}
       />
       
       <DeliveryLogForm 
         open={showDeliveryForm} 
         onOpenChange={setShowDeliveryForm} 
         tanks={tanks}
+        onRecordDelivery={recordDelivery}
       />
       
       <ReconciliationForm 
         open={showReconciliationForm} 
         onOpenChange={setShowReconciliationForm} 
         tanks={tanks}
+        onRecordReconciliation={recordReconciliation}
       />
       
       <TankSetupForm 
         open={showTankSetup} 
         onOpenChange={setShowTankSetup}
+        onCreateTank={createTank}
+        onUpdateTank={updateTank}
       />
       
       <PumpSetupForm 
         open={showPumpSetup} 
         onOpenChange={setShowPumpSetup}
         tanks={tanks}
+        onCreatePump={createPump}
       />
     </div>
   );

@@ -5,17 +5,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { FuelTank, useFuelManagement } from "@/hooks/useFuelManagement";
+import { FuelTank, FuelDelivery } from "@/hooks/useFuelManagement";
 import { Truck, DollarSign, FileText } from "lucide-react";
 
 interface DeliveryLogFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tanks: FuelTank[];
+  onRecordDelivery: (data: {
+    tank_id: string;
+    gallons_delivered: number;
+    vendor_name?: string;
+    invoice_number?: string;
+    cost_per_gallon?: number;
+    notes?: string;
+  }) => Promise<FuelDelivery | null>;
 }
 
-export function DeliveryLogForm({ open, onOpenChange, tanks }: DeliveryLogFormProps) {
-  const { recordDelivery } = useFuelManagement();
+export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }: DeliveryLogFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [tankId, setTankId] = useState("");
@@ -34,7 +41,7 @@ export function DeliveryLogForm({ open, onOpenChange, tanks }: DeliveryLogFormPr
     if (!tankId || !gallonsDelivered) return;
 
     setLoading(true);
-    const result = await recordDelivery({
+    const result = await onRecordDelivery({
       tank_id: tankId,
       gallons_delivered: parseFloat(gallonsDelivered),
       vendor_name: vendorName || undefined,
