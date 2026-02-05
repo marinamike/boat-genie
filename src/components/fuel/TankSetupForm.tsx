@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,14 +18,34 @@ export function TankSetupForm({ open, onOpenChange, editTank }: TankSetupFormPro
   const { createTank, updateTank } = useFuelManagement();
   const [loading, setLoading] = useState(false);
   
-  const [tankName, setTankName] = useState(editTank?.tank_name || "");
-  const [fuelType, setFuelType] = useState<"diesel" | "gasoline" | "premium">(
-    (editTank?.fuel_type as "diesel" | "gasoline" | "premium") || "diesel"
-  );
-  const [totalCapacity, setTotalCapacity] = useState(editTank?.total_capacity_gallons?.toString() || "");
-  const [currentVolume, setCurrentVolume] = useState(editTank?.current_volume_gallons?.toString() || "");
-  const [lowLevelThreshold, setLowLevelThreshold] = useState(editTank?.low_level_threshold_gallons?.toString() || "500");
-  const [notes, setNotes] = useState(editTank?.notes || "");
+  const [tankName, setTankName] = useState("");
+  const [fuelType, setFuelType] = useState<"diesel" | "gasoline" | "premium">("diesel");
+  const [totalCapacity, setTotalCapacity] = useState("");
+  const [currentVolume, setCurrentVolume] = useState("");
+  const [lowLevelThreshold, setLowLevelThreshold] = useState("500");
+  const [notes, setNotes] = useState("");
+
+  // Reset form when opening or when editTank changes
+  useEffect(() => {
+    if (open) {
+      if (editTank) {
+        setTankName(editTank.tank_name || "");
+        setFuelType((editTank.fuel_type as "diesel" | "gasoline" | "premium") || "diesel");
+        setTotalCapacity(editTank.total_capacity_gallons?.toString() || "");
+        setCurrentVolume(editTank.current_volume_gallons?.toString() || "");
+        setLowLevelThreshold(editTank.low_level_threshold_gallons?.toString() || "500");
+        setNotes(editTank.notes || "");
+      } else {
+        // Reset to defaults for new tank
+        setTankName("");
+        setFuelType("diesel");
+        setTotalCapacity("");
+        setCurrentVolume("");
+        setLowLevelThreshold("500");
+        setNotes("");
+      }
+    }
+  }, [open, editTank]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,20 +75,13 @@ export function TankSetupForm({ open, onOpenChange, editTank }: TankSetupFormPro
     setLoading(false);
     
     if (success) {
-      // Reset form
-      setTankName("");
-      setFuelType("diesel");
-      setTotalCapacity("");
-      setCurrentVolume("");
-      setLowLevelThreshold("500");
-      setNotes("");
       onOpenChange(false);
     }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5" />
@@ -96,11 +109,19 @@ export function TankSetupForm({ open, onOpenChange, editTank }: TankSetupFormPro
           {/* Fuel Type */}
           <div className="space-y-2">
             <Label htmlFor="fuelType">Fuel Type *</Label>
-            <Select value={fuelType} onValueChange={(v) => setFuelType(v as typeof fuelType)}>
-              <SelectTrigger>
-                <SelectValue />
+            <Select 
+              value={fuelType} 
+              onValueChange={(v) => setFuelType(v as typeof fuelType)}
+            >
+              <SelectTrigger id="fuelType">
+                <SelectValue placeholder="Select fuel type" />
               </SelectTrigger>
-              <SelectContent className="z-[200]" position="popper" sideOffset={4}>
+              <SelectContent 
+                className="z-[200]" 
+                position="popper" 
+                sideOffset={4}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
                 <SelectItem value="diesel">Diesel</SelectItem>
                 <SelectItem value="gasoline">Gasoline (Regular)</SelectItem>
                 <SelectItem value="premium">Premium</SelectItem>
