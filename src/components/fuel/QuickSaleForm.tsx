@@ -151,11 +151,11 @@ export function QuickSaleForm({ open, onOpenChange, pumps, onRecordSale }: Quick
               <Input
                 id="price"
                 type="number"
-                step="0.01"
+                step="0.001"
                 min="0"
                 value={pricePerGallon}
                 onChange={(e) => setPricePerGallon(e.target.value)}
-                placeholder="0.00"
+                placeholder="0.000"
                 className="pl-8"
               />
               <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
