@@ -6,7 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { VesselProvider } from "@/contexts/VesselContext";
 import RoleSwitcher from "@/components/RoleSwitcher";
-import { OwnerLayout, ProviderLayout, StaffLayout, MarinaLayout } from "@/layouts";
+import { OwnerLayout, ProviderLayout, StaffLayout, MarinaLayout, BusinessLayout } from "@/layouts";
+import { BusinessProvider } from "@/contexts/BusinessContext";
 import { MarineLoadingScreen } from "@/components/ui/marine-loading";
 
 // Page imports
@@ -39,6 +40,8 @@ import MarinaSlipsPage from "./pages/MarinaSlipsPage";
 import MarinaReservationsPage from "./pages/MarinaReservationsPage";
 import MarinaLeasesPage from "./pages/MarinaLeasesPage";
 import MarinaMessagesPage from "./pages/MarinaMessagesPage";
+import BusinessDashboard from "./pages/BusinessDashboard";
+import BusinessSettings from "./pages/BusinessSettings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -147,29 +150,31 @@ function RoleBasedRoutes() {
 
     case "admin":
       return (
-        <Routes>
-          {/* Marina Layout - Full marina management with dedicated nav */}
-          <Route element={<MarinaLayout />}>
-            <Route path="/marina" element={<MarinaDashboard />} />
-            <Route path="/marina/slips" element={<MarinaSlipsPage />} />
-            <Route path="/marina/reservations" element={<MarinaReservationsPage />} />
-            <Route path="/marina/leases" element={<MarinaLeasesPage />} />
-            <Route path="/marina/messages" element={<MarinaMessagesPage />} />
-            <Route path="/marina/settings" element={<MarinaManagement />} />
+        <BusinessProvider>
+          <Routes>
+            {/* Business Layout - Modular management with dynamic nav */}
+            <Route element={<BusinessLayout />}>
+              <Route path="/business" element={<BusinessDashboard />} />
+              <Route path="/business/slips" element={<MarinaSlipsPage />} />
+              <Route path="/business/jobs" element={<ProviderDashboard />} />
+              <Route path="/business/settings" element={<BusinessSettings />} />
+              <Route path="/profile" element={<Profile />} />
+            </Route>
+            {/* Legacy marina routes - redirect to new business routes */}
+            <Route path="/marina" element={<Navigate to="/business" replace />} />
+            <Route path="/marina/slips" element={<Navigate to="/business/slips" replace />} />
+            <Route path="/marina/settings" element={<Navigate to="/business/settings" replace />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/register-marina" element={<RegisterMarina />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-          {/* Public marina details page */}
-          <Route path="/marina/:id" element={<MarinaDetails />} />
-          {/* Default landing for Marina Managers is /marina */}
-          <Route path="/" element={<Navigate to="/marina" replace />} />
-          <Route path="/dashboard" element={<Navigate to="/marina" replace />} />
-          <Route path="/provider" element={<Navigate to="/marina" replace />} />
-          <Route path="/dock" element={<Navigate to="/marina" replace />} />
-          <Route path="/operations" element={<Navigate to="/marina" replace />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Default landing for Business Managers is /business */}
+            <Route path="/" element={<Navigate to="/business" replace />} />
+            <Route path="/dashboard" element={<Navigate to="/business" replace />} />
+            <Route path="/provider" element={<Navigate to="/business" replace />} />
+            <Route path="/dock" element={<Navigate to="/business" replace />} />
+            <Route path="/operations" element={<Navigate to="/business" replace />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BusinessProvider>
       );
 
     default:
