@@ -36,6 +36,7 @@ import BusinessDashboard from "./pages/BusinessDashboard";
 import BusinessSettings from "./pages/BusinessSettings";
 import FuelDashboard from "./pages/FuelDashboard";
 import StoreDashboard from "./pages/StoreDashboard";
+import ServiceDashboard from "./pages/ServiceDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,7 +110,7 @@ function RoleBasedRoutes() {
             <Route element={<BusinessLayout />}>
               <Route path="/business" element={<BusinessDashboard />} />
               <Route path="/business/slips" element={<SlipsDashboard />} />
-              <Route path="/business/jobs" element={<ProviderDashboard />} />
+              <Route path="/business/jobs" element={<ServiceDashboard />} />
               <Route path="/business/fuel" element={<FuelDashboard />} />
               <Route path="/business/store" element={<StoreDashboard />} />
               <Route path="/business/settings" element={<BusinessSettings />} />

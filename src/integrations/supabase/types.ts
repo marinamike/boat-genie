@@ -486,6 +486,80 @@ export type Database = {
         }
         Relationships: []
       }
+      boats_on_blocks: {
+        Row: {
+          bay_id: string | null
+          boat_id: string
+          business_id: string
+          created_at: string
+          expected_launch: string | null
+          hauled_at: string
+          id: string
+          launched_at: string | null
+          notes: string | null
+          updated_at: string
+          work_order_id: string | null
+          yard_location: string | null
+        }
+        Insert: {
+          bay_id?: string | null
+          boat_id: string
+          business_id: string
+          created_at?: string
+          expected_launch?: string | null
+          hauled_at?: string
+          id?: string
+          launched_at?: string | null
+          notes?: string | null
+          updated_at?: string
+          work_order_id?: string | null
+          yard_location?: string | null
+        }
+        Update: {
+          bay_id?: string | null
+          boat_id?: string
+          business_id?: string
+          created_at?: string
+          expected_launch?: string | null
+          hauled_at?: string
+          id?: string
+          launched_at?: string | null
+          notes?: string | null
+          updated_at?: string
+          work_order_id?: string | null
+          yard_location?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boats_on_blocks_bay_id_fkey"
+            columns: ["bay_id"]
+            isOneToOne: false
+            referencedRelation: "haul_out_bays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boats_on_blocks_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boats_on_blocks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boats_on_blocks_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_staff: {
         Row: {
           accepted_at: string | null
@@ -1244,6 +1318,50 @@ export type Database = {
             columns: ["vessel_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      haul_out_bays: {
+        Row: {
+          bay_name: string
+          business_id: string
+          created_at: string
+          id: string
+          is_available: boolean
+          max_beam_ft: number | null
+          max_length_ft: number | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          bay_name: string
+          business_id: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          max_beam_ft?: number | null
+          max_length_ft?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bay_name?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          max_beam_ft?: number | null
+          max_length_ft?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haul_out_bays_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -2314,6 +2432,80 @@ export type Database = {
           },
         ]
       }
+      parts_pulls: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          inventory_item_id: string | null
+          notes: string | null
+          phase_id: string | null
+          pulled_at: string
+          pulled_by: string
+          quantity: number
+          unit_cost: number
+          unit_price: number
+          work_order_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          notes?: string | null
+          phase_id?: string | null
+          pulled_at?: string
+          pulled_by: string
+          quantity?: number
+          unit_cost?: number
+          unit_price?: number
+          work_order_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          notes?: string | null
+          phase_id?: string | null
+          pulled_at?: string
+          pulled_by?: string
+          quantity?: number
+          unit_cost?: number
+          unit_price?: number
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_pulls_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_pulls_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "store_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_pulls_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_pulls_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_invites: {
         Row: {
           accepted_at: string | null
@@ -2829,6 +3021,134 @@ export type Database = {
           },
         ]
       }
+      qc_checklist_templates: {
+        Row: {
+          business_id: string
+          checklist_items: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          job_type: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          checklist_items?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          job_type: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          checklist_items?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          job_type?: string
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qc_checklist_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qc_inspections: {
+        Row: {
+          all_items_passed: boolean
+          business_id: string
+          completed_items: Json
+          created_at: string
+          id: string
+          phase_id: string | null
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          submitted_at: string
+          submitted_by: string
+          template_id: string | null
+          work_order_id: string
+        }
+        Insert: {
+          all_items_passed?: boolean
+          business_id: string
+          completed_items?: Json
+          created_at?: string
+          id?: string
+          phase_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_at?: string
+          submitted_by: string
+          template_id?: string | null
+          work_order_id: string
+        }
+        Update: {
+          all_items_passed?: boolean
+          business_id?: string
+          completed_items?: Json
+          created_at?: string
+          id?: string
+          phase_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_at?: string
+          submitted_by?: string
+          template_id?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qc_inspections_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qc_inspections_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qc_inspections_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "service_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qc_inspections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "qc_checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qc_inspections_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           base_price: number
@@ -3169,6 +3489,121 @@ export type Database = {
           },
         ]
       }
+      service_invoices: {
+        Row: {
+          approved_at: string | null
+          boat_id: string
+          business_id: string
+          created_at: string
+          haul_fee: number
+          id: string
+          invoice_number: string
+          labor_hours: number
+          labor_rate: number
+          labor_total: number
+          launch_fee: number
+          notes: string | null
+          other_fees: number
+          other_fees_description: string | null
+          owner_id: string
+          paid_at: string | null
+          parts_total: number
+          sent_at: string | null
+          status: string
+          storage_daily_rate: number
+          storage_days: number
+          storage_total: number
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          total_amount: number
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          boat_id: string
+          business_id: string
+          created_at?: string
+          haul_fee?: number
+          id?: string
+          invoice_number: string
+          labor_hours?: number
+          labor_rate?: number
+          labor_total?: number
+          launch_fee?: number
+          notes?: string | null
+          other_fees?: number
+          other_fees_description?: string | null
+          owner_id: string
+          paid_at?: string | null
+          parts_total?: number
+          sent_at?: string | null
+          status?: string
+          storage_daily_rate?: number
+          storage_days?: number
+          storage_total?: number
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total_amount?: number
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          boat_id?: string
+          business_id?: string
+          created_at?: string
+          haul_fee?: number
+          id?: string
+          invoice_number?: string
+          labor_hours?: number
+          labor_rate?: number
+          labor_total?: number
+          launch_fee?: number
+          notes?: string | null
+          other_fees?: number
+          other_fees_description?: string | null
+          owner_id?: string
+          paid_at?: string | null
+          parts_total?: number
+          sent_at?: string | null
+          status?: string
+          storage_daily_rate?: number
+          storage_days?: number
+          storage_total?: number
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total_amount?: number
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_invoices_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_invoices_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_rates: {
         Row: {
           created_at: string
@@ -3204,6 +3639,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      service_staff: {
+        Row: {
+          billable_hourly_rate: number
+          business_id: string
+          created_at: string
+          id: string
+          internal_hourly_rate: number
+          is_active: boolean
+          notes: string | null
+          specialties: Database["public"]["Enums"]["service_specialty"][]
+          staff_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billable_hourly_rate?: number
+          business_id: string
+          created_at?: string
+          id?: string
+          internal_hourly_rate?: number
+          is_active?: boolean
+          notes?: string | null
+          specialties?: Database["public"]["Enums"]["service_specialty"][]
+          staff_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billable_hourly_rate?: number
+          business_id?: string
+          created_at?: string
+          id?: string
+          internal_hourly_rate?: number
+          is_active?: boolean
+          notes?: string | null
+          specialties?: Database["public"]["Enums"]["service_specialty"][]
+          staff_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_staff_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff_invites: {
         Row: {
@@ -3310,6 +3795,80 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_entries: {
+        Row: {
+          break_minutes: number
+          business_id: string
+          created_at: string
+          id: string
+          is_billable: boolean
+          notes: string | null
+          phase_id: string | null
+          punch_in: string
+          punch_out: string | null
+          service_staff_id: string
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          break_minutes?: number
+          business_id: string
+          created_at?: string
+          id?: string
+          is_billable?: boolean
+          notes?: string | null
+          phase_id?: string | null
+          punch_in: string
+          punch_out?: string | null
+          service_staff_id: string
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          break_minutes?: number
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_billable?: boolean
+          notes?: string | null
+          phase_id?: string | null
+          punch_in?: string
+          punch_out?: string | null
+          service_staff_id?: string
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_service_staff_id_fkey"
+            columns: ["service_staff_id"]
+            isOneToOne: false
+            referencedRelation: "service_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -3675,6 +4234,82 @@ export type Database = {
           },
         ]
       }
+      work_order_phases: {
+        Row: {
+          actual_hours: number | null
+          assigned_staff_id: string | null
+          business_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          phase_name: string
+          phase_number: number
+          requires_haul_out: boolean
+          started_at: string | null
+          status: Database["public"]["Enums"]["work_order_phase_status"]
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_staff_id?: string | null
+          business_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          phase_name: string
+          phase_number?: number
+          requires_haul_out?: boolean
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["work_order_phase_status"]
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_staff_id?: string | null
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          phase_name?: string
+          phase_number?: number
+          requires_haul_out?: boolean
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["work_order_phase_status"]
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_phases_assigned_staff_id_fkey"
+            columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "service_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_phases_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_phases_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_orders: {
         Row: {
           accepted_quote_id: string | null
@@ -3946,6 +4581,153 @@ export type Database = {
           },
         ]
       }
+      yard_calendar: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          assigned_operator_id: string | null
+          bay_id: string | null
+          boat_id: string
+          business_id: string
+          created_at: string
+          equipment_id: string | null
+          event_type: string
+          id: string
+          notes: string | null
+          scheduled_end: string
+          scheduled_start: string
+          status: string
+          updated_at: string
+          work_order_id: string | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          assigned_operator_id?: string | null
+          bay_id?: string | null
+          boat_id: string
+          business_id: string
+          created_at?: string
+          equipment_id?: string | null
+          event_type: string
+          id?: string
+          notes?: string | null
+          scheduled_end: string
+          scheduled_start: string
+          status?: string
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          assigned_operator_id?: string | null
+          bay_id?: string | null
+          boat_id?: string
+          business_id?: string
+          created_at?: string
+          equipment_id?: string | null
+          event_type?: string
+          id?: string
+          notes?: string | null
+          scheduled_end?: string
+          scheduled_start?: string
+          status?: string
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yard_calendar_assigned_operator_id_fkey"
+            columns: ["assigned_operator_id"]
+            isOneToOne: false
+            referencedRelation: "service_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yard_calendar_bay_id_fkey"
+            columns: ["bay_id"]
+            isOneToOne: false
+            referencedRelation: "haul_out_bays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yard_calendar_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yard_calendar_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yard_calendar_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "yard_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yard_calendar_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yard_equipment: {
+        Row: {
+          business_id: string
+          created_at: string
+          equipment_name: string
+          equipment_type: string
+          id: string
+          is_available: boolean
+          max_beam_ft: number | null
+          max_capacity_lbs: number | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          equipment_name: string
+          equipment_type: string
+          id?: string
+          is_available?: boolean
+          max_beam_ft?: number | null
+          max_capacity_lbs?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          equipment_name?: string
+          equipment_type?: string
+          id?: string
+          is_available?: boolean
+          max_beam_ft?: number | null
+          max_capacity_lbs?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yard_equipment_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       boat_profiles_masked: {
@@ -4060,6 +4842,20 @@ export type Database = {
       membership_tier: "standard" | "genie"
       pricing_model: "per_foot" | "flat_rate" | "per_hour"
       quote_status: "pending" | "accepted" | "rejected" | "expired"
+      service_specialty:
+        | "diesel_mechanic"
+        | "outboard_mechanic"
+        | "electrician"
+        | "electronics"
+        | "fiberglass"
+        | "gelcoat"
+        | "painter"
+        | "canvas"
+        | "detailer"
+        | "rigger"
+        | "welder"
+        | "carpenter"
+        | "general"
       service_type: "genie_service" | "pro_service"
       store_item_category: "parts" | "retail" | "consumables"
       utility_meter_type: "power" | "water"
@@ -4069,6 +4865,11 @@ export type Database = {
         | "approved"
         | "rejected"
         | "converted"
+      work_order_phase_status:
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "blocked"
       work_order_status:
         | "pending"
         | "assigned"
@@ -4232,6 +5033,21 @@ export const Constants = {
       membership_tier: ["standard", "genie"],
       pricing_model: ["per_foot", "flat_rate", "per_hour"],
       quote_status: ["pending", "accepted", "rejected", "expired"],
+      service_specialty: [
+        "diesel_mechanic",
+        "outboard_mechanic",
+        "electrician",
+        "electronics",
+        "fiberglass",
+        "gelcoat",
+        "painter",
+        "canvas",
+        "detailer",
+        "rigger",
+        "welder",
+        "carpenter",
+        "general",
+      ],
       service_type: ["genie_service", "pro_service"],
       store_item_category: ["parts", "retail", "consumables"],
       utility_meter_type: ["power", "water"],
@@ -4241,6 +5057,12 @@ export const Constants = {
         "approved",
         "rejected",
         "converted",
+      ],
+      work_order_phase_status: [
+        "pending",
+        "in_progress",
+        "completed",
+        "blocked",
       ],
       work_order_status: [
         "pending",
