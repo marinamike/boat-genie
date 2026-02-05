@@ -74,9 +74,20 @@ export interface PumpTotalizerReading {
   expected_reading: number;
 }
 
+export interface TankReading {
+  tank_id: string;
+  tank_name: string;
+  theoretical_gallons: number;
+  physical_gallons: number;
+  discrepancy_gallons: number;
+}
+
 export interface FuelReconciliation {
   id: string;
   business_id: string;
+  fuel_type: string | null;
+  tank_readings: TankReading[] | null;
+  // Legacy/summary fields
   tank_id: string;
   physical_reading_gallons: number;
   theoretical_volume_gallons: number;
@@ -84,7 +95,7 @@ export interface FuelReconciliation {
   discrepancy_percentage: number;
   measurement_type: string;
   raw_measurement: number | null;
-  pump_totalizer_readings: unknown; // jsonb from Supabase
+  pump_totalizer_readings: PumpTotalizerReading[] | null;
   notes: string | null;
   recorded_by: string;
   recorded_at: string;
@@ -187,7 +198,15 @@ export function useFuelManagement() {
       return;
     }
 
-    setReconciliations(data as FuelReconciliation[]);
+    // Map the data to properly type JSONB fields
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const typedData: FuelReconciliation[] = (data || []).map((rec: any) => ({
+      ...rec,
+      tank_readings: Array.isArray(rec.tank_readings) ? rec.tank_readings as unknown as TankReading[] : null,
+      pump_totalizer_readings: Array.isArray(rec.pump_totalizer_readings) ? rec.pump_totalizer_readings as unknown as PumpTotalizerReading[] : null,
+    }));
+
+    setReconciliations(typedData);
   }, [business?.id]);
 
   const refresh = useCallback(async () => {
@@ -460,11 +479,10 @@ export function useFuelManagement() {
   };
 
   const recordReconciliation = async (data: {
-    tank_id: string;
-    physical_reading_gallons: number;
-    measurement_type: "gallons" | "inches";
-    raw_measurement?: number;
+    fuel_type: string;
+    tank_readings: TankReading[];
     pump_totalizer_readings?: PumpTotalizerReading[];
+    measurement_type: "gallons" | "inches";
     notes?: string;
   }) => {
     if (!business?.id) return null;
@@ -472,29 +490,34 @@ export function useFuelManagement() {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return null;
 
-    const tank = tanks.find(t => t.id === data.tank_id);
-    if (!tank) {
-      toast({ title: "Error", description: "Tank not found", variant: "destructive" });
+    if (data.tank_readings.length === 0) {
+      toast({ title: "Error", description: "At least one tank reading is required", variant: "destructive" });
       return null;
     }
 
-    const theoretical = tank.current_volume_gallons;
-    const physical = data.physical_reading_gallons;
-    const discrepancy = physical - theoretical;
-    const discrepancy_percentage = theoretical > 0 
-      ? (discrepancy / theoretical) * 100 
+    // Calculate totals across all tanks
+    const totalTheoretical = data.tank_readings.reduce((sum, tr) => sum + tr.theoretical_gallons, 0);
+    const totalPhysical = data.tank_readings.reduce((sum, tr) => sum + tr.physical_gallons, 0);
+    const totalDiscrepancy = totalPhysical - totalTheoretical;
+    const discrepancy_percentage = totalTheoretical > 0 
+      ? (totalDiscrepancy / totalTheoretical) * 100 
       : 0;
+
+    // Use first tank as primary for legacy compatibility
+    const primaryTank = data.tank_readings[0];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const insertData: any = {
       business_id: business.id,
-      tank_id: data.tank_id,
-      physical_reading_gallons: physical,
-      theoretical_volume_gallons: theoretical,
-      discrepancy_gallons: discrepancy,
+      fuel_type: data.fuel_type,
+      tank_readings: data.tank_readings,
+      // Legacy fields for backward compatibility
+      tank_id: primaryTank.tank_id,
+      physical_reading_gallons: totalPhysical,
+      theoretical_volume_gallons: totalTheoretical,
+      discrepancy_gallons: totalDiscrepancy,
       discrepancy_percentage,
       measurement_type: data.measurement_type,
-      raw_measurement: data.raw_measurement || null,
       pump_totalizer_readings: data.pump_totalizer_readings || [],
       notes: data.notes || null,
       recorded_by: user.user.id,
@@ -511,15 +534,17 @@ export function useFuelManagement() {
       return null;
     }
 
-    // Update tank to match physical reading
-    await supabase
-      .from("fuel_tanks")
-      .update({ current_volume_gallons: physical })
-      .eq("id", tank.id);
+    // Update all tanks to match their physical readings
+    for (const tankReading of data.tank_readings) {
+      await supabase
+        .from("fuel_tanks")
+        .update({ current_volume_gallons: tankReading.physical_gallons })
+        .eq("id", tankReading.tank_id);
+    }
 
     toast({ 
       title: "Reconciliation recorded", 
-      description: `Discrepancy: ${discrepancy >= 0 ? '+' : ''}${discrepancy.toFixed(1)} gallons (${discrepancy_percentage.toFixed(1)}%)` 
+      description: `${data.fuel_type} - Discrepancy: ${totalDiscrepancy >= 0 ? '+' : ''}${totalDiscrepancy.toFixed(1)} gal (${discrepancy_percentage.toFixed(1)}%)` 
     });
     
     await refresh();

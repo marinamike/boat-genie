@@ -1024,6 +1024,7 @@ export type Database = {
           created_at: string
           discrepancy_gallons: number
           discrepancy_percentage: number
+          fuel_type: string | null
           id: string
           measurement_type: string
           notes: string | null
@@ -1033,6 +1034,7 @@ export type Database = {
           recorded_at: string
           recorded_by: string
           tank_id: string
+          tank_readings: Json | null
           theoretical_volume_gallons: number
         }
         Insert: {
@@ -1040,6 +1042,7 @@ export type Database = {
           created_at?: string
           discrepancy_gallons: number
           discrepancy_percentage: number
+          fuel_type?: string | null
           id?: string
           measurement_type?: string
           notes?: string | null
@@ -1049,6 +1052,7 @@ export type Database = {
           recorded_at?: string
           recorded_by: string
           tank_id: string
+          tank_readings?: Json | null
           theoretical_volume_gallons: number
         }
         Update: {
@@ -1056,6 +1060,7 @@ export type Database = {
           created_at?: string
           discrepancy_gallons?: number
           discrepancy_percentage?: number
+          fuel_type?: string | null
           id?: string
           measurement_type?: string
           notes?: string | null
@@ -1065,6 +1070,7 @@ export type Database = {
           recorded_at?: string
           recorded_by?: string
           tank_id?: string
+          tank_readings?: Json | null
           theoretical_volume_gallons?: number
         }
         Relationships: [
