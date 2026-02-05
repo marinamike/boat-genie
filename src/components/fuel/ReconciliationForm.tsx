@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { FuelTank, useFuelManagement } from "@/hooks/useFuelManagement";
+import { FuelTank, FuelReconciliation } from "@/hooks/useFuelManagement";
 import { ClipboardCheck, AlertTriangle, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,10 +14,16 @@ interface ReconciliationFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tanks: FuelTank[];
+  onRecordReconciliation: (data: {
+    tank_id: string;
+    physical_reading_gallons: number;
+    measurement_type: "gallons" | "inches";
+    raw_measurement?: number;
+    notes?: string;
+  }) => Promise<unknown>;
 }
 
-export function ReconciliationForm({ open, onOpenChange, tanks }: ReconciliationFormProps) {
-  const { recordReconciliation } = useFuelManagement();
+export function ReconciliationForm({ open, onOpenChange, tanks, onRecordReconciliation }: ReconciliationFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [tankId, setTankId] = useState("");
@@ -36,7 +42,7 @@ export function ReconciliationForm({ open, onOpenChange, tanks }: Reconciliation
     if (!tankId || !physicalReading) return;
 
     setLoading(true);
-    const result = await recordReconciliation({
+    const result = await onRecordReconciliation({
       tank_id: tankId,
       physical_reading_gallons: physical,
       measurement_type: measurementType,

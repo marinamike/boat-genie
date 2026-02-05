@@ -5,17 +5,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { useFuelManagement, FuelTank } from "@/hooks/useFuelManagement";
+import { FuelTank } from "@/hooks/useFuelManagement";
 import { Droplets } from "lucide-react";
 
 interface TankSetupFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editTank?: FuelTank | null;
+  onCreateTank: (data: Omit<FuelTank, "id" | "created_at" | "updated_at" | "business_id">) => Promise<unknown>;
+  onUpdateTank: (id: string, data: Partial<FuelTank>) => Promise<boolean>;
 }
 
-export function TankSetupForm({ open, onOpenChange, editTank }: TankSetupFormProps) {
-  const { createTank, updateTank } = useFuelManagement();
+export function TankSetupForm({ open, onOpenChange, editTank, onCreateTank, onUpdateTank }: TankSetupFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [tankName, setTankName] = useState("");
@@ -66,9 +67,9 @@ export function TankSetupForm({ open, onOpenChange, editTank }: TankSetupFormPro
 
     let success = false;
     if (editTank) {
-      success = await updateTank(editTank.id, tankData);
+      success = await onUpdateTank(editTank.id, tankData);
     } else {
-      const result = await createTank(tankData);
+      const result = await onCreateTank(tankData);
       success = !!result;
     }
 

@@ -4,17 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { useFuelManagement, FuelTank } from "@/hooks/useFuelManagement";
+import { FuelTank, FuelPump } from "@/hooks/useFuelManagement";
 import { Fuel } from "lucide-react";
 
 interface PumpSetupFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tanks: FuelTank[];
+  onCreatePump: (data: Omit<FuelPump, "id" | "created_at" | "updated_at" | "business_id" | "tank">) => Promise<FuelPump | null>;
 }
 
-export function PumpSetupForm({ open, onOpenChange, tanks }: PumpSetupFormProps) {
-  const { createPump } = useFuelManagement();
+export function PumpSetupForm({ open, onOpenChange, tanks, onCreatePump }: PumpSetupFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [pumpName, setPumpName] = useState("");
@@ -28,7 +28,7 @@ export function PumpSetupForm({ open, onOpenChange, tanks }: PumpSetupFormProps)
 
     setLoading(true);
     
-    const result = await createPump({
+    const result = await onCreatePump({
       pump_name: pumpName,
       pump_number: pumpNumber || null,
       tank_id: tankId,
