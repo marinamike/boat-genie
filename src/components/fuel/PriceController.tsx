@@ -106,29 +106,29 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Current Price Display */}
-        <div className="flex items-end gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
           <div className="flex-1">
             <Label className="text-xs text-muted-foreground">Retail Price</Label>
             <div className="flex items-center gap-2 mt-1">
-              <div className="relative flex-1 min-w-[140px]">
+              <div className="relative flex-1">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="number"
                   step="0.001"
                   value={retailPrice}
                   onChange={(e) => setRetailPrice(e.target.value)}
-                  className="pl-10 pr-2 text-xl font-bold h-14"
+                  className="pl-10 text-lg font-bold h-12"
                   disabled={!isOwner}
                 />
               </div>
-              {trend === "up" && <TrendingUp className="h-5 w-5 text-green-500" />}
-              {trend === "down" && <TrendingDown className="h-5 w-5 text-red-500" />}
-              {trend === "same" && <Minus className="h-5 w-5 text-muted-foreground" />}
+              {trend === "up" && <TrendingUp className="h-5 w-5 text-green-500 shrink-0" />}
+              {trend === "down" && <TrendingDown className="h-5 w-5 text-red-500 shrink-0" />}
+              {trend === "same" && <Minus className="h-5 w-5 text-muted-foreground shrink-0" />}
             </div>
             <p className="text-xs text-muted-foreground mt-1">per gallon</p>
           </div>
           {isOwner && (
-            <Button onClick={handleQuickUpdate} disabled={saving} className="h-14">
+            <Button onClick={handleQuickUpdate} disabled={saving} className="h-12 shrink-0">
               {saving ? "Saving..." : "Update"}
             </Button>
           )}
