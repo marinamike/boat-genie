@@ -31,17 +31,17 @@ export default function BusinessDashboard() {
         <Card>
           <CardHeader className="text-center">
             <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <CardTitle>No Business Found</CardTitle>
+            <CardTitle>Welcome to Business</CardTitle>
             <CardDescription>
-              You don't have a business profile yet. Create one to get started with managing your marina or service business.
+              Set up your business profile to start managing your marina, service yard, or both. Configure your modules and settings to get started.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
             <Link
-              to="/register-marina"
+              to="/business/settings"
               className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Register Business
+              Set Up Business
             </Link>
           </CardContent>
         </Card>

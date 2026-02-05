@@ -22,9 +22,8 @@ interface UserManagementProps {
 }
 
 const ROLE_CONFIG: Record<AppRole, { label: string; color: string }> = {
-  boat_owner: { label: "Owner", color: "bg-blue-500" },
-  provider: { label: "Provider", color: "bg-green-500" },
-  admin: { label: "Manager", color: "bg-purple-500" },
+  boat_owner: { label: "Customer", color: "bg-blue-500" },
+  admin: { label: "Business", color: "bg-purple-500" },
   marina_staff: { label: "Staff", color: "bg-orange-500" },
 };
 
@@ -112,9 +111,8 @@ export function UserManagement({ users, onUpdateRole }: UserManagementProps) {
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="boat_owner">Owner</SelectItem>
-                              <SelectItem value="provider">Provider</SelectItem>
-                              <SelectItem value="admin">Manager</SelectItem>
+                              <SelectItem value="boat_owner">Customer</SelectItem>
+                              <SelectItem value="admin">Business</SelectItem>
                               <SelectItem value="marina_staff">Staff</SelectItem>
                             </SelectContent>
                           </Select>
