@@ -31,7 +31,7 @@ import Operations from "./pages/Operations";
 
 // Business pages
 import MarinaDetails from "./pages/MarinaDetails";
-import MarinaSlipsPage from "./pages/MarinaSlipsPage";
+import SlipsDashboard from "./pages/SlipsDashboard";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import BusinessSettings from "./pages/BusinessSettings";
 import FuelDashboard from "./pages/FuelDashboard";
@@ -108,7 +108,7 @@ function RoleBasedRoutes() {
           <Routes>
             <Route element={<BusinessLayout />}>
               <Route path="/business" element={<BusinessDashboard />} />
-              <Route path="/business/slips" element={<MarinaSlipsPage />} />
+              <Route path="/business/slips" element={<SlipsDashboard />} />
               <Route path="/business/jobs" element={<ProviderDashboard />} />
               <Route path="/business/fuel" element={<FuelDashboard />} />
               <Route path="/business/store" element={<StoreDashboard />} />
