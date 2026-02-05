@@ -153,19 +153,16 @@ export function QuickSaleForm({ open, onOpenChange, pumps, tanks, onRecordSale }
             </div>
           </div>
 
-          {/* Price Per Gallon */}
+          {/* Price Per Gallon (Display Only) */}
           <div className="space-y-2">
-            <Label htmlFor="price">Price Per Gallon</Label>
+            <Label>Price Per Gallon</Label>
             <div className="relative">
               <Input
-                id="price"
-                type="number"
-                step="0.001"
-                min="0"
-                value={pricePerGallon}
-                onChange={(e) => setPricePerGallon(e.target.value)}
-                placeholder="0.000"
-                className="pl-8"
+                type="text"
+                value={pricePerGallon ? `$${parseFloat(pricePerGallon).toFixed(3)}` : "—"}
+                readOnly
+                disabled
+                className="pl-8 bg-muted"
               />
               <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             </div>
