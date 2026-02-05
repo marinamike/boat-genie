@@ -1,43 +1,92 @@
 
-# Fix: Price Per Gallon Not Updating in Quick-Log Fuel Sale
+# Refactor: Pump-to-Fuel-Type Architecture
 
-## Problem
-When you update prices in the **Pricing** tab, the **Quick-Log Fuel Sale** form doesn't reflect the new prices. You have to close and reopen the form (or refresh the page) to see updated pricing.
+## Current Problem
+The system links each pump to a **specific tank** via `tank_id`. In reality:
+- All **diesel pumps** draw from all available **diesel tanks**
+- All **gas pumps** draw from all available **gas tanks**
 
-## Root Cause
-The `QuickSaleForm` component creates its own instance of the `useFuelPricing` hook, which fetches price data when the component first loads. When prices are updated in the **Pricing** tab, that update only refreshes the Pricing tab's hook instance - the QuickSaleForm's data remains stale.
+This means pumps should be associated with a **fuel type**, not a specific tank.
 
-## Solution
-Refresh the pricing data whenever the Quick-Log Fuel Sale sheet opens. This ensures staff always see the latest prices when recording a sale.
+## Solution Overview
+1. Replace `tank_id` on pumps with `fuel_type`
+2. When recording a sale, deduct gallons proportionally from all active tanks of that fuel type (or from the tank with the most fuel)
+3. Update UI to select fuel type instead of a specific tank when adding/editing pumps
 
-## Changes Required
+## Database Changes
 
-### 1. Update QuickSaleForm.tsx
+### Migration: Modify `fuel_pumps` table
+```sql
+-- Add fuel_type column to pumps
+ALTER TABLE fuel_pumps 
+ADD COLUMN fuel_type text;
 
-Add a `useEffect` that calls `refresh()` from the pricing hook whenever the sheet opens:
+-- Populate fuel_type from existing linked tanks
+UPDATE fuel_pumps 
+SET fuel_type = (SELECT fuel_type FROM fuel_tanks WHERE id = fuel_pumps.tank_id);
 
-```typescript
-const { getRetailPrice, getMemberPrice, prices, refresh } = useFuelPricing();
+-- Make fuel_type NOT NULL and remove tank_id requirement
+ALTER TABLE fuel_pumps 
+ALTER COLUMN fuel_type SET NOT NULL;
 
-// Refresh prices when sheet opens
-useEffect(() => {
-  if (open) {
-    refresh();
-  }
-}, [open, refresh]);
+-- Make tank_id nullable (keep for historical reference but not used going forward)
+ALTER TABLE fuel_pumps 
+ALTER COLUMN tank_id DROP NOT NULL;
 ```
 
-This ensures that:
-- Every time a staff member opens the sale form, fresh prices are fetched from the database
-- Any updates made in the Pricing tab are immediately reflected
-- The form always shows current pricing without requiring a page refresh
+## Code Changes
+
+### 1. Update `FuelPump` Interface
+**File:** `src/hooks/useFuelManagement.ts`
+
+- Add `fuel_type` field to the interface
+- Remove dependency on `tank_id` for fuel type lookup
+
+### 2. Update `PumpSetupForm.tsx`
+**File:** `src/components/fuel/PumpSetupForm.tsx`
+
+- Replace "Linked Tank" dropdown with **Fuel Type** selector (Gas, Diesel, Premium)
+- Remove tank selection entirely
+
+### 3. Update `recordSale` Logic
+**File:** `src/hooks/useFuelManagement.ts`
+
+Current logic:
+```typescript
+const tank = tanks.find(t => t.id === pump.tank_id);
+// Deduct from single tank
+```
+
+New logic:
+```typescript
+// Find all active tanks of this fuel type
+const matchingTanks = tanks.filter(t => 
+  t.fuel_type === pump.fuel_type && t.is_active
+);
+
+// Deduct from tank with most fuel (or distribute proportionally)
+const primaryTank = matchingTanks.sort((a, b) => 
+  b.current_volume_gallons - a.current_volume_gallons
+)[0];
+```
+
+### 4. Update `QuickSaleForm.tsx`
+**File:** `src/components/fuel/QuickSaleForm.tsx`
+
+- Update pump display to show fuel type directly instead of `pump.tank?.fuel_type`
+- Update tank availability display to show combined volume across all tanks of that type
+
+### 5. Update `fuel_transactions` Insert
+When recording a sale, we'll pick the primary tank (with most volume) to associate with the transaction for inventory tracking purposes.
 
 ## Files to Modify
-- `src/components/fuel/QuickSaleForm.tsx`
+- **Database migration** (new)
+- `src/hooks/useFuelManagement.ts` - Interface + sale logic
+- `src/components/fuel/PumpSetupForm.tsx` - Fuel type selector
+- `src/components/fuel/QuickSaleForm.tsx` - Display updates
 
 ## Testing
-1. Go to the **Fuel** dashboard
-2. Open the **Pricing** tab and update a fuel price
-3. Click **Log Fuel Sale** to open the Quick-Log form
-4. Select a pump with that fuel type
-5. Verify the **Price Per Gallon** field shows the newly updated price
+1. Edit an existing pump - verify fuel type is shown (not tank)
+2. Add a new pump - select fuel type only
+3. Record a sale - verify gallons are deducted from the correct fuel type's tanks
+4. Check that combined tank volume displays correctly in the sale form
