@@ -20,7 +20,7 @@ export function TankSetupForm({ open, onOpenChange, editTank, onCreateTank, onUp
   const [loading, setLoading] = useState(false);
   
   const [tankName, setTankName] = useState("");
-  const [fuelType, setFuelType] = useState<"diesel" | "gasoline" | "premium">("diesel");
+  const [fuelType, setFuelType] = useState<"diesel" | "gasoline">("diesel");
   const [totalCapacity, setTotalCapacity] = useState("");
   const [currentVolume, setCurrentVolume] = useState("");
   const [lowLevelThreshold, setLowLevelThreshold] = useState("500");
@@ -31,7 +31,7 @@ export function TankSetupForm({ open, onOpenChange, editTank, onCreateTank, onUp
     if (open) {
       if (editTank) {
         setTankName(editTank.tank_name || "");
-        setFuelType((editTank.fuel_type as "diesel" | "gasoline" | "premium") || "diesel");
+        setFuelType((editTank.fuel_type as "diesel" | "gasoline") || "diesel");
         setTotalCapacity(editTank.total_capacity_gallons?.toString() || "");
         setCurrentVolume(editTank.current_volume_gallons?.toString() || "");
         setLowLevelThreshold(editTank.low_level_threshold_gallons?.toString() || "500");
@@ -124,8 +124,7 @@ export function TankSetupForm({ open, onOpenChange, editTank, onCreateTank, onUp
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
                 <SelectItem value="diesel">Diesel</SelectItem>
-                <SelectItem value="gasoline">Gasoline (Regular)</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="gasoline">Gasoline</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -7,7 +7,7 @@ export interface FuelTank {
   id: string;
   business_id: string;
   tank_name: string;
-  fuel_type: "diesel" | "gasoline" | "premium";
+  fuel_type: "diesel" | "gasoline";
   total_capacity_gallons: number;
   current_volume_gallons: number;
   low_level_threshold_gallons: number;

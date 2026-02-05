@@ -306,9 +306,8 @@ export function PriceController({ isOwner }: PriceControllerProps) {
   const { prices, priceHistory, loading, updatePrice, getPriceHistoryForType } = useFuelPricing();
 
   const fuelTypes = [
-    { type: "gasoline", label: "Regular Gas" },
+    { type: "gasoline", label: "Gas" },
     { type: "diesel", label: "Diesel" },
-    { type: "premium", label: "Premium Gas" },
   ];
 
   if (loading) {
