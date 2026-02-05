@@ -14,7 +14,6 @@ import { LiveDockList } from "@/components/marina/LiveDockList";
 import { ReservationManager } from "@/components/marina/ReservationManager";
 import { MarinaProfileEditor } from "@/components/marina/MarinaProfileEditor";
 import { MarinaSeedButton } from "@/components/marina/MarinaSeedButton";
-import { useAuth } from "@/contexts/AuthContext";
 // BottomNav removed - handled by StaffLayout
 
 
@@ -55,7 +54,6 @@ const MarinaManagement = () => {
   const [loading, setLoading] = useState(true);
   const [marina, setMarina] = useState<Marina | null>(null);
   const navigate = useNavigate();
-  const { isGodModeUser } = useAuth();
 
   const { 
     settings, 
@@ -176,12 +174,6 @@ const MarinaManagement = () => {
           onDelete={deleteFile}
           onToggleActive={toggleFileActive}
         />
-
-        {/* God Mode: Marina Seed Button */}
-        {isGodModeUser && <MarinaSeedButton />}
-
-        {/* God Mode: Admin Provider Review */}
-        {isGodModeUser && <AdminProviderReview />}
       </main>
 
       {/* BottomNav handled by StaffLayout */}

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Anchor, MessageSquare, Settings, Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { PendingReservationsCard } from "@/components/marina/dashboard/PendingReservationsCard";
 import { ArrivalsDepaturesCard } from "@/components/marina/dashboard/ArrivalsDepatures";
 import { ActiveProvidersCard } from "@/components/marina/dashboard/ActiveProvidersCard";
@@ -29,7 +29,6 @@ const MarinaDashboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatWorkOrderId, setChatWorkOrderId] = useState<string | undefined>();
   const navigate = useNavigate();
-  const { isGodModeUser } = useAuth();
   const { approveReservation, rejectReservation } = useMarinaReservations("marina");
 
   // Approval dialog state
@@ -168,11 +167,6 @@ const MarinaDashboard = () => {
           <Button variant="outline" onClick={() => navigate("/marina/reservations")}>
             All Reservations
           </Button>
-          {isGodModeUser && (
-            <Button variant="outline" onClick={() => navigate("/admin")}>
-              Admin Panel
-            </Button>
-          )}
         </div>
       </main>
 
