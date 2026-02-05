@@ -26,7 +26,14 @@ interface QuickSaleFormProps {
 }
 
 export function QuickSaleForm({ open, onOpenChange, pumps, onRecordSale }: QuickSaleFormProps) {
-  const { getRetailPrice, getMemberPrice, prices } = useFuelPricing();
+  const { getRetailPrice, getMemberPrice, prices, refresh } = useFuelPricing();
+  
+  // Refresh prices when sheet opens to ensure latest pricing
+  useEffect(() => {
+    if (open) {
+      refresh();
+    }
+  }, [open, refresh]);
   const [loading, setLoading] = useState(false);
   
   const [pumpId, setPumpId] = useState("");
