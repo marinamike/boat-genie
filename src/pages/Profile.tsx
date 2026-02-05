@@ -32,7 +32,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const { role, isAdmin, hasMarina, updateRole, loading: roleLoading, refetch: refetchRole } = useUserRole();
+  const { role, isAdmin, hasMarina, userId, updateRole, loading: roleLoading, refetch: refetchRole } = useUserRole();
   const { settings, toggleModule, loading: marinaLoading } = useMarinaSettings();
 
   useEffect(() => {
@@ -109,6 +109,16 @@ const Profile = () => {
   };
 
   const handleRoleSelect = async (newRole: AppRole) => {
+    // Safety: if role data hasn't finished loading (fail-open timeout can render early),
+    // don't allow role writes yet.
+    if (roleLoading || !userId) {
+      toast({
+        title: "Please wait",
+        description: "Account info is still loading. Try again in a moment.",
+      });
+      return;
+    }
+
     // For Business role, check if they need to register a marina first
     if (newRole === "admin" && !hasMarina) {
       navigate("/register-marina");
@@ -228,7 +238,7 @@ const Profile = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RoleSelector selectedRole={role} onSelect={handleRoleSelect} />
+            <RoleSelector selectedRole={role} onSelect={handleRoleSelect} disabled={roleLoading || !userId} />
           </CardContent>
         </Card>
 
