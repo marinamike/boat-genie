@@ -810,42 +810,54 @@ export type Database = {
       fuel_deliveries: {
         Row: {
           business_id: string
+          confirmed_at: string | null
+          confirmed_by: string | null
           cost_per_gallon: number | null
           created_at: string
           delivery_date: string
           gallons_delivered: number
+          gallons_requested: number | null
           id: string
           invoice_number: string | null
           notes: string | null
           recorded_by: string
+          status: string
           tank_id: string
           total_cost: number | null
           vendor_name: string | null
         }
         Insert: {
           business_id: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           cost_per_gallon?: number | null
           created_at?: string
           delivery_date?: string
           gallons_delivered: number
+          gallons_requested?: number | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
           recorded_by: string
+          status?: string
           tank_id: string
           total_cost?: number | null
           vendor_name?: string | null
         }
         Update: {
           business_id?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           cost_per_gallon?: number | null
           created_at?: string
           delivery_date?: string
           gallons_delivered?: number
+          gallons_requested?: number | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
           recorded_by?: string
+          status?: string
           tank_id?: string
           total_cost?: number | null
           vendor_name?: string | null
