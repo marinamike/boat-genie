@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { ReservationRequestSheet } from "@/components/marina/ReservationRequestSheet";
 import { MarineWeatherWidget } from "@/components/weather/MarineWeatherWidget";
 import { TideChart } from "@/components/weather/TideChart";
+import { LiveFuelPrices } from "@/components/fuel/LiveFuelPrices";
 import { useMarineWeather } from "@/hooks/useMarineWeather";
 
 interface Marina {
@@ -357,6 +358,11 @@ export default function MarinaDetails() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Live Fuel Prices */}
+        {(marina.fuel_gas || marina.fuel_diesel) && (
+          <LiveFuelPrices businessId={marina.id} />
+        )}
 
         {/* Amenities */}
         {amenities.length > 0 && (

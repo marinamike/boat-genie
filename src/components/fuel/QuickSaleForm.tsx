@@ -1,18 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { FuelPump, FuelTransaction } from "@/hooks/useFuelManagement";
-import { Fuel, DollarSign, Ship } from "lucide-react";
+import { useFuelPricing } from "@/hooks/useFuelPricing";
+import { Fuel, DollarSign, Ship, Users } from "lucide-react";
 
 interface QuickSaleFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pumps: FuelPump[];
-  defaultPricePerGallon?: number;
   onRecordSale: (data: {
     pump_id: string;
     gallons_sold: number;
@@ -24,17 +25,35 @@ interface QuickSaleFormProps {
   }) => Promise<FuelTransaction | null>;
 }
 
-export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon = 4.50, onRecordSale }: QuickSaleFormProps) {
+export function QuickSaleForm({ open, onOpenChange, pumps, onRecordSale }: QuickSaleFormProps) {
+  const { getRetailPrice, getMemberPrice, prices } = useFuelPricing();
   const [loading, setLoading] = useState(false);
   
   const [pumpId, setPumpId] = useState("");
   const [gallonsSold, setGallonsSold] = useState("");
-  const [pricePerGallon, setPricePerGallon] = useState(defaultPricePerGallon.toString());
+  const [pricePerGallon, setPricePerGallon] = useState("");
   const [vesselName, setVesselName] = useState("");
   const [notes, setNotes] = useState("");
+  const [applyMemberPrice, setApplyMemberPrice] = useState(false);
 
   const selectedPump = pumps.find(p => p.id === pumpId);
+  const selectedFuelType = selectedPump?.tank?.fuel_type || "";
+  const memberPrice = getMemberPrice(selectedFuelType);
+  const hasMemberPricing = memberPrice !== null;
   const totalAmount = parseFloat(gallonsSold || "0") * parseFloat(pricePerGallon || "0");
+
+  // Update price when pump is selected or member toggle changes
+  useEffect(() => {
+    if (selectedPump?.tank?.fuel_type) {
+      const fuelType = selectedPump.tank.fuel_type;
+      if (applyMemberPrice && memberPrice !== null) {
+        setPricePerGallon(memberPrice.toString());
+      } else {
+        const retailPrice = getRetailPrice(fuelType);
+        setPricePerGallon(retailPrice > 0 ? retailPrice.toString() : "");
+      }
+    }
+  }, [pumpId, selectedPump, applyMemberPrice, getRetailPrice, getMemberPrice, memberPrice]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +65,7 @@ export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon
       gallons_sold: parseFloat(gallonsSold),
       price_per_gallon: parseFloat(pricePerGallon),
       vessel_name: vesselName || undefined,
-      notes: notes || undefined,
+      notes: applyMemberPrice ? `[Member Price Applied] ${notes || ""}`.trim() : notes || undefined,
     });
 
     setLoading(false);
@@ -57,6 +76,7 @@ export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon
       setGallonsSold("");
       setVesselName("");
       setNotes("");
+      setApplyMemberPrice(false);
       onOpenChange(false);
     }
   };
@@ -128,12 +148,36 @@ export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon
                 min="0"
                 value={pricePerGallon}
                 onChange={(e) => setPricePerGallon(e.target.value)}
-                placeholder="4.50"
+                placeholder="0.00"
                 className="pl-8"
               />
               <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             </div>
+            {!pricePerGallon && selectedPump && (
+              <p className="text-xs text-destructive">
+                No pricing configured for {selectedFuelType}. Set prices in the Pricing tab.
+              </p>
+            )}
           </div>
+
+          {/* Member Pricing Toggle */}
+          {hasMemberPricing && selectedPump && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Apply Member Price</p>
+                  <p className="text-xs text-muted-foreground">
+                    ${memberPrice?.toFixed(2)}/gal (saves ${((parseFloat(pricePerGallon) || 0) - (memberPrice || 0)).toFixed(2)}/gal)
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={applyMemberPrice}
+                onCheckedChange={setApplyMemberPrice}
+              />
+            </div>
+          )}
 
           {/* Vessel Name */}
           <div className="space-y-2">
