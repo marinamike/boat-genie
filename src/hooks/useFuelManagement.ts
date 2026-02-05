@@ -427,9 +427,6 @@ export function useFuelManagement() {
     tank_id: string;
     gallons_requested: number;
     vendor_name?: string;
-    invoice_number?: string;
-    cost_per_gallon?: number;
-    notes?: string;
   }) => {
     if (!business?.id) return null;
 
@@ -444,9 +441,6 @@ export function useFuelManagement() {
         gallons_requested: data.gallons_requested,
         gallons_delivered: 0, // Will be set on confirmation
         vendor_name: data.vendor_name || null,
-        invoice_number: data.invoice_number || null,
-        cost_per_gallon: data.cost_per_gallon || null,
-        notes: data.notes || null,
         recorded_by: user.user.id,
         status: "requested",
       })
@@ -470,6 +464,7 @@ export function useFuelManagement() {
   const confirmDelivery = async (deliveryId: string, data: {
     gallons_delivered: number;
     cost_per_gallon?: number;
+    invoice_number?: string;
     notes?: string;
   }) => {
     if (!business?.id) return false;
@@ -493,6 +488,7 @@ export function useFuelManagement() {
       .update({
         gallons_delivered: data.gallons_delivered,
         cost_per_gallon: data.cost_per_gallon || null,
+        invoice_number: data.invoice_number || null,
         total_cost,
         notes: data.notes || null,
         status: "delivered",
@@ -542,9 +538,6 @@ export function useFuelManagement() {
       tank_id: data.tank_id,
       gallons_requested: data.gallons_delivered,
       vendor_name: data.vendor_name,
-      invoice_number: data.invoice_number,
-      cost_per_gallon: data.cost_per_gallon,
-      notes: data.notes,
     });
 
     if (!request) return null;
@@ -552,6 +545,7 @@ export function useFuelManagement() {
     await confirmDelivery(request.id, {
       gallons_delivered: data.gallons_delivered,
       cost_per_gallon: data.cost_per_gallon,
+      invoice_number: data.invoice_number,
       notes: data.notes,
     });
 

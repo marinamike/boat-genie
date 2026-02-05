@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { FuelDelivery } from "@/hooks/useFuelManagement";
-import { CheckCircle2, DollarSign, AlertTriangle } from "lucide-react";
+import { CheckCircle2, DollarSign, AlertTriangle, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ConfirmDeliverySheetProps {
@@ -15,6 +15,7 @@ interface ConfirmDeliverySheetProps {
   onConfirmDelivery: (deliveryId: string, data: {
     gallons_delivered: number;
     cost_per_gallon?: number;
+    invoice_number?: string;
     notes?: string;
   }) => Promise<boolean>;
 }
@@ -29,6 +30,7 @@ export function ConfirmDeliverySheet({
   
   const [gallonsDelivered, setGallonsDelivered] = useState("");
   const [costPerGallon, setCostPerGallon] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [notes, setNotes] = useState("");
 
   // Pre-fill from request when opening
@@ -36,6 +38,7 @@ export function ConfirmDeliverySheet({
     if (delivery && open) {
       setGallonsDelivered(delivery.gallons_requested?.toString() || "");
       setCostPerGallon(delivery.cost_per_gallon?.toString() || "");
+      setInvoiceNumber(delivery.invoice_number || "");
       setNotes(delivery.notes || "");
     }
   }, [delivery, open]);
@@ -54,6 +57,7 @@ export function ConfirmDeliverySheet({
     const success = await onConfirmDelivery(delivery.id, {
       gallons_delivered: parseFloat(gallonsDelivered),
       cost_per_gallon: costPerGallon ? parseFloat(costPerGallon) : undefined,
+      invoice_number: invoiceNumber || undefined,
       notes: notes || undefined,
     });
 
@@ -63,6 +67,7 @@ export function ConfirmDeliverySheet({
       // Reset form
       setGallonsDelivered("");
       setCostPerGallon("");
+      setInvoiceNumber("");
       setNotes("");
       onOpenChange(false);
     }
@@ -98,11 +103,22 @@ export function ConfirmDeliverySheet({
             <div className="text-2xl font-bold">
               {requestedGallons.toLocaleString()} gal
             </div>
-            {delivery.invoice_number && (
-              <p className="text-xs text-muted-foreground">
-                PO/Invoice: {delivery.invoice_number}
-              </p>
-            )}
+          </div>
+
+          {/* PO/Invoice Number */}
+          <div className="space-y-2">
+            <Label htmlFor="invoice">PO / Invoice Number</Label>
+            <div className="relative">
+              <Input
+                id="invoice"
+                type="text"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="INV-12345"
+                className="pl-8"
+              />
+              <FileText className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
 
           {/* Actual Gallons Delivered */}
@@ -145,7 +161,7 @@ export function ConfirmDeliverySheet({
 
           {/* Actual Cost Per Gallon */}
           <div className="space-y-2">
-            <Label htmlFor="cost">Actual Cost Per Gallon</Label>
+            <Label htmlFor="cost">Cost Per Gallon</Label>
             <div className="relative">
               <Input
                 id="cost"
