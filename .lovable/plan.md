@@ -1,68 +1,52 @@
 
-# Simplify Fuel Delivery Request Form
+# Auto-Update Cost Basis on Delivery Confirmation
 
 ## Overview
-Streamline the delivery request form to only capture essential information upfront, and move all other details to the confirmation step when the fuel actually arrives.
+When a fuel delivery is confirmed with a cost per gallon, automatically update the cost basis for that product type in the pricing system. This ensures pricing always reflects the latest acquisition cost and maintains proper margins.
 
-## Current State
-The **DeliveryRequestForm** currently has these fields:
-- Tank selection (product type) - **Keep**
-- Gallons requested - **Keep**
-- Vendor name - **Keep**
-- PO/Invoice number - Move to confirmation
-- Expected cost per gallon - Move to confirmation
-- Notes - Move to confirmation
+## Current Flow
+1. Staff confirms a delivery with `gallons_delivered` and `cost_per_gallon`
+2. System updates the delivery record and tank volume
+3. Cost basis in pricing remains unchanged (requires manual update)
 
-The **ConfirmDeliverySheet** currently has:
-- Actual gallons delivered
-- Actual cost per gallon
-- Notes
+## Proposed Flow
+1. Staff confirms delivery with `gallons_delivered` and `cost_per_gallon`
+2. System updates delivery record and tank volume
+3. **NEW**: System automatically updates `fuel_prices.cost_basis` for that fuel type
+4. If auto-margin is enabled, retail price also updates automatically
 
-## Changes
+## Changes Required
 
-### 1. Simplify DeliveryRequestForm
-Remove the following fields from the request form:
-- Invoice number input
-- Expected cost per gallon input
-- Notes textarea
-- Estimated cost display
+### 1. Update `useFuelManagement.ts` - `confirmDelivery` function
+After updating the tank volume, add logic to update the fuel pricing cost basis:
+- Look up the tank to determine the fuel type
+- Update `fuel_prices.cost_basis` for that fuel type with the delivery's cost per gallon
+- The existing database trigger will log the price change to history
+- The existing auto-margin logic in the database/hook will recalculate retail price if enabled
 
-The form will only show:
-- **Product Type** (tank selection dropdown)
-- **Gallons Requested** (number input)
-- **Vendor Name** (text input)
-
-### 2. Enhance ConfirmDeliverySheet
-Add fields that were removed from the request form:
-- **PO/Invoice Number** (text input) - for recording the invoice when fuel arrives
-- Keep existing: Actual gallons delivered, Cost per gallon, Notes
-
-### 3. Update Hook Function
-Modify `createDeliveryRequest` function signature:
-- Remove `invoice_number`, `cost_per_gallon`, and `notes` from the request creation parameters
-- These will only be set during confirmation
-
-Modify `confirmDelivery` function signature:
-- Add `invoice_number` parameter to capture invoice details at confirmation time
+### 2. Considerations
+- Only update cost basis if `cost_per_gallon` is provided (not null/undefined)
+- Use the tank's `fuel_type` to identify which pricing record to update
+- The existing `log_fuel_price_change` trigger will automatically log the change to `fuel_price_history`
+- If auto-margin is enabled, the retail price will be recalculated
 
 ---
 
 ## Technical Details
 
-### File: `src/components/fuel/DeliveryRequestForm.tsx`
-- Remove state variables: `invoiceNumber`, `costPerGallon`, `notes`
-- Remove these from form submission payload
-- Remove corresponding form field JSX (lines 136-192)
-- Simplify interface to only require `tank_id`, `gallons_requested`, `vendor_name`
-
-### File: `src/components/fuel/ConfirmDeliverySheet.tsx`
-- Add `invoiceNumber` state variable
-- Add Invoice Number input field after the request summary section
-- Update `onConfirmDelivery` call to include `invoice_number`
-- Pre-fill invoice number from delivery if it exists (for edge cases)
-
 ### File: `src/hooks/useFuelManagement.ts`
-- Update `createDeliveryRequest` function to only accept: `tank_id`, `gallons_requested`, `vendor_name`
-- Update `confirmDelivery` function to accept additional field: `invoice_number`
-- Update the database insert/update calls accordingly
+Location: Inside `confirmDelivery` function, after the tank volume update (around line 523)
 
+Add the following logic:
+1. Check if `cost_per_gallon` was provided
+2. Get the fuel type from the tank
+3. Get current price record for that fuel type
+4. Calculate new retail price if auto-margin is enabled
+5. Update the `fuel_prices` table with new cost basis (and retail price if auto-margin)
+6. Set `updated_by` to current user for audit trail
+
+The update will include:
+- `cost_basis`: New cost from delivery
+- `retail_price`: Recalculated if auto-margin enabled (cost_basis + auto_margin_amount)
+- `member_price`: Recalculated if member discount enabled (retail_price - member_discount_amount)
+- `updated_by`: Current user ID
