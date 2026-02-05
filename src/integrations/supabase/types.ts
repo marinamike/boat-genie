@@ -486,6 +486,209 @@ export type Database = {
         }
         Relationships: []
       }
+      business_staff: {
+        Row: {
+          accepted_at: string | null
+          business_id: string
+          created_at: string
+          id: string
+          invited_at: string
+          job_title: string | null
+          module_permissions: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          invited_at?: string
+          job_title?: string | null
+          module_permissions?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          invited_at?: string
+          job_title?: string | null
+          module_permissions?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_staff_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          accepts_longterm: boolean | null
+          accepts_transient: boolean | null
+          address: string | null
+          amenities: string[] | null
+          auto_approve_transient: boolean | null
+          business_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          diagnostic_fee: number | null
+          ein: string | null
+          enabled_modules: Database["public"]["Enums"]["business_module"][]
+          fuel_diesel: boolean | null
+          fuel_gas: boolean | null
+          has_laundry: boolean | null
+          has_pool: boolean | null
+          has_pumpout: boolean | null
+          has_restaurant: boolean | null
+          has_security: boolean | null
+          has_wifi: boolean | null
+          hourly_rate: number | null
+          id: string
+          insurance_doc_url: string | null
+          insurance_expiry: string | null
+          is_verified: boolean | null
+          latitude: number | null
+          logo_url: string | null
+          longitude: number | null
+          max_beam_ft: number | null
+          max_draft_ft: number | null
+          max_length_ft: number | null
+          min_depth_ft: number | null
+          monthly_base_rate: number | null
+          owner_id: string
+          power_options: string[] | null
+          rate_per_foot: number | null
+          require_insurance_long_term: boolean | null
+          require_registration: boolean | null
+          service_categories: string[] | null
+          staging_dock_linear_footage: number | null
+          stripe_account_id: string | null
+          stripe_connected: boolean | null
+          total_slips: number | null
+          transient_rate_per_ft: number | null
+          updated_at: string
+          verified_at: string | null
+          w9_doc_url: string | null
+          website_url: string | null
+        }
+        Insert: {
+          accepts_longterm?: boolean | null
+          accepts_transient?: boolean | null
+          address?: string | null
+          amenities?: string[] | null
+          auto_approve_transient?: boolean | null
+          business_name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          diagnostic_fee?: number | null
+          ein?: string | null
+          enabled_modules?: Database["public"]["Enums"]["business_module"][]
+          fuel_diesel?: boolean | null
+          fuel_gas?: boolean | null
+          has_laundry?: boolean | null
+          has_pool?: boolean | null
+          has_pumpout?: boolean | null
+          has_restaurant?: boolean | null
+          has_security?: boolean | null
+          has_wifi?: boolean | null
+          hourly_rate?: number | null
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expiry?: string | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          logo_url?: string | null
+          longitude?: number | null
+          max_beam_ft?: number | null
+          max_draft_ft?: number | null
+          max_length_ft?: number | null
+          min_depth_ft?: number | null
+          monthly_base_rate?: number | null
+          owner_id: string
+          power_options?: string[] | null
+          rate_per_foot?: number | null
+          require_insurance_long_term?: boolean | null
+          require_registration?: boolean | null
+          service_categories?: string[] | null
+          staging_dock_linear_footage?: number | null
+          stripe_account_id?: string | null
+          stripe_connected?: boolean | null
+          total_slips?: number | null
+          transient_rate_per_ft?: number | null
+          updated_at?: string
+          verified_at?: string | null
+          w9_doc_url?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          accepts_longterm?: boolean | null
+          accepts_transient?: boolean | null
+          address?: string | null
+          amenities?: string[] | null
+          auto_approve_transient?: boolean | null
+          business_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          diagnostic_fee?: number | null
+          ein?: string | null
+          enabled_modules?: Database["public"]["Enums"]["business_module"][]
+          fuel_diesel?: boolean | null
+          fuel_gas?: boolean | null
+          has_laundry?: boolean | null
+          has_pool?: boolean | null
+          has_pumpout?: boolean | null
+          has_restaurant?: boolean | null
+          has_security?: boolean | null
+          has_wifi?: boolean | null
+          hourly_rate?: number | null
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expiry?: string | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          logo_url?: string | null
+          longitude?: number | null
+          max_beam_ft?: number | null
+          max_draft_ft?: number | null
+          max_length_ft?: number | null
+          min_depth_ft?: number | null
+          monthly_base_rate?: number | null
+          owner_id?: string
+          power_options?: string[] | null
+          rate_per_foot?: number | null
+          require_insurance_long_term?: boolean | null
+          require_registration?: boolean | null
+          service_categories?: string[] | null
+          staging_dock_linear_footage?: number | null
+          stripe_account_id?: string | null
+          stripe_connected?: boolean | null
+          total_slips?: number | null
+          transient_rate_per_ft?: number | null
+          updated_at?: string
+          verified_at?: string | null
+          w9_doc_url?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       dock_status: {
         Row: {
           boat_id: string
@@ -965,6 +1168,7 @@ export type Database = {
           assigned_dock_location: string | null
           assigned_slip: string | null
           boat_id: string
+          business_id: string | null
           created_at: string
           id: string
           insurance_verified: boolean | null
@@ -987,6 +1191,7 @@ export type Database = {
           assigned_dock_location?: string | null
           assigned_slip?: string | null
           boat_id: string
+          business_id?: string | null
           created_at?: string
           id?: string
           insurance_verified?: boolean | null
@@ -1009,6 +1214,7 @@ export type Database = {
           assigned_dock_location?: string | null
           assigned_slip?: string | null
           boat_id?: string
+          business_id?: string | null
           created_at?: string
           id?: string
           insurance_verified?: boolean | null
@@ -1030,6 +1236,13 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marina_reservations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
           {
@@ -1887,6 +2100,7 @@ export type Database = {
       quotes: {
         Row: {
           base_price: number
+          business_id: string | null
           created_at: string
           emergency_fee: number
           id: string
@@ -1909,6 +2123,7 @@ export type Database = {
         }
         Insert: {
           base_price: number
+          business_id?: string | null
           created_at?: string
           emergency_fee?: number
           id?: string
@@ -1931,6 +2146,7 @@ export type Database = {
         }
         Update: {
           base_price?: number
+          business_id?: string | null
           created_at?: string
           emergency_fee?: number
           id?: string
@@ -1952,6 +2168,13 @@ export type Database = {
           work_order_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "quotes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quotes_work_order_id_fkey"
             columns: ["work_order_id"]
@@ -2113,6 +2336,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      staff_invites: {
+        Row: {
+          accepted_at: string | null
+          business_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invite_token: string
+          job_title: string | null
+          module_permissions: Json
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          business_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          job_title?: string | null
+          module_permissions?: Json
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          business_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          job_title?: string | null
+          module_permissions?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_invites_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -2419,6 +2689,7 @@ export type Database = {
         Row: {
           accepted_quote_id: string | null
           boat_id: string
+          business_id: string | null
           check_in_method: string | null
           completed_at: string | null
           created_at: string
@@ -2465,6 +2736,7 @@ export type Database = {
         Insert: {
           accepted_quote_id?: string | null
           boat_id: string
+          business_id?: string | null
           check_in_method?: string | null
           completed_at?: string | null
           created_at?: string
@@ -2511,6 +2783,7 @@ export type Database = {
         Update: {
           accepted_quote_id?: string | null
           boat_id?: string
+          business_id?: string | null
           check_in_method?: string | null
           completed_at?: string | null
           created_at?: string
@@ -2567,6 +2840,13 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
           {
@@ -2648,7 +2928,12 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_business_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
+      has_module_permission: {
+        Args: { _business_id: string; _module: string; _permission: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2661,11 +2946,14 @@ export type Database = {
         Args: { _work_order_id: string }
         Returns: boolean
       }
+      is_business_owner: { Args: { _business_id: string }; Returns: boolean }
+      is_business_staff: { Args: { _business_id: string }; Returns: boolean }
       is_marina_manager: { Args: never; Returns: boolean }
       owns_boat: { Args: { _boat_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "boat_owner" | "provider" | "admin" | "marina_staff"
+      business_module: "slips" | "service" | "fuel" | "ship_store"
       escrow_status:
         | "none"
         | "pending_quote"
@@ -2831,6 +3119,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["boat_owner", "provider", "admin", "marina_staff"],
+      business_module: ["slips", "service", "fuel", "ship_store"],
       escrow_status: [
         "none",
         "pending_quote",
