@@ -571,6 +571,7 @@ export type Database = {
           monthly_base_rate: number | null
           owner_id: string
           power_options: string[] | null
+          power_rate_per_kwh: number | null
           rate_per_foot: number | null
           require_insurance_long_term: boolean | null
           require_registration: boolean | null
@@ -583,6 +584,7 @@ export type Database = {
           updated_at: string
           verified_at: string | null
           w9_doc_url: string | null
+          water_rate_per_gallon: number | null
           website_url: string | null
         }
         Insert: {
@@ -622,6 +624,7 @@ export type Database = {
           monthly_base_rate?: number | null
           owner_id: string
           power_options?: string[] | null
+          power_rate_per_kwh?: number | null
           rate_per_foot?: number | null
           require_insurance_long_term?: boolean | null
           require_registration?: boolean | null
@@ -634,6 +637,7 @@ export type Database = {
           updated_at?: string
           verified_at?: string | null
           w9_doc_url?: string | null
+          water_rate_per_gallon?: number | null
           website_url?: string | null
         }
         Update: {
@@ -673,6 +677,7 @@ export type Database = {
           monthly_base_rate?: number | null
           owner_id?: string
           power_options?: string[] | null
+          power_rate_per_kwh?: number | null
           rate_per_foot?: number | null
           require_insurance_long_term?: boolean | null
           require_registration?: boolean | null
@@ -685,6 +690,7 @@ export type Database = {
           updated_at?: string
           verified_at?: string | null
           w9_doc_url?: string | null
+          water_rate_per_gallon?: number | null
           website_url?: string | null
         }
         Relationships: []
@@ -1409,6 +1415,100 @@ export type Database = {
           },
         ]
       }
+      lease_agreements: {
+        Row: {
+          auto_renew: boolean | null
+          boat_id: string
+          business_id: string
+          contract_doc_url: string | null
+          created_at: string
+          deposit_amount: number | null
+          deposit_paid: boolean | null
+          end_date: string | null
+          id: string
+          insurance_verified: boolean | null
+          lease_status: Database["public"]["Enums"]["lease_status"]
+          monthly_rate: number
+          owner_id: string
+          power_included: boolean | null
+          registration_verified: boolean | null
+          renewal_months: number | null
+          start_date: string
+          terms_notes: string | null
+          updated_at: string
+          water_included: boolean | null
+          yard_asset_id: string
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          boat_id: string
+          business_id: string
+          contract_doc_url?: string | null
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          end_date?: string | null
+          id?: string
+          insurance_verified?: boolean | null
+          lease_status?: Database["public"]["Enums"]["lease_status"]
+          monthly_rate: number
+          owner_id: string
+          power_included?: boolean | null
+          registration_verified?: boolean | null
+          renewal_months?: number | null
+          start_date: string
+          terms_notes?: string | null
+          updated_at?: string
+          water_included?: boolean | null
+          yard_asset_id: string
+        }
+        Update: {
+          auto_renew?: boolean | null
+          boat_id?: string
+          business_id?: string
+          contract_doc_url?: string | null
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          end_date?: string | null
+          id?: string
+          insurance_verified?: boolean | null
+          lease_status?: Database["public"]["Enums"]["lease_status"]
+          monthly_rate?: number
+          owner_id?: string
+          power_included?: boolean | null
+          registration_verified?: boolean | null
+          renewal_months?: number | null
+          start_date?: string
+          terms_notes?: string | null
+          updated_at?: string
+          water_included?: boolean | null
+          yard_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lease_agreements_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreements_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreements_yard_asset_id_fkey"
+            columns: ["yard_asset_id"]
+            isOneToOne: false
+            referencedRelation: "yard_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_recommendations: {
         Row: {
           boat_equipment_id: string | null
@@ -2042,6 +2142,88 @@ export type Database = {
           },
         ]
       }
+      meter_readings: {
+        Row: {
+          billing_period_end: string | null
+          billing_period_start: string | null
+          boat_id: string | null
+          business_id: string
+          created_at: string
+          current_reading: number
+          id: string
+          invoice_id: string | null
+          is_billed: boolean | null
+          meter_id: string
+          notes: string | null
+          previous_reading: number
+          rate_per_unit: number
+          reading_date: string
+          recorded_by: string
+          total_charge: number | null
+          usage_amount: number | null
+        }
+        Insert: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          boat_id?: string | null
+          business_id: string
+          created_at?: string
+          current_reading: number
+          id?: string
+          invoice_id?: string | null
+          is_billed?: boolean | null
+          meter_id: string
+          notes?: string | null
+          previous_reading: number
+          rate_per_unit: number
+          reading_date?: string
+          recorded_by: string
+          total_charge?: number | null
+          usage_amount?: number | null
+        }
+        Update: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          boat_id?: string | null
+          business_id?: string
+          created_at?: string
+          current_reading?: number
+          id?: string
+          invoice_id?: string | null
+          is_billed?: boolean | null
+          meter_id?: string
+          notes?: string | null
+          previous_reading?: number
+          rate_per_unit?: number
+          reading_date?: string
+          recorded_by?: string
+          total_charge?: number | null
+          usage_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meter_readings_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meter_readings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meter_readings_meter_id_fkey"
+            columns: ["meter_id"]
+            isOneToOne: false
+            referencedRelation: "utility_meters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -2182,6 +2364,67 @@ export type Database = {
           work_order_id?: string | null
         }
         Relationships: []
+      }
+      power_alerts: {
+        Row: {
+          alert_message: string | null
+          alert_type: string
+          business_id: string
+          created_at: string
+          id: string
+          is_resolved: boolean | null
+          meter_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          yard_asset_id: string
+        }
+        Insert: {
+          alert_message?: string | null
+          alert_type?: string
+          business_id: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          meter_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          yard_asset_id: string
+        }
+        Update: {
+          alert_message?: string | null
+          alert_type?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          meter_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          yard_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "power_alerts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "power_alerts_meter_id_fkey"
+            columns: ["meter_id"]
+            isOneToOne: false
+            referencedRelation: "utility_meters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "power_alerts_yard_asset_id_fkey"
+            columns: ["yard_asset_id"]
+            isOneToOne: false
+            referencedRelation: "yard_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -3092,6 +3335,66 @@ export type Database = {
         }
         Relationships: []
       }
+      utility_meters: {
+        Row: {
+          business_id: string
+          created_at: string
+          current_reading: number | null
+          id: string
+          is_active: boolean | null
+          last_reading_date: string | null
+          meter_name: string
+          meter_number: string | null
+          meter_type: Database["public"]["Enums"]["utility_meter_type"]
+          rate_per_unit: number
+          updated_at: string
+          yard_asset_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          current_reading?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_reading_date?: string | null
+          meter_name: string
+          meter_number?: string | null
+          meter_type: Database["public"]["Enums"]["utility_meter_type"]
+          rate_per_unit?: number
+          updated_at?: string
+          yard_asset_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          current_reading?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_reading_date?: string | null
+          meter_name?: string
+          meter_number?: string | null
+          meter_type?: Database["public"]["Enums"]["utility_meter_type"]
+          rate_per_unit?: number
+          updated_at?: string
+          yard_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_meters_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_meters_yard_asset_id_fkey"
+            columns: ["yard_asset_id"]
+            isOneToOne: false
+            referencedRelation: "yard_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vessel_documents: {
         Row: {
           boat_id: string
@@ -3552,6 +3855,88 @@ export type Database = {
           },
         ]
       }
+      yard_assets: {
+        Row: {
+          asset_name: string
+          asset_type: Database["public"]["Enums"]["yard_asset_type"]
+          business_id: string
+          created_at: string
+          current_boat_id: string | null
+          current_reservation_id: string | null
+          daily_rate: number | null
+          dock_section: string | null
+          id: string
+          is_available: boolean | null
+          max_beam_ft: number | null
+          max_draft_ft: number | null
+          max_loa_ft: number | null
+          monthly_rate: number | null
+          notes: string | null
+          position_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          asset_name: string
+          asset_type?: Database["public"]["Enums"]["yard_asset_type"]
+          business_id: string
+          created_at?: string
+          current_boat_id?: string | null
+          current_reservation_id?: string | null
+          daily_rate?: number | null
+          dock_section?: string | null
+          id?: string
+          is_available?: boolean | null
+          max_beam_ft?: number | null
+          max_draft_ft?: number | null
+          max_loa_ft?: number | null
+          monthly_rate?: number | null
+          notes?: string | null
+          position_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          asset_name?: string
+          asset_type?: Database["public"]["Enums"]["yard_asset_type"]
+          business_id?: string
+          created_at?: string
+          current_boat_id?: string | null
+          current_reservation_id?: string | null
+          daily_rate?: number | null
+          dock_section?: string | null
+          id?: string
+          is_available?: boolean | null
+          max_beam_ft?: number | null
+          max_draft_ft?: number | null
+          max_loa_ft?: number | null
+          monthly_rate?: number | null
+          notes?: string | null
+          position_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yard_assets_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yard_assets_current_boat_id_fkey"
+            columns: ["current_boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yard_assets_current_reservation_id_fkey"
+            columns: ["current_reservation_id"]
+            isOneToOne: false
+            referencedRelation: "marina_reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       boat_profiles_masked: {
@@ -3661,12 +4046,14 @@ export type Database = {
         | "hauling"
         | "re_racked"
         | "cancelled"
+      lease_status: "active" | "pending" | "expired" | "terminated"
       marina_module: "dry_stack" | "ship_store" | "fuel_dock" | "service_yard"
       membership_tier: "standard" | "genie"
       pricing_model: "per_foot" | "flat_rate" | "per_hour"
       quote_status: "pending" | "accepted" | "rejected" | "expired"
       service_type: "genie_service" | "pro_service"
       store_item_category: "parts" | "retail" | "consumables"
+      utility_meter_type: "power" | "water"
       wish_form_status:
         | "submitted"
         | "reviewed"
@@ -3679,6 +4066,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      yard_asset_type: "wet_slip" | "dry_rack" | "yard_block" | "mooring"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3830,12 +4218,14 @@ export const Constants = {
         "re_racked",
         "cancelled",
       ],
+      lease_status: ["active", "pending", "expired", "terminated"],
       marina_module: ["dry_stack", "ship_store", "fuel_dock", "service_yard"],
       membership_tier: ["standard", "genie"],
       pricing_model: ["per_foot", "flat_rate", "per_hour"],
       quote_status: ["pending", "accepted", "rejected", "expired"],
       service_type: ["genie_service", "pro_service"],
       store_item_category: ["parts", "retail", "consumables"],
+      utility_meter_type: ["power", "water"],
       wish_form_status: [
         "submitted",
         "reviewed",
@@ -3850,6 +4240,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      yard_asset_type: ["wet_slip", "dry_rack", "yard_block", "mooring"],
     },
   },
 } as const
