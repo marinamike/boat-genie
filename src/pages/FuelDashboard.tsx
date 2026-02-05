@@ -422,6 +422,7 @@ export default function FuelDashboard() {
         open={showReconciliationForm} 
         onOpenChange={setShowReconciliationForm} 
         tanks={tanks}
+        pumps={pumps}
         onRecordReconciliation={recordReconciliation}
       />
       

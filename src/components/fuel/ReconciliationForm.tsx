@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,29 +6,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { FuelTank, FuelReconciliation } from "@/hooks/useFuelManagement";
-import { ClipboardCheck, AlertTriangle, CheckCircle } from "lucide-react";
+import { FuelTank, FuelPump, PumpTotalizerReading } from "@/hooks/useFuelManagement";
+import { ClipboardCheck, AlertTriangle, CheckCircle, Fuel } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ReconciliationFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tanks: FuelTank[];
+  pumps: FuelPump[];
   onRecordReconciliation: (data: {
     tank_id: string;
     physical_reading_gallons: number;
     measurement_type: "gallons" | "inches";
     raw_measurement?: number;
+    pump_totalizer_readings?: PumpTotalizerReading[];
     notes?: string;
   }) => Promise<unknown>;
 }
 
-export function ReconciliationForm({ open, onOpenChange, tanks, onRecordReconciliation }: ReconciliationFormProps) {
+interface PumpReading {
+  pump_id: string;
+  pump_name: string;
+  expected_reading: number;
+  actual_reading: string;
+}
+
+export function ReconciliationForm({ open, onOpenChange, tanks, pumps, onRecordReconciliation }: ReconciliationFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [tankId, setTankId] = useState("");
   const [measurementType, setMeasurementType] = useState<"gallons" | "inches">("gallons");
   const [physicalReading, setPhysicalReading] = useState("");
+  const [pumpReadings, setPumpReadings] = useState<PumpReading[]>([]);
   const [notes, setNotes] = useState("");
 
   const selectedTank = tanks.find(t => t.id === tankId);
@@ -37,16 +47,56 @@ export function ReconciliationForm({ open, onOpenChange, tanks, onRecordReconcil
   const discrepancy = physical - theoretical;
   const discrepancyPercentage = theoretical > 0 ? (discrepancy / theoretical) * 100 : 0;
 
+  // Get pumps matching the selected tank's fuel type
+  const matchingPumps = selectedTank 
+    ? pumps.filter(p => p.fuel_type === selectedTank.fuel_type && p.is_active)
+    : [];
+
+  // Update pump readings when tank selection changes
+  useEffect(() => {
+    if (selectedTank) {
+      const newPumpReadings = matchingPumps.map(pump => ({
+        pump_id: pump.id,
+        pump_name: pump.pump_name,
+        expected_reading: pump.lifetime_meter_gallons,
+        actual_reading: "",
+      }));
+      setPumpReadings(newPumpReadings);
+    } else {
+      setPumpReadings([]);
+    }
+  }, [tankId, selectedTank?.fuel_type]);
+
+  const handlePumpReadingChange = (pumpId: string, value: string) => {
+    setPumpReadings(prev => 
+      prev.map(pr => 
+        pr.pump_id === pumpId ? { ...pr, actual_reading: value } : pr
+      )
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tankId || !physicalReading) return;
 
     setLoading(true);
+    
+    // Build pump totalizer readings array (only include pumps with actual readings)
+    const pumpTotalizerReadings: PumpTotalizerReading[] = pumpReadings
+      .filter(pr => pr.actual_reading !== "")
+      .map(pr => ({
+        pump_id: pr.pump_id,
+        pump_name: pr.pump_name,
+        meter_reading: parseFloat(pr.actual_reading),
+        expected_reading: pr.expected_reading,
+      }));
+
     const result = await onRecordReconciliation({
       tank_id: tankId,
       physical_reading_gallons: physical,
       measurement_type: measurementType,
       raw_measurement: measurementType === "inches" ? physical : undefined,
+      pump_totalizer_readings: pumpTotalizerReadings.length > 0 ? pumpTotalizerReadings : undefined,
       notes: notes || undefined,
     });
 
@@ -56,6 +106,7 @@ export function ReconciliationForm({ open, onOpenChange, tanks, onRecordReconcil
       // Reset form
       setTankId("");
       setPhysicalReading("");
+      setPumpReadings([]);
       setNotes("");
       onOpenChange(false);
     }
@@ -65,14 +116,14 @@ export function ReconciliationForm({ open, onOpenChange, tanks, onRecordReconcil
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ClipboardCheck className="h-5 w-5" />
             Tank Reconciliation
           </SheetTitle>
           <SheetDescription>
-            Enter physical dip/stick measurement
+            Enter physical dip/stick measurement and pump totalizers
           </SheetDescription>
         </SheetHeader>
 
@@ -191,6 +242,65 @@ export function ReconciliationForm({ open, onOpenChange, tanks, onRecordReconcil
                   Variance exceeds 2%. Consider investigating potential causes.
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Pump Totalizers Section */}
+          {selectedTank && matchingPumps.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Fuel className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-sm font-medium">
+                  Pump Totalizers ({selectedTank.fuel_type})
+                </Label>
+              </div>
+              
+              <div className="space-y-3">
+                {pumpReadings.map(pr => {
+                  const actualValue = parseFloat(pr.actual_reading || "0");
+                  const pumpDiscrepancy = pr.actual_reading ? actualValue - pr.expected_reading : null;
+                  
+                  return (
+                    <div key={pr.pump_id} className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{pr.pump_name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          System: {pr.expected_reading.toLocaleString()} gal
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={pr.actual_reading}
+                          onChange={(e) => handlePumpReadingChange(pr.pump_id, e.target.value)}
+                          placeholder="Actual totalizer reading"
+                          className="flex-1"
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">gal</span>
+                      </div>
+                      
+                      {pumpDiscrepancy !== null && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Discrepancy:</span>
+                          <span className={cn(
+                            "font-medium",
+                            Math.abs(pumpDiscrepancy) <= 10 ? "text-primary" : "text-destructive"
+                          )}>
+                            {pumpDiscrepancy >= 0 ? "+" : ""}{pumpDiscrepancy.toFixed(1)} gal
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                Optional: Enter the physical totalizer reading from each pump's meter
+              </p>
             </div>
           )}
 

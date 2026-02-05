@@ -67,6 +67,13 @@ export interface FuelDelivery {
   tank?: FuelTank;
 }
 
+export interface PumpTotalizerReading {
+  pump_id: string;
+  pump_name: string;
+  meter_reading: number;
+  expected_reading: number;
+}
+
 export interface FuelReconciliation {
   id: string;
   business_id: string;
@@ -75,8 +82,9 @@ export interface FuelReconciliation {
   theoretical_volume_gallons: number;
   discrepancy_gallons: number;
   discrepancy_percentage: number;
-  measurement_type: "gallons" | "inches";
+  measurement_type: string;
   raw_measurement: number | null;
+  pump_totalizer_readings: unknown; // jsonb from Supabase
   notes: string | null;
   recorded_by: string;
   recorded_at: string;
@@ -456,6 +464,7 @@ export function useFuelManagement() {
     physical_reading_gallons: number;
     measurement_type: "gallons" | "inches";
     raw_measurement?: number;
+    pump_totalizer_readings?: PumpTotalizerReading[];
     notes?: string;
   }) => {
     if (!business?.id) return null;
@@ -476,20 +485,24 @@ export function useFuelManagement() {
       ? (discrepancy / theoretical) * 100 
       : 0;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const insertData: any = {
+      business_id: business.id,
+      tank_id: data.tank_id,
+      physical_reading_gallons: physical,
+      theoretical_volume_gallons: theoretical,
+      discrepancy_gallons: discrepancy,
+      discrepancy_percentage,
+      measurement_type: data.measurement_type,
+      raw_measurement: data.raw_measurement || null,
+      pump_totalizer_readings: data.pump_totalizer_readings || [],
+      notes: data.notes || null,
+      recorded_by: user.user.id,
+    };
+
     const { data: reconciliation, error } = await supabase
       .from("fuel_reconciliations")
-      .insert({
-        business_id: business.id,
-        tank_id: data.tank_id,
-        physical_reading_gallons: physical,
-        theoretical_volume_gallons: theoretical,
-        discrepancy_gallons: discrepancy,
-        discrepancy_percentage,
-        measurement_type: data.measurement_type,
-        raw_measurement: data.raw_measurement || null,
-        notes: data.notes || null,
-        recorded_by: user.user.id,
-      })
+      .insert(insertData)
       .select()
       .single();
 
