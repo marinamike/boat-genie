@@ -520,6 +520,44 @@ export function useFuelManagement() {
           last_delivery_date: new Date().toISOString()
         })
         .eq("id", tank.id);
+
+      // Auto-update cost basis if cost per gallon was provided
+      if (data.cost_per_gallon) {
+        const fuelType = tank.fuel_type;
+        
+        // Get current pricing record for this fuel type
+        const { data: priceRecord } = await supabase
+          .from("fuel_prices")
+          .select("*")
+          .eq("business_id", business.id)
+          .eq("fuel_type", fuelType)
+          .single();
+
+        if (priceRecord) {
+          // Calculate new prices based on settings
+          let newRetailPrice = priceRecord.retail_price;
+          let newMemberPrice = priceRecord.member_price;
+
+          if (priceRecord.auto_margin_enabled && priceRecord.auto_margin_amount) {
+            newRetailPrice = data.cost_per_gallon + priceRecord.auto_margin_amount;
+          }
+
+          if (priceRecord.member_discount_enabled && priceRecord.member_discount_amount && newRetailPrice) {
+            newMemberPrice = newRetailPrice - priceRecord.member_discount_amount;
+          }
+
+          // Update fuel prices with new cost basis
+          await supabase
+            .from("fuel_prices")
+            .update({
+              cost_basis: data.cost_per_gallon,
+              retail_price: newRetailPrice,
+              member_price: newMemberPrice,
+              updated_by: user.user.id,
+            })
+            .eq("id", priceRecord.id);
+        }
+      }
     }
 
     toast({ 
