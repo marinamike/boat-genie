@@ -1,67 +1,49 @@
 
-# Plan: Add Edit and Delete for Tanks and Pumps
+# Fix: Quick-Log Fuel Sale Window Not Fully Visible
 
-## Current State
-- Edit functionality already exists for both tanks and pumps (pencil button triggers the edit form)
-- Delete functionality is missing entirely
+## Problem
+When using the Quick-Log Fuel Sale form, the content extends beyond the visible area (especially on smaller screens or when the "Total Amount" section appears after entering gallons). The "Record Sale" button gets cut off and users cannot complete the transaction.
+
+## Root Cause
+The `SheetContent` component in `QuickSaleForm.tsx` lacks scrolling capability. When the form content grows (with the Total Amount display appearing), it overflows the fixed-height sheet without providing a way to scroll.
+
+## Solution
+Add scrolling support to the Sheet content so all form fields and the submit button remain accessible regardless of screen size.
 
 ## Changes Required
 
-### 1. Add Delete Functions to useFuelManagement Hook
-Add two new functions to `src/hooks/useFuelManagement.ts`:
-- `deleteTank(id: string)` - Deletes a tank after checking it has no linked pumps
-- `deletePump(id: string)` - Deletes a pump from the database
+### 1. Update QuickSaleForm.tsx
 
-Both functions will show appropriate toast messages and refresh the data after deletion.
+Add `overflow-y-auto` to the `SheetContent` to enable vertical scrolling, and wrap the form in a flex container to ensure proper layout:
 
-### 2. Add Delete Button to Tank Cards
-Update `src/components/fuel/TankGauge.tsx`:
-- Add an `onDelete` prop
-- Add a trash icon button next to the edit button
-- Include a confirmation dialog before deletion (using AlertDialog)
-
-### 3. Add Delete Button to Pump Rows
-Update `src/pages/FuelDashboard.tsx`:
-- Add a trash icon button next to the edit button for pumps
-- Include a confirmation dialog before deletion
-
-### 4. Wire Up Delete Handlers in FuelDashboard
-Update `src/pages/FuelDashboard.tsx`:
-- Import and use the new `deleteTank` and `deletePump` functions from the hook
-- Pass delete handlers to child components
-
-## Technical Details
-
-### Delete Tank Function
-```typescript
-const deleteTank = async (id: string) => {
-  // Check if tank has linked pumps
-  const linkedPumps = pumps.filter(p => p.tank_id === id);
-  if (linkedPumps.length > 0) {
-    toast({ 
-      title: "Cannot delete tank", 
-      description: "Remove linked pumps first",
-      variant: "destructive" 
-    });
-    return false;
-  }
-  // Delete from database
-  // Refresh data
-};
+**Current:**
+```tsx
+<SheetContent className="sm:max-w-md">
 ```
 
-### Delete Pump Function
-```typescript
-const deletePump = async (id: string) => {
-  // Delete from database
-  // Refresh data
-};
+**Updated:**
+```tsx
+<SheetContent className="sm:max-w-md overflow-y-auto">
 ```
 
-### Confirmation Dialog
-Uses the existing AlertDialog component to confirm before destructive actions.
+Also add bottom padding to the form to ensure the button isn't cut off at the edge:
+
+**Current:**
+```tsx
+<form onSubmit={handleSubmit} className="space-y-4 mt-6">
+```
+
+**Updated:**
+```tsx
+<form onSubmit={handleSubmit} className="space-y-4 mt-6 pb-6">
+```
 
 ## Files to Modify
-1. `src/hooks/useFuelManagement.ts` - Add deleteTank and deletePump functions
-2. `src/components/fuel/TankGauge.tsx` - Add delete button with confirmation
-3. `src/pages/FuelDashboard.tsx` - Wire up delete handlers and add pump delete UI
+- `src/components/fuel/QuickSaleForm.tsx`
+
+## Testing
+1. Navigate to `/business/fuel`
+2. Click "Record Sale" to open the Quick-Log Fuel Sale sheet
+3. Select a pump and enter gallons to trigger the Total Amount display
+4. Verify the entire form is scrollable and the "Record Sale" button is visible and clickable
+5. Test on mobile viewport to confirm scrolling works on smaller screens
