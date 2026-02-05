@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export type AppRole = "boat_owner" | "provider" | "admin" | "marina_staff";
+// Three-profile architecture: Customer (boat_owner), Business (admin), Staff (marina_staff)
+export type AppRole = "boat_owner" | "admin" | "marina_staff";
 
 interface Marina {
   id: string;
@@ -183,7 +184,6 @@ export function useUserRole() {
   };
 
   const isAdmin = role === "admin";
-  const isProvider = role === "provider";
   const isBoatOwner = role === "boat_owner";
   const isMarinaStaff = role === "marina_staff";
   const hasMarina = !!marina;
@@ -194,7 +194,6 @@ export function useUserRole() {
     loading,
     userId,
     isAdmin,
-    isProvider,
     isBoatOwner,
     isMarinaStaff,
     hasMarina,
