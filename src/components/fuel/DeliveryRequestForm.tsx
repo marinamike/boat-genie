@@ -8,13 +8,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { FuelTank, FuelDelivery } from "@/hooks/useFuelManagement";
 import { Truck, DollarSign, FileText } from "lucide-react";
 
-interface DeliveryLogFormProps {
+interface DeliveryRequestFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tanks: FuelTank[];
-  onRecordDelivery: (data: {
+  onCreateRequest: (data: {
     tank_id: string;
-    gallons_delivered: number;
+    gallons_requested: number;
     vendor_name?: string;
     invoice_number?: string;
     cost_per_gallon?: number;
@@ -22,28 +22,28 @@ interface DeliveryLogFormProps {
   }) => Promise<FuelDelivery | null>;
 }
 
-export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }: DeliveryLogFormProps) {
+export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest }: DeliveryRequestFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [tankId, setTankId] = useState("");
-  const [gallonsDelivered, setGallonsDelivered] = useState("");
+  const [gallonsRequested, setGallonsRequested] = useState("");
   const [vendorName, setVendorName] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [costPerGallon, setCostPerGallon] = useState("");
   const [notes, setNotes] = useState("");
 
   const selectedTank = tanks.find(t => t.id === tankId);
-  const totalCost = parseFloat(gallonsDelivered || "0") * parseFloat(costPerGallon || "0");
-  const newVolume = (selectedTank?.current_volume_gallons || 0) + parseFloat(gallonsDelivered || "0");
+  const estimatedCost = parseFloat(gallonsRequested || "0") * parseFloat(costPerGallon || "0");
+  const projectedVolume = (selectedTank?.current_volume_gallons || 0) + parseFloat(gallonsRequested || "0");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tankId || !gallonsDelivered) return;
+    if (!tankId || !gallonsRequested) return;
 
     setLoading(true);
-    const result = await onRecordDelivery({
+    const result = await onCreateRequest({
       tank_id: tankId,
-      gallons_delivered: parseFloat(gallonsDelivered),
+      gallons_requested: parseFloat(gallonsRequested),
       vendor_name: vendorName || undefined,
       invoice_number: invoiceNumber || undefined,
       cost_per_gallon: costPerGallon ? parseFloat(costPerGallon) : undefined,
@@ -55,7 +55,7 @@ export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }:
     if (result) {
       // Reset form
       setTankId("");
-      setGallonsDelivered("");
+      setGallonsRequested("");
       setVendorName("");
       setInvoiceNumber("");
       setCostPerGallon("");
@@ -70,10 +70,10 @@ export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }:
         <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
-            Log Fuel Delivery
+            Request Fuel Delivery
           </SheetTitle>
           <SheetDescription>
-            Record a fuel delivery to a tank
+            Create a delivery request. Confirm the actual quantity once received.
           </SheetDescription>
         </SheetHeader>
 
@@ -100,23 +100,23 @@ export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }:
             )}
           </div>
 
-          {/* Gallons Delivered */}
+          {/* Gallons Requested */}
           <div className="space-y-2">
-            <Label htmlFor="gallons">Gallons Delivered *</Label>
+            <Label htmlFor="gallons">Gallons Requested *</Label>
             <Input
               id="gallons"
               type="number"
               step="0.01"
               min="0"
-              value={gallonsDelivered}
-              onChange={(e) => setGallonsDelivered(e.target.value)}
+              value={gallonsRequested}
+              onChange={(e) => setGallonsRequested(e.target.value)}
               placeholder="0.00"
               required
             />
-            {selectedTank && gallonsDelivered && (
+            {selectedTank && gallonsRequested && (
               <p className="text-xs text-muted-foreground">
-                New tank level: {newVolume.toLocaleString()} gal 
-                ({((newVolume / selectedTank.total_capacity_gallons) * 100).toFixed(0)}% full)
+                Projected level after delivery: {projectedVolume.toLocaleString()} gal 
+                ({((projectedVolume / selectedTank.total_capacity_gallons) * 100).toFixed(0)}% full)
               </p>
             )}
           </div>
@@ -135,23 +135,23 @@ export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }:
 
           {/* Invoice Number */}
           <div className="space-y-2">
-            <Label htmlFor="invoice">Invoice Number</Label>
+            <Label htmlFor="invoice">PO / Invoice Number</Label>
             <div className="relative">
               <Input
                 id="invoice"
                 type="text"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="INV-12345"
+                placeholder="PO-12345"
                 className="pl-8"
               />
               <FileText className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             </div>
           </div>
 
-          {/* Cost Per Gallon */}
+          {/* Expected Cost Per Gallon */}
           <div className="space-y-2">
-            <Label htmlFor="cost">Cost Per Gallon</Label>
+            <Label htmlFor="cost">Expected Cost Per Gallon</Label>
             <div className="relative">
               <Input
                 id="cost"
@@ -179,20 +179,20 @@ export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }:
             />
           </div>
 
-          {/* Total Cost Display */}
-          {costPerGallon && gallonsDelivered && (
+          {/* Estimated Cost Display */}
+          {costPerGallon && gallonsRequested && (
             <div className="p-4 rounded-lg bg-muted/50 border">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Total Cost</span>
+                <span className="text-sm text-muted-foreground">Estimated Cost</span>
                 <span className="text-xl font-bold">
-                  ${totalCost.toFixed(2)}
+                  ${estimatedCost.toFixed(2)}
                 </span>
               </div>
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading || !tankId || !gallonsDelivered}>
-            {loading ? "Recording..." : "Record Delivery"}
+          <Button type="submit" className="w-full" disabled={loading || !tankId || !gallonsRequested}>
+            {loading ? "Creating..." : "Create Delivery Request"}
           </Button>
         </form>
       </SheetContent>

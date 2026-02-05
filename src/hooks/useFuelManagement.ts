@@ -55,6 +55,7 @@ export interface FuelDelivery {
   id: string;
   business_id: string;
   tank_id: string;
+  gallons_requested: number | null;
   gallons_delivered: number;
   delivery_date: string;
   vendor_name: string | null;
@@ -63,6 +64,9 @@ export interface FuelDelivery {
   total_cost: number | null;
   notes: string | null;
   recorded_by: string;
+  status: "requested" | "delivered" | "cancelled";
+  confirmed_at: string | null;
+  confirmed_by: string | null;
   created_at: string;
   tank?: FuelTank;
 }
@@ -419,9 +423,9 @@ export function useFuelManagement() {
     return transaction;
   };
 
-  const recordDelivery = async (data: {
+  const createDeliveryRequest = async (data: {
     tank_id: string;
-    gallons_delivered: number;
+    gallons_requested: number;
     vendor_name?: string;
     invoice_number?: string;
     cost_per_gallon?: number;
@@ -432,33 +436,79 @@ export function useFuelManagement() {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return null;
 
-    const total_cost = data.cost_per_gallon 
-      ? data.gallons_delivered * data.cost_per_gallon 
-      : null;
-
     const { data: delivery, error } = await supabase
       .from("fuel_deliveries")
       .insert({
         business_id: business.id,
         tank_id: data.tank_id,
-        gallons_delivered: data.gallons_delivered,
+        gallons_requested: data.gallons_requested,
+        gallons_delivered: 0, // Will be set on confirmation
         vendor_name: data.vendor_name || null,
         invoice_number: data.invoice_number || null,
         cost_per_gallon: data.cost_per_gallon || null,
-        total_cost,
         notes: data.notes || null,
         recorded_by: user.user.id,
+        status: "requested",
       })
       .select()
       .single();
 
     if (error) {
-      toast({ title: "Error recording delivery", description: error.message, variant: "destructive" });
+      toast({ title: "Error creating delivery request", description: error.message, variant: "destructive" });
       return null;
     }
 
+    toast({ 
+      title: "Delivery request created", 
+      description: `${data.gallons_requested.toLocaleString()} gallons ordered` 
+    });
+    
+    await refresh();
+    return delivery as unknown as FuelDelivery;
+  };
+
+  const confirmDelivery = async (deliveryId: string, data: {
+    gallons_delivered: number;
+    cost_per_gallon?: number;
+    notes?: string;
+  }) => {
+    if (!business?.id) return false;
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return false;
+
+    // Get the delivery to find the tank
+    const delivery = deliveries.find(d => d.id === deliveryId);
+    if (!delivery) {
+      toast({ title: "Error", description: "Delivery not found", variant: "destructive" });
+      return false;
+    }
+
+    const total_cost = data.cost_per_gallon 
+      ? data.gallons_delivered * data.cost_per_gallon 
+      : null;
+
+    const { error } = await supabase
+      .from("fuel_deliveries")
+      .update({
+        gallons_delivered: data.gallons_delivered,
+        cost_per_gallon: data.cost_per_gallon || null,
+        total_cost,
+        notes: data.notes || null,
+        status: "delivered",
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: user.user.id,
+        delivery_date: new Date().toISOString(), // Update to actual delivery date
+      })
+      .eq("id", deliveryId);
+
+    if (error) {
+      toast({ title: "Error confirming delivery", description: error.message, variant: "destructive" });
+      return false;
+    }
+
     // Update tank volume and last delivery date
-    const tank = tanks.find(t => t.id === data.tank_id);
+    const tank = tanks.find(t => t.id === delivery.tank_id);
     if (tank) {
       await supabase
         .from("fuel_tanks")
@@ -470,12 +520,42 @@ export function useFuelManagement() {
     }
 
     toast({ 
-      title: "Delivery recorded", 
-      description: `${data.gallons_delivered} gallons added to tank` 
+      title: "Delivery confirmed", 
+      description: `${data.gallons_delivered.toLocaleString()} gallons added to tank` 
     });
     
     await refresh();
-    return delivery;
+    return true;
+  };
+
+  // Legacy function for backward compatibility
+  const recordDelivery = async (data: {
+    tank_id: string;
+    gallons_delivered: number;
+    vendor_name?: string;
+    invoice_number?: string;
+    cost_per_gallon?: number;
+    notes?: string;
+  }) => {
+    // Create and immediately confirm a delivery
+    const request = await createDeliveryRequest({
+      tank_id: data.tank_id,
+      gallons_requested: data.gallons_delivered,
+      vendor_name: data.vendor_name,
+      invoice_number: data.invoice_number,
+      cost_per_gallon: data.cost_per_gallon,
+      notes: data.notes,
+    });
+
+    if (!request) return null;
+
+    await confirmDelivery(request.id, {
+      gallons_delivered: data.gallons_delivered,
+      cost_per_gallon: data.cost_per_gallon,
+      notes: data.notes,
+    });
+
+    return request;
   };
 
   const recordReconciliation = async (data: {
@@ -567,6 +647,8 @@ export function useFuelManagement() {
     deletePump,
     recordSale,
     recordDelivery,
+    createDeliveryRequest,
+    confirmDelivery,
     recordReconciliation,
   };
 }
