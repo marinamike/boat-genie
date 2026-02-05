@@ -4,24 +4,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { FuelTank, FuelPump } from "@/hooks/useFuelManagement";
+import { FuelPump } from "@/hooks/useFuelManagement";
 import { Fuel } from "lucide-react";
+
+const FUEL_TYPES = [
+  { value: "gasoline", label: "Gasoline" },
+  { value: "diesel", label: "Diesel" },
+  { value: "premium", label: "Premium" },
+];
 
 interface PumpSetupFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tanks: FuelTank[];
   editPump?: FuelPump | null;
   onCreatePump: (data: Omit<FuelPump, "id" | "created_at" | "updated_at" | "business_id" | "tank">) => Promise<FuelPump | null>;
   onUpdatePump: (id: string, data: Partial<FuelPump>) => Promise<boolean>;
 }
 
-export function PumpSetupForm({ open, onOpenChange, tanks, editPump, onCreatePump, onUpdatePump }: PumpSetupFormProps) {
+export function PumpSetupForm({ open, onOpenChange, editPump, onCreatePump, onUpdatePump }: PumpSetupFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [pumpName, setPumpName] = useState("");
   const [pumpNumber, setPumpNumber] = useState("");
-  const [tankId, setTankId] = useState("");
+  const [fuelType, setFuelType] = useState("");
   const [lifetimeMeter, setLifetimeMeter] = useState("0");
 
   // Reset form when opening or when editPump changes
@@ -30,13 +35,13 @@ export function PumpSetupForm({ open, onOpenChange, tanks, editPump, onCreatePum
       if (editPump) {
         setPumpName(editPump.pump_name || "");
         setPumpNumber(editPump.pump_number || "");
-        setTankId(editPump.tank_id || "");
+        setFuelType(editPump.fuel_type || "");
         setLifetimeMeter(editPump.lifetime_meter_gallons?.toString() || "0");
       } else {
         // Reset to defaults for new pump
         setPumpName("");
         setPumpNumber("");
-        setTankId("");
+        setFuelType("");
         setLifetimeMeter("0");
       }
     }
@@ -44,14 +49,15 @@ export function PumpSetupForm({ open, onOpenChange, tanks, editPump, onCreatePum
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pumpName || !tankId) return;
+    if (!pumpName || !fuelType) return;
 
     setLoading(true);
     
     const pumpData = {
       pump_name: pumpName,
       pump_number: pumpNumber || null,
-      tank_id: tankId,
+      tank_id: null,
+      fuel_type: fuelType,
       lifetime_meter_gallons: parseFloat(lifetimeMeter || "0"),
       is_active: true,
     };
@@ -110,12 +116,12 @@ export function PumpSetupForm({ open, onOpenChange, tanks, editPump, onCreatePum
             />
           </div>
 
-          {/* Tank Selection */}
+          {/* Fuel Type Selection */}
           <div className="space-y-2">
-            <Label htmlFor="tank">Linked Tank *</Label>
-            <Select value={tankId} onValueChange={setTankId}>
+            <Label htmlFor="fuelType">Fuel Type *</Label>
+            <Select value={fuelType} onValueChange={setFuelType}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a tank" />
+                <SelectValue placeholder="Choose fuel type" />
               </SelectTrigger>
               <SelectContent
                 className="z-[200]"
@@ -123,13 +129,16 @@ export function PumpSetupForm({ open, onOpenChange, tanks, editPump, onCreatePum
                 sideOffset={4}
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
-                {tanks.filter(t => t.is_active).map(tank => (
-                  <SelectItem key={tank.id} value={tank.id}>
-                    {tank.tank_name} - {tank.fuel_type}
+                {FUEL_TYPES.map(type => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Pump will draw from all active tanks of this fuel type
+            </p>
           </div>
 
           {/* Lifetime Meter Reading */}
@@ -149,7 +158,7 @@ export function PumpSetupForm({ open, onOpenChange, tanks, editPump, onCreatePum
             </p>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading || !pumpName || !tankId}>
+          <Button type="submit" className="w-full" disabled={loading || !pumpName || !fuelType}>
             {loading ? "Saving..." : editPump ? "Update Pump" : "Add Pump"}
           </Button>
         </form>

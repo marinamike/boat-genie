@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { FuelPump, FuelTransaction } from "@/hooks/useFuelManagement";
+import { FuelPump, FuelTransaction, FuelTank } from "@/hooks/useFuelManagement";
 import { useFuelPricing } from "@/hooks/useFuelPricing";
 import { Fuel, DollarSign, Ship, Users } from "lucide-react";
 
@@ -14,6 +14,7 @@ interface QuickSaleFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pumps: FuelPump[];
+  tanks: FuelTank[];
   onRecordSale: (data: {
     pump_id: string;
     gallons_sold: number;
@@ -25,7 +26,7 @@ interface QuickSaleFormProps {
   }) => Promise<FuelTransaction | null>;
 }
 
-export function QuickSaleForm({ open, onOpenChange, pumps, onRecordSale }: QuickSaleFormProps) {
+export function QuickSaleForm({ open, onOpenChange, pumps, tanks, onRecordSale }: QuickSaleFormProps) {
   const { getRetailPrice, getMemberPrice, prices, refresh } = useFuelPricing();
   
   // Refresh prices when sheet opens to ensure latest pricing
@@ -44,15 +45,23 @@ export function QuickSaleForm({ open, onOpenChange, pumps, onRecordSale }: Quick
   const [applyMemberPrice, setApplyMemberPrice] = useState(false);
 
   const selectedPump = pumps.find(p => p.id === pumpId);
-  const selectedFuelType = selectedPump?.tank?.fuel_type || "";
+  const selectedFuelType = selectedPump?.fuel_type || "";
   const memberPrice = getMemberPrice(selectedFuelType);
   const hasMemberPricing = memberPrice !== null;
   const totalAmount = parseFloat(gallonsSold || "0") * parseFloat(pricePerGallon || "0");
 
+  // Calculate combined volume for the selected fuel type
+  const availableVolume = useMemo(() => {
+    if (!selectedFuelType) return 0;
+    return tanks
+      .filter(t => t.fuel_type === selectedFuelType && t.is_active)
+      .reduce((sum, t) => sum + t.current_volume_gallons, 0);
+  }, [tanks, selectedFuelType]);
+
   // Update price when pump is selected or member toggle changes
   useEffect(() => {
-    if (selectedPump?.tank?.fuel_type) {
-      const fuelType = selectedPump.tank.fuel_type;
+    if (selectedPump?.fuel_type) {
+      const fuelType = selectedPump.fuel_type;
       if (applyMemberPrice && memberPrice !== null) {
         setPricePerGallon(memberPrice.toString());
       } else {
@@ -113,14 +122,14 @@ export function QuickSaleForm({ open, onOpenChange, pumps, onRecordSale }: Quick
                 {pumps.filter(p => p.is_active).map(pump => (
                   <SelectItem key={pump.id} value={pump.id}>
                     {pump.pump_name} {pump.pump_number ? `(#${pump.pump_number})` : ""} 
-                    - {pump.tank?.fuel_type}
+                    - {pump.fuel_type}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {selectedPump?.tank && (
+            {selectedPump && (
               <p className="text-xs text-muted-foreground">
-                Tank: {selectedPump.tank.tank_name} ({selectedPump.tank.current_volume_gallons.toLocaleString()} gal available)
+                {selectedFuelType} available: {availableVolume.toLocaleString()} gal (combined from all tanks)
               </p>
             )}
           </div>

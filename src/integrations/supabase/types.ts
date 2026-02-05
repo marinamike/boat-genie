@@ -968,34 +968,37 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          fuel_type: string
           id: string
           is_active: boolean
           lifetime_meter_gallons: number
           pump_name: string
           pump_number: string | null
-          tank_id: string
+          tank_id: string | null
           updated_at: string
         }
         Insert: {
           business_id: string
           created_at?: string
+          fuel_type: string
           id?: string
           is_active?: boolean
           lifetime_meter_gallons?: number
           pump_name: string
           pump_number?: string | null
-          tank_id: string
+          tank_id?: string | null
           updated_at?: string
         }
         Update: {
           business_id?: string
           created_at?: string
+          fuel_type?: string
           id?: string
           is_active?: boolean
           lifetime_meter_gallons?: number
           pump_name?: string
           pump_number?: string | null
-          tank_id?: string
+          tank_id?: string | null
           updated_at?: string
         }
         Relationships: [

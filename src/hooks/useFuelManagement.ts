@@ -21,7 +21,8 @@ export interface FuelTank {
 export interface FuelPump {
   id: string;
   business_id: string;
-  tank_id: string;
+  tank_id: string | null;
+  fuel_type: string;
   pump_name: string;
   pump_number: string | null;
   lifetime_meter_gallons: number;
@@ -335,13 +336,24 @@ export function useFuelManagement() {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return null;
 
-    // Create transaction
+    // Find all active tanks of this fuel type and pick the one with the most volume
+    const matchingTanks = tanks
+      .filter(t => t.fuel_type === pump.fuel_type && t.is_active)
+      .sort((a, b) => b.current_volume_gallons - a.current_volume_gallons);
+    
+    const primaryTank = matchingTanks[0];
+    if (!primaryTank) {
+      toast({ title: "Error", description: `No active ${pump.fuel_type} tanks found`, variant: "destructive" });
+      return null;
+    }
+
+    // Create transaction - associate with primary tank for inventory tracking
     const { data: transaction, error } = await supabase
       .from("fuel_transactions")
       .insert({
         business_id: business.id,
         pump_id: data.pump_id,
-        tank_id: pump.tank_id,
+        tank_id: primaryTank.id,
         gallons_sold: data.gallons_sold,
         price_per_gallon: data.price_per_gallon,
         total_amount,
@@ -359,14 +371,11 @@ export function useFuelManagement() {
       return null;
     }
 
-    // Update tank volume
-    const tank = tanks.find(t => t.id === pump.tank_id);
-    if (tank) {
-      await supabase
-        .from("fuel_tanks")
-        .update({ current_volume_gallons: tank.current_volume_gallons - data.gallons_sold })
-        .eq("id", tank.id);
-    }
+    // Update tank volume - deduct from the tank with the most fuel
+    await supabase
+      .from("fuel_tanks")
+      .update({ current_volume_gallons: primaryTank.current_volume_gallons - data.gallons_sold })
+      .eq("id", primaryTank.id);
 
     // Update pump meter
     await supabase
