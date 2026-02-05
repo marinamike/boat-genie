@@ -11,6 +11,16 @@ import { ReconciliationForm } from "@/components/fuel/ReconciliationForm";
 import { TankSetupForm } from "@/components/fuel/TankSetupForm";
 import { PumpSetupForm } from "@/components/fuel/PumpSetupForm";
 import { DiscrepancyReport } from "@/components/fuel/DiscrepancyReport";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { 
   Fuel, 
@@ -22,7 +32,8 @@ import {
   DollarSign,
   TrendingUp,
   AlertTriangle,
-  Pencil
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { FuelTank, FuelPump } from "@/hooks/useFuelManagement";
 
@@ -37,8 +48,10 @@ export default function FuelDashboard() {
     loading,
     createTank,
     updateTank,
+    deleteTank,
     createPump,
     updatePump,
+    deletePump,
     recordSale,
     recordDelivery,
     recordReconciliation,
@@ -50,6 +63,8 @@ export default function FuelDashboard() {
   const [showTankSetup, setShowTankSetup] = useState(false);
   const [showPumpSetup, setShowPumpSetup] = useState(false);
   const [editingTank, setEditingTank] = useState<FuelTank | null>(null);
+  const [deletingPump, setDeletingPump] = useState<FuelPump | null>(null);
+  const [isDeletingPump, setIsDeletingPump] = useState(false);
   const [editingPump, setEditingPump] = useState<FuelPump | null>(null);
 
   const canWrite = isOwner || hasModuleAccess("fuel", "write");
@@ -64,6 +79,14 @@ export default function FuelDashboard() {
     .reduce((sum, t) => sum + t.gallons_sold, 0);
 
   const lowTanks = tanks.filter(t => t.current_volume_gallons <= t.low_level_threshold_gallons);
+
+  const handleDeletePump = async () => {
+    if (!deletingPump) return;
+    setIsDeletingPump(true);
+    await deletePump(deletingPump.id);
+    setIsDeletingPump(false);
+    setDeletingPump(null);
+  };
 
   if (loading) {
     return (
@@ -199,6 +222,7 @@ export default function FuelDashboard() {
                       setEditingTank(tank);
                       setShowTankSetup(true);
                     }}
+                    onDelete={() => deleteTank(tank.id)}
                   />
                 ))}
               </div>
@@ -235,7 +259,7 @@ export default function FuelDashboard() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <div className="text-right">
                               <p className="text-sm font-medium">
                                 {pump.lifetime_meter_gallons.toLocaleString()} gal
@@ -243,17 +267,27 @@ export default function FuelDashboard() {
                               <p className="text-xs text-muted-foreground">Lifetime</p>
                             </div>
                             {canWrite && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => {
-                                  setEditingPump(pump);
-                                  setShowPumpSetup(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    setEditingPump(pump);
+                                    setShowPumpSetup(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => setDeletingPump(pump)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -406,6 +440,28 @@ export default function FuelDashboard() {
         onCreatePump={createPump}
         onUpdatePump={updatePump}
       />
+
+      {/* Delete Pump Confirmation */}
+      <AlertDialog open={!!deletingPump} onOpenChange={(open) => !open && setDeletingPump(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Pump</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingPump?.pump_name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingPump}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeletePump} 
+              disabled={isDeletingPump}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingPump ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

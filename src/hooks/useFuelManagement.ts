@@ -270,6 +270,49 @@ export function useFuelManagement() {
     return true;
   };
 
+  const deleteTank = async (id: string) => {
+    // Check if tank has linked pumps
+    const linkedPumps = pumps.filter(p => p.tank_id === id);
+    if (linkedPumps.length > 0) {
+      toast({ 
+        title: "Cannot delete tank", 
+        description: "Remove linked pumps first before deleting this tank.",
+        variant: "destructive" 
+      });
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("fuel_tanks")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error deleting tank", description: error.message, variant: "destructive" });
+      return false;
+    }
+
+    toast({ title: "Tank deleted" });
+    await fetchTanks();
+    return true;
+  };
+
+  const deletePump = async (id: string) => {
+    const { error } = await supabase
+      .from("fuel_pumps")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error deleting pump", description: error.message, variant: "destructive" });
+      return false;
+    }
+
+    toast({ title: "Pump deleted" });
+    await fetchPumps();
+    return true;
+  };
+
   const recordSale = async (data: {
     pump_id: string;
     gallons_sold: number;
@@ -471,8 +514,10 @@ export function useFuelManagement() {
     refresh,
     createTank,
     updateTank,
+    deleteTank,
     createPump,
     updatePump,
+    deletePump,
     recordSale,
     recordDelivery,
     recordReconciliation,

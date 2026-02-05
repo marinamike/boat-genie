@@ -1,16 +1,31 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Droplets, AlertTriangle, Pencil } from "lucide-react";
+import { Droplets, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { FuelTank } from "@/hooks/useFuelManagement";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TankGaugeProps {
   tank: FuelTank;
   onClick?: () => void;
   onEdit?: () => void;
+  onDelete?: () => Promise<boolean>;
   canEdit?: boolean;
 }
 
-export function TankGauge({ tank, onClick, onEdit, canEdit = false }: TankGaugeProps) {
+export function TankGauge({ tank, onClick, onEdit, onDelete, canEdit = false }: TankGaugeProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fillPercentage = tank.total_capacity_gallons > 0
     ? (tank.current_volume_gallons / tank.total_capacity_gallons) * 100
     : 0;
@@ -29,48 +44,70 @@ export function TankGauge({ tank, onClick, onEdit, canEdit = false }: TankGaugeP
     premium: "bg-blue-100",
   };
 
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    await onDelete();
+    setIsDeleting(false);
+    setShowDeleteConfirm(false);
+  };
+
   return (
-    <div 
-      onClick={onClick}
-      className={cn(
-        "relative p-4 rounded-xl border bg-card transition-all hover:shadow-lg hover:border-primary/30",
-        onClick && "cursor-pointer",
-        isLow && "border-destructive/50 bg-destructive/5"
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Droplets className={cn(
-            "h-5 w-5",
-            tank.fuel_type === "diesel" && "text-amber-500",
-            tank.fuel_type === "gasoline" && "text-emerald-500",
-            tank.fuel_type === "premium" && "text-blue-500",
-          )} />
-          <div>
-            <h3 className="font-semibold text-sm">{tank.tank_name}</h3>
-            <p className="text-xs text-muted-foreground capitalize">{tank.fuel_type}</p>
+    <>
+      <div 
+        onClick={onClick}
+        className={cn(
+          "relative p-4 rounded-xl border bg-card transition-all hover:shadow-lg hover:border-primary/30",
+          onClick && "cursor-pointer",
+          isLow && "border-destructive/50 bg-destructive/5"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Droplets className={cn(
+              "h-5 w-5",
+              tank.fuel_type === "diesel" && "text-amber-500",
+              tank.fuel_type === "gasoline" && "text-emerald-500",
+              tank.fuel_type === "premium" && "text-blue-500",
+            )} />
+            <div>
+              <h3 className="font-semibold text-sm">{tank.tank_name}</h3>
+              <p className="text-xs text-muted-foreground capitalize">{tank.fuel_type}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            {isLow && (
+              <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
+            )}
+            {canEdit && onEdit && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {canEdit && onDelete && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {isLow && (
-            <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
-          )}
-          {canEdit && onEdit && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
 
       {/* Vertical Tank Gauge */}
       <div className="flex gap-4">
@@ -134,12 +171,35 @@ export function TankGauge({ tank, onClick, onEdit, canEdit = false }: TankGaugeP
         </div>
       </div>
 
-      {/* Last delivery */}
-      {tank.last_delivery_date && (
-        <p className="text-xs text-muted-foreground mt-3 pt-2 border-t">
-          Last delivery: {new Date(tank.last_delivery_date).toLocaleDateString()}
-        </p>
-      )}
-    </div>
+        {/* Last delivery */}
+        {tank.last_delivery_date && (
+          <p className="text-xs text-muted-foreground mt-3 pt-2 border-t">
+            Last delivery: {new Date(tank.last_delivery_date).toLocaleDateString()}
+          </p>
+        )}
+      </div>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tank</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{tank.tank_name}"? This action cannot be undone.
+              Any linked pumps must be removed first.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
