@@ -32,6 +32,7 @@ const moduleLabels: Record<BusinessModule, string> = {
   service: "Service",
   fuel: "Fuel",
   ship_store: "Store",
+  store: "Store",
 };
 
 export function StaffManager() {
