@@ -1,52 +1,76 @@
 
-# Auto-Update Cost Basis on Delivery Confirmation
+# Make Discrepancy Reports Clickable with Detail View
 
 ## Overview
-When a fuel delivery is confirmed with a cost per gallon, automatically update the cost basis for that product type in the pricing system. This ensures pricing always reflects the latest acquisition cost and maintains proper margins.
+Add the ability to click on individual reconciliation entries in the Discrepancy Report to open a read-only detail sheet showing all recorded information from that reconciliation.
 
-## Current Flow
-1. Staff confirms a delivery with `gallons_delivered` and `cost_per_gallon`
-2. System updates the delivery record and tank volume
-3. Cost basis in pricing remains unchanged (requires manual update)
+## Current State
+- Discrepancy reports are displayed as a list within a Card
+- Each reconciliation shows a summary: fuel type, discrepancy amounts, tank readings, and pump totalizers
+- Users cannot click to see more details
 
-## Proposed Flow
-1. Staff confirms delivery with `gallons_delivered` and `cost_per_gallon`
-2. System updates delivery record and tank volume
-3. **NEW**: System automatically updates `fuel_prices.cost_basis` for that fuel type
-4. If auto-margin is enabled, retail price also updates automatically
+## Proposed Solution
+Create a new `ReconciliationDetailSheet` component that opens when a user clicks on any reconciliation entry, displaying all recorded data in a read-only format.
 
 ## Changes Required
 
-### 1. Update `useFuelManagement.ts` - `confirmDelivery` function
-After updating the tank volume, add logic to update the fuel pricing cost basis:
-- Look up the tank to determine the fuel type
-- Update `fuel_prices.cost_basis` for that fuel type with the delivery's cost per gallon
-- The existing database trigger will log the price change to history
-- The existing auto-margin logic in the database/hook will recalculate retail price if enabled
+### 1. Create New Component: `src/components/fuel/ReconciliationDetailSheet.tsx`
+A read-only Sheet component that displays:
+- Header with fuel type, date, and time
+- Status indicator (significant discrepancy vs OK)
+- Tank readings section (per-tank breakdown)
+- Pump totalizer readings section
+- Summary totals
+- Notes (if any were recorded)
+- Recorded by information
 
-### 2. Considerations
-- Only update cost basis if `cost_per_gallon` is provided (not null/undefined)
-- Use the tank's `fuel_type` to identify which pricing record to update
-- The existing `log_fuel_price_change` trigger will automatically log the change to `fuel_price_history`
-- If auto-margin is enabled, the retail price will be recalculated
+Following the existing pattern from `WorkOrderDetailSheet.tsx` for consistency.
+
+### 2. Update `src/components/fuel/DiscrepancyReport.tsx`
+- Add state to track selected reconciliation
+- Make each reconciliation entry clickable with hover/cursor styles
+- Add ChevronRight icon to indicate clickability
+- Render the new `ReconciliationDetailSheet` component
+- Pass the selected reconciliation to the sheet
+
+## Visual Design
+
+The clickable reconciliation cards will:
+- Show a subtle hover effect
+- Display a chevron icon on the right side
+- Use `cursor-pointer` to indicate interactivity
+
+The detail sheet will display:
+- Full date and time header
+- Fuel type with status badge
+- Complete tank readings with physical vs theoretical comparison
+- All pump totalizer readings with expected vs actual
+- Combined discrepancy summary
+- Any notes recorded during reconciliation
 
 ---
 
 ## Technical Details
 
-### File: `src/hooks/useFuelManagement.ts`
-Location: Inside `confirmDelivery` function, after the tank volume update (around line 523)
+### New File: `ReconciliationDetailSheet.tsx`
+```typescript
+interface ReconciliationDetailSheetProps {
+  reconciliation: FuelReconciliation | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+```
 
-Add the following logic:
-1. Check if `cost_per_gallon` was provided
-2. Get the fuel type from the tank
-3. Get current price record for that fuel type
-4. Calculate new retail price if auto-margin is enabled
-5. Update the `fuel_prices` table with new cost basis (and retail price if auto-margin)
-6. Set `updated_by` to current user for audit trail
+Key sections to display:
+1. **Header**: Date/time, fuel type, status badge
+2. **Tank Readings**: For each tank - theoretical vs physical gallons, individual discrepancy
+3. **Pump Totalizers**: For each pump - expected vs actual meter reading, discrepancy
+4. **Summary**: Combined discrepancy in gallons and percentage
+5. **Notes**: Any notes recorded during reconciliation
 
-The update will include:
-- `cost_basis`: New cost from delivery
-- `retail_price`: Recalculated if auto-margin enabled (cost_basis + auto_margin_amount)
-- `member_price`: Recalculated if member discount enabled (retail_price - member_discount_amount)
-- `updated_by`: Current user ID
+### Update: `DiscrepancyReport.tsx`
+- Import the new `ReconciliationDetailSheet`
+- Add `useState` for `selectedReconciliation`
+- Wrap each reconciliation div with `onClick` handler
+- Add hover styles and chevron icon
+- Render `ReconciliationDetailSheet` at the bottom of the component
