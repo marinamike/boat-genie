@@ -427,11 +427,16 @@ export function useFuelManagement() {
     tank_id: string;
     gallons_requested: number;
     vendor_name?: string;
+    requested_date?: Date;
+    next_available?: boolean;
   }) => {
     if (!business?.id) return null;
 
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return null;
+
+    // Build notes for next available flag
+    const deliveryNotes = data.next_available ? "Next available delivery requested" : null;
 
     const { data: delivery, error } = await supabase
       .from("fuel_deliveries")
@@ -441,6 +446,8 @@ export function useFuelManagement() {
         gallons_requested: data.gallons_requested,
         gallons_delivered: 0, // Will be set on confirmation
         vendor_name: data.vendor_name || null,
+        delivery_date: data.requested_date?.toISOString() || new Date().toISOString(),
+        notes: deliveryNotes,
         recorded_by: user.user.id,
         status: "requested",
       })
