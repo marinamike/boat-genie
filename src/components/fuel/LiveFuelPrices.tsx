@@ -50,9 +50,8 @@ export function LiveFuelPrices({ businessId, showMemberPrices = false }: LiveFue
   }
 
   const fuelLabels: Record<string, string> = {
-    gasoline: "Regular",
+    gasoline: "Gas",
     diesel: "Diesel",
-    premium: "Premium",
   };
 
   return (

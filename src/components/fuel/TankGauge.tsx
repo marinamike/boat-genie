@@ -69,7 +69,6 @@ export function TankGauge({ tank, onClick, onEdit, onDelete, canEdit = false }: 
               "h-5 w-5",
               tank.fuel_type === "diesel" && "text-amber-500",
               tank.fuel_type === "gasoline" && "text-emerald-500",
-              tank.fuel_type === "premium" && "text-blue-500",
             )} />
             <div>
               <h3 className="font-semibold text-sm">{tank.tank_name}</h3>

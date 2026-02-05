@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 export interface FuelPrice {
   id: string;
   business_id: string;
-  fuel_type: "gasoline" | "diesel" | "premium";
+  fuel_type: "gasoline" | "diesel";
   cost_basis: number;
   retail_price: number;
   member_price: number | null;
