@@ -1,8 +1,9 @@
 import { ModuleManager } from "@/components/business/ModuleManager";
 import { StaffManager } from "@/components/business/StaffManager";
+import { BusinessSetupForm } from "@/components/business/BusinessSetupForm";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Users, Puzzle } from "lucide-react";
+import { Users, Puzzle } from "lucide-react";
 
 export default function BusinessSettings() {
   const { business, isOwner, loading } = useBusiness();
@@ -15,10 +16,11 @@ export default function BusinessSettings() {
     );
   }
 
+  // Show setup form if no business exists
   if (!business) {
     return (
-      <div className="container max-w-lg mx-auto p-4 pt-8 text-center">
-        <p className="text-muted-foreground">No business found.</p>
+      <div className="container max-w-2xl mx-auto p-4 pt-8">
+        <BusinessSetupForm />
       </div>
     );
   }

@@ -49,7 +49,6 @@ const queryClient = new QueryClient({
  * - Customer (boat_owner): Boat owners who need services
  * - Business (admin): Marina/yard operators who manage modules
  * - Staff (marina_staff): Employees assigned to specific modules
- * - Provider: Service providers (legacy, treated as independent contractors)
  */
 function RoleBasedRoutes() {
   const { role, loading, user } = useAuth();
@@ -86,19 +85,6 @@ function RoleBasedRoutes() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       );
-
-    case "provider":
-      return (
-        <Routes>
-          <Route element={<ProviderLayout />}>
-            <Route path="/provider" element={<ProviderDashboard />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-          <Route path="/" element={<Navigate to="/provider" replace />} />
-          <Route path="*" element={<Navigate to="/provider" replace />} />
-        </Routes>
-      );
-
     case "marina_staff":
       return (
         <Routes>

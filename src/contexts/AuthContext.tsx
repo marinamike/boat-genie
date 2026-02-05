@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "boat_owner" | "provider" | "admin" | "marina_staff";
+// Three-profile architecture: Customer (boat_owner), Business (admin), Staff (marina_staff)
+export type AppRole = "boat_owner" | "admin" | "marina_staff";
 
 interface AuthContextType {
   session: Session | null;

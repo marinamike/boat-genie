@@ -119,12 +119,7 @@ const Profile = () => {
       return;
     }
 
-    // For Business role, check if they need to register a marina first
-    if (newRole === "admin" && !hasMarina) {
-      navigate("/register-marina");
-      return;
-    }
-
+    // Allow immediate role switch - Business setup handled in BusinessDashboard
     const success = await updateRole(newRole);
     if (success) {
       const roleLabels: Record<AppRole, string> = {
