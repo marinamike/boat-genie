@@ -139,6 +139,37 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
             />
           </div>
 
+          {/* Requested Delivery Date */}
+          <div className="space-y-2">
+            <Label>Requested Delivery Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={nextAvailable}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !requestedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {requestedDate ? format(requestedDate, "PPP") : "Select date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={requestedDate}
+                  onSelect={setRequestedDate}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           {/* Next Available Checkbox */}
           <div className="flex items-center space-x-2">
             <Checkbox 
@@ -153,38 +184,6 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
               Next available delivery
             </Label>
           </div>
-
-          {/* Requested Delivery Date */}
-          {!nextAvailable && (
-            <div className="space-y-2">
-              <Label>Requested Delivery Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !requestedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {requestedDate ? format(requestedDate, "PPP") : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={requestedDate}
-                    onSelect={setRequestedDate}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
 
           <Button type="submit" className="w-full" disabled={loading || !selectedTank || !gallonsRequested}>
             {loading ? "Creating..." : "Create Delivery Request"}
