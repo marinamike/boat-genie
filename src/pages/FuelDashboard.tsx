@@ -407,6 +407,7 @@ export default function FuelDashboard() {
         open={showSaleForm} 
         onOpenChange={setShowSaleForm} 
         pumps={pumps}
+        tanks={tanks}
         onRecordSale={recordSale}
       />
       
@@ -441,7 +442,6 @@ export default function FuelDashboard() {
           setShowPumpSetup(open);
           if (!open) setEditingPump(null);
         }}
-        tanks={tanks}
         editPump={editingPump}
         onCreatePump={createPump}
         onUpdatePump={updatePump}
