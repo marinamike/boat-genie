@@ -11,6 +11,7 @@ import { ReconciliationForm } from "@/components/fuel/ReconciliationForm";
 import { TankSetupForm } from "@/components/fuel/TankSetupForm";
 import { PumpSetupForm } from "@/components/fuel/PumpSetupForm";
 import { DiscrepancyReport } from "@/components/fuel/DiscrepancyReport";
+import { PriceController } from "@/components/fuel/PriceController";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -186,8 +187,9 @@ export default function FuelDashboard() {
       </div>
 
       <Tabs defaultValue="tanks" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="tanks">Tanks</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="transactions">Sales</TabsTrigger>
           <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -298,6 +300,10 @@ export default function FuelDashboard() {
               </Card>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="pricing" className="mt-4">
+          <PriceController isOwner={isOwner} />
         </TabsContent>
 
         <TabsContent value="transactions" className="mt-4">

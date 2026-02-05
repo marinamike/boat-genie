@@ -867,6 +867,103 @@ export type Database = {
           },
         ]
       }
+      fuel_price_history: {
+        Row: {
+          business_id: string
+          changed_at: string
+          changed_by: string | null
+          cost_basis: number
+          fuel_type: string
+          id: string
+          member_price: number | null
+          retail_price: number
+        }
+        Insert: {
+          business_id: string
+          changed_at?: string
+          changed_by?: string | null
+          cost_basis: number
+          fuel_type: string
+          id?: string
+          member_price?: number | null
+          retail_price: number
+        }
+        Update: {
+          business_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          cost_basis?: number
+          fuel_type?: string
+          id?: string
+          member_price?: number | null
+          retail_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_price_history_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_prices: {
+        Row: {
+          auto_margin_amount: number | null
+          auto_margin_enabled: boolean
+          business_id: string
+          cost_basis: number
+          created_at: string
+          fuel_type: string
+          id: string
+          member_discount_amount: number | null
+          member_discount_enabled: boolean
+          member_price: number | null
+          retail_price: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_margin_amount?: number | null
+          auto_margin_enabled?: boolean
+          business_id: string
+          cost_basis?: number
+          created_at?: string
+          fuel_type: string
+          id?: string
+          member_discount_amount?: number | null
+          member_discount_enabled?: boolean
+          member_price?: number | null
+          retail_price?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_margin_amount?: number | null
+          auto_margin_enabled?: boolean
+          business_id?: string
+          cost_basis?: number
+          created_at?: string
+          fuel_type?: string
+          id?: string
+          member_discount_amount?: number | null
+          member_discount_enabled?: boolean
+          member_price?: number | null
+          retail_price?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_prices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_pumps: {
         Row: {
           business_id: string
