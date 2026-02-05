@@ -21,20 +21,25 @@ interface DeliveryRequestFormProps {
 export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest }: DeliveryRequestFormProps) {
   const [loading, setLoading] = useState(false);
   
-  const [tankId, setTankId] = useState("");
+  const [fuelType, setFuelType] = useState("");
   const [gallonsRequested, setGallonsRequested] = useState("");
   const [vendorName, setVendorName] = useState("");
 
-  const selectedTank = tanks.find(t => t.id === tankId);
+  // Find the primary tank for selected fuel type (highest capacity active tank)
+  const matchingTanks = tanks
+    .filter(t => t.is_active && t.fuel_type.toLowerCase() === fuelType.toLowerCase())
+    .sort((a, b) => b.total_capacity_gallons - a.total_capacity_gallons);
+  
+  const selectedTank = matchingTanks[0];
   const projectedVolume = (selectedTank?.current_volume_gallons || 0) + parseFloat(gallonsRequested || "0");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tankId || !gallonsRequested) return;
+    if (!selectedTank || !gallonsRequested) return;
 
     setLoading(true);
     const result = await onCreateRequest({
-      tank_id: tankId,
+      tank_id: selectedTank.id,
       gallons_requested: parseFloat(gallonsRequested),
       vendor_name: vendorName || undefined,
     });
@@ -43,12 +48,17 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
     
     if (result) {
       // Reset form
-      setTankId("");
+      setFuelType("");
       setGallonsRequested("");
       setVendorName("");
       onOpenChange(false);
     }
   };
+
+  // Determine available fuel types from active tanks
+  const availableFuelTypes = [...new Set(tanks.filter(t => t.is_active).map(t => t.fuel_type))];
+  const hasGas = availableFuelTypes.some(ft => ft.toLowerCase() === 'gasoline' || ft.toLowerCase() === 'gas');
+  const hasDiesel = availableFuelTypes.some(ft => ft.toLowerCase() === 'diesel');
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -64,24 +74,21 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 mt-6 pb-4">
-          {/* Tank Selection */}
+          {/* Fuel Type Selection */}
           <div className="space-y-2">
-            <Label htmlFor="tank">Product Type *</Label>
-            <Select value={tankId} onValueChange={setTankId}>
+            <Label htmlFor="fuelType">Product Type *</Label>
+            <Select value={fuelType} onValueChange={setFuelType}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a tank" />
+                <SelectValue placeholder="Select fuel type" />
               </SelectTrigger>
               <SelectContent>
-                {tanks.filter(t => t.is_active).map(tank => (
-                  <SelectItem key={tank.id} value={tank.id}>
-                    {tank.tank_name} - {tank.fuel_type} ({tank.current_volume_gallons.toLocaleString()} gal)
-                  </SelectItem>
-                ))}
+                {hasGas && <SelectItem value="gasoline">Gas</SelectItem>}
+                {hasDiesel && <SelectItem value="diesel">Diesel</SelectItem>}
               </SelectContent>
             </Select>
             {selectedTank && (
               <p className="text-xs text-muted-foreground">
-                Available space: {(selectedTank.total_capacity_gallons - selectedTank.current_volume_gallons).toLocaleString()} gal
+                Tank: {selectedTank.tank_name} • Available space: {(selectedTank.total_capacity_gallons - selectedTank.current_volume_gallons).toLocaleString()} gal
               </p>
             )}
           </div>
@@ -119,7 +126,7 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading || !tankId || !gallonsRequested}>
+          <Button type="submit" className="w-full" disabled={loading || !selectedTank || !gallonsRequested}>
             {loading ? "Creating..." : "Create Delivery Request"}
           </Button>
         </form>
