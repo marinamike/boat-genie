@@ -110,14 +110,14 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
           <div className="flex-1">
             <Label className="text-xs text-muted-foreground">Retail Price</Label>
             <div className="flex items-center gap-2 mt-1">
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-[140px]">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="number"
                   step="0.001"
                   value={retailPrice}
                   onChange={(e) => setRetailPrice(e.target.value)}
-                  className="pl-10 text-2xl font-bold h-14"
+                  className="pl-10 pr-2 text-xl font-bold h-14"
                   disabled={!isOwner}
                 />
               </div>
