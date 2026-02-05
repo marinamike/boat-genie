@@ -30,8 +30,11 @@ export function AssetForm({ asset, onSubmit, onCancel }: AssetFormProps) {
     max_loa_ft: asset?.max_loa_ft?.toString() || "",
     max_beam_ft: asset?.max_beam_ft?.toString() || "",
     max_draft_ft: asset?.max_draft_ft?.toString() || "",
-    daily_rate: asset?.daily_rate?.toString() || "",
-    monthly_rate: asset?.monthly_rate?.toString() || "",
+    daily_rate_per_ft: asset?.daily_rate_per_ft?.toString() || "",
+    weekly_rate_per_ft: asset?.weekly_rate_per_ft?.toString() || "",
+    monthly_rate_per_ft: asset?.monthly_rate_per_ft?.toString() || "",
+    seasonal_rate_per_ft: asset?.seasonal_rate_per_ft?.toString() || "",
+    annual_rate_per_ft: asset?.annual_rate_per_ft?.toString() || "",
     notes: asset?.notes || "",
   });
 
@@ -47,8 +50,11 @@ export function AssetForm({ asset, onSubmit, onCancel }: AssetFormProps) {
         max_loa_ft: formData.max_loa_ft ? parseFloat(formData.max_loa_ft) : null,
         max_beam_ft: formData.max_beam_ft ? parseFloat(formData.max_beam_ft) : null,
         max_draft_ft: formData.max_draft_ft ? parseFloat(formData.max_draft_ft) : null,
-        daily_rate: formData.daily_rate ? parseFloat(formData.daily_rate) : null,
-        monthly_rate: formData.monthly_rate ? parseFloat(formData.monthly_rate) : null,
+        daily_rate_per_ft: formData.daily_rate_per_ft ? parseFloat(formData.daily_rate_per_ft) : null,
+        weekly_rate_per_ft: formData.weekly_rate_per_ft ? parseFloat(formData.weekly_rate_per_ft) : null,
+        monthly_rate_per_ft: formData.monthly_rate_per_ft ? parseFloat(formData.monthly_rate_per_ft) : null,
+        seasonal_rate_per_ft: formData.seasonal_rate_per_ft ? parseFloat(formData.seasonal_rate_per_ft) : null,
+        annual_rate_per_ft: formData.annual_rate_per_ft ? parseFloat(formData.annual_rate_per_ft) : null,
         notes: formData.notes || null,
       });
     } finally {
@@ -147,32 +153,74 @@ export function AssetForm({ asset, onSubmit, onCancel }: AssetFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="daily_rate">Daily Rate ($)</Label>
-          <Input
-            id="daily_rate"
-            type="number"
-            step="0.01"
-            placeholder="50.00"
-            value={formData.daily_rate}
-            onChange={(e) =>
-              setFormData({ ...formData, daily_rate: e.target.value })
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="monthly_rate">Monthly Rate ($)</Label>
-          <Input
-            id="monthly_rate"
-            type="number"
-            step="0.01"
-            placeholder="800.00"
-            value={formData.monthly_rate}
-            onChange={(e) =>
-              setFormData({ ...formData, monthly_rate: e.target.value })
-            }
-          />
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Rates ($ per foot)</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="daily_rate_per_ft" className="text-xs text-muted-foreground">Daily</Label>
+            <Input
+              id="daily_rate_per_ft"
+              type="number"
+              step="0.01"
+              placeholder="2.50"
+              value={formData.daily_rate_per_ft}
+              onChange={(e) =>
+                setFormData({ ...formData, daily_rate_per_ft: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="weekly_rate_per_ft" className="text-xs text-muted-foreground">Weekly</Label>
+            <Input
+              id="weekly_rate_per_ft"
+              type="number"
+              step="0.01"
+              placeholder="15.00"
+              value={formData.weekly_rate_per_ft}
+              onChange={(e) =>
+                setFormData({ ...formData, weekly_rate_per_ft: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="monthly_rate_per_ft" className="text-xs text-muted-foreground">Monthly</Label>
+            <Input
+              id="monthly_rate_per_ft"
+              type="number"
+              step="0.01"
+              placeholder="45.00"
+              value={formData.monthly_rate_per_ft}
+              onChange={(e) =>
+                setFormData({ ...formData, monthly_rate_per_ft: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="seasonal_rate_per_ft" className="text-xs text-muted-foreground">Seasonal</Label>
+            <Input
+              id="seasonal_rate_per_ft"
+              type="number"
+              step="0.01"
+              placeholder="200.00"
+              value={formData.seasonal_rate_per_ft}
+              onChange={(e) =>
+                setFormData({ ...formData, seasonal_rate_per_ft: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="annual_rate_per_ft" className="text-xs text-muted-foreground">Annual</Label>
+            <Input
+              id="annual_rate_per_ft"
+              type="number"
+              step="0.01"
+              placeholder="350.00"
+              value={formData.annual_rate_per_ft}
+              onChange={(e) =>
+                setFormData({ ...formData, annual_rate_per_ft: e.target.value })
+              }
+            />
+          </div>
         </div>
       </div>
 
