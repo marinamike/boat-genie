@@ -24,8 +24,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Calendar, RefreshCw, XCircle, Search } from "lucide-react";
+import { FileText, Plus, Calendar, RefreshCw, XCircle, Search, Pencil } from "lucide-react";
 import { YardAsset, LeaseAgreement } from "@/hooks/useYardAssets";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addMonths } from "date-fns";
 
@@ -47,6 +48,7 @@ export function LeaseManager({
   terminateLease,
 }: LeaseManagerProps) {
   const [showNewLease, setShowNewLease] = useState(false);
+  const [editingLease, setEditingLease] = useState<LeaseAgreement | null>(null);
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [boatSearch, setBoatSearch] = useState("");
   const [boatResults, setBoatResults] = useState<any[]>([]);
@@ -56,12 +58,72 @@ export function LeaseManager({
     end_date: format(addMonths(new Date(), 12), "yyyy-MM-dd"),
     monthly_rate: "",
     deposit_amount: "",
+    deposit_paid: false,
     auto_renew: true,
     renewal_months: 12,
     power_included: false,
     water_included: false,
+    terms_notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const openEditLease = (lease: LeaseAgreement) => {
+    setEditingLease(lease);
+    setFormData({
+      start_date: lease.start_date,
+      end_date: lease.end_date || format(addMonths(new Date(lease.start_date), 12), "yyyy-MM-dd"),
+      monthly_rate: lease.monthly_rate.toString(),
+      deposit_amount: (lease.deposit_amount || 0).toString(),
+      deposit_paid: lease.deposit_paid || false,
+      auto_renew: lease.auto_renew || false,
+      renewal_months: lease.renewal_months || 12,
+      power_included: lease.power_included || false,
+      water_included: lease.water_included || false,
+      terms_notes: lease.terms_notes || "",
+    });
+  };
+
+  const handleUpdateLease = async () => {
+    if (!editingLease) return;
+    setSubmitting(true);
+
+    try {
+      await updateLease(editingLease.id, {
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        monthly_rate: parseFloat(formData.monthly_rate) || 0,
+        deposit_amount: parseFloat(formData.deposit_amount) || 0,
+        deposit_paid: formData.deposit_paid,
+        auto_renew: formData.auto_renew,
+        renewal_months: formData.renewal_months,
+        power_included: formData.power_included,
+        water_included: formData.water_included,
+        terms_notes: formData.terms_notes,
+      });
+      setEditingLease(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      start_date: format(new Date(), "yyyy-MM-dd"),
+      end_date: format(addMonths(new Date(), 12), "yyyy-MM-dd"),
+      monthly_rate: "",
+      deposit_amount: "",
+      deposit_paid: false,
+      auto_renew: true,
+      renewal_months: 12,
+      power_included: false,
+      water_included: false,
+      terms_notes: "",
+    });
+    setSelectedAssetId("");
+    setSelectedBoat(null);
+    setBoatSearch("");
+    setBoatResults([]);
+  };
 
   const handleSearchBoat = async () => {
     if (!boatSearch.trim()) return;
@@ -88,18 +150,17 @@ export function LeaseManager({
         end_date: formData.end_date,
         monthly_rate: parseFloat(formData.monthly_rate) || 0,
         deposit_amount: parseFloat(formData.deposit_amount) || 0,
+        deposit_paid: formData.deposit_paid,
         auto_renew: formData.auto_renew,
         renewal_months: formData.renewal_months,
         power_included: formData.power_included,
         water_included: formData.water_included,
+        terms_notes: formData.terms_notes,
         lease_status: "active",
       });
       
       setShowNewLease(false);
-      setSelectedAssetId("");
-      setSelectedBoat(null);
-      setBoatSearch("");
-      setBoatResults([]);
+      resetForm();
     } finally {
       setSubmitting(false);
     }
@@ -231,29 +292,35 @@ export function LeaseManager({
                       {lease.water_included && <Badge variant="secondary">Water Included</Badge>}
                     </div>
                     
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Terminate
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Terminate Lease?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will end the lease for {lease.boat?.name} at {lease.asset?.asset_name}.
-                            The slip will be marked as available.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => terminateLease(lease.id)}>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEditLease(lease)}>
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <XCircle className="w-4 h-4 mr-1" />
                             Terminate
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Terminate Lease?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will end the lease for {lease.boat?.name} at {lease.asset?.asset_name}.
+                              The slip will be marked as available.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => terminateLease(lease.id)}>
+                              Terminate
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -482,6 +549,171 @@ export function LeaseManager({
               </Button>
             </div>
           </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Lease Sheet */}
+      <Sheet open={!!editingLease} onOpenChange={(open) => !open && setEditingLease(null)}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Lease</SheetTitle>
+          </SheetHeader>
+          
+          {editingLease && (
+            <div className="space-y-4 mt-6">
+              {/* Lease Info (Read-only) */}
+              <Card className="bg-muted/50">
+                <CardContent className="py-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Vessel</span>
+                    <span className="font-medium">{editingLease.boat?.name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-muted-foreground">Space</span>
+                    <span>{editingLease.asset?.asset_name}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) =>
+                      setFormData({ ...formData, start_date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) =>
+                      setFormData({ ...formData, end_date: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Rates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Monthly Rate ($) *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="800.00"
+                    value={formData.monthly_rate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, monthly_rate: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Security Deposit ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.deposit_amount}
+                    onChange={(e) =>
+                      setFormData({ ...formData, deposit_amount: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Deposit Paid */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Deposit Paid</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Has the security deposit been collected?
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.deposit_paid}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, deposit_paid: checked })
+                  }
+                />
+              </div>
+
+              {/* Auto-Renew */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Auto-Renew</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically renew when lease expires
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.auto_renew}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, auto_renew: checked })
+                  }
+                />
+              </div>
+
+              {/* Utilities Included */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Power Included</Label>
+                  <Switch
+                    checked={formData.power_included}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, power_included: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Water Included</Label>
+                  <Switch
+                    checked={formData.water_included}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, water_included: checked })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label>Terms & Notes</Label>
+                <Textarea
+                  placeholder="Additional lease terms or notes..."
+                  value={formData.terms_notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, terms_notes: e.target.value })
+                  }
+                  rows={3}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingLease(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateLease}
+                  disabled={!formData.monthly_rate || submitting}
+                  className="flex-1"
+                >
+                  {submitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
     </div>
