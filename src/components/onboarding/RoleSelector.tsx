@@ -1,4 +1,4 @@
-import { Ship, Wrench, Building2, HardHat } from "lucide-react";
+import { Ship, Building2, HardHat } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/hooks/useUserRole";
@@ -9,29 +9,24 @@ interface RoleSelectorProps {
   disabled?: boolean;
 }
 
+// Three-profile architecture: Customer, Business, Staff
 const roles = [
   {
     id: "boat_owner" as AppRole,
-    title: "Boat Owner",
+    title: "Customer",
     description: "Manage your vessel, request services, and track maintenance",
     icon: Ship,
   },
   {
-    id: "provider" as AppRole,
-    title: "Service Provider",
-    description: "View assigned work orders and provide marine services",
-    icon: Wrench,
-  },
-  {
     id: "admin" as AppRole,
-    title: "Marina Manager",
-    description: "Manage slips, launch queue, and marina operations",
+    title: "Business",
+    description: "Manage marina operations, services, fuel, and retail",
     icon: Building2,
   },
   {
     id: "marina_staff" as AppRole,
-    title: "Marina Staff",
-    description: "Handle launches, dock tasks, and on-site operations",
+    title: "Staff",
+    description: "Work under a Business with assigned module permissions",
     icon: HardHat,
   },
 ];
