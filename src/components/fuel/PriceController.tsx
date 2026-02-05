@@ -114,7 +114,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="number"
-                  step="0.01"
+                  step="0.001"
                   value={retailPrice}
                   onChange={(e) => setRetailPrice(e.target.value)}
                   className="pl-10 text-2xl font-bold h-14"
@@ -149,7 +149,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
                     key={i}
                     className="flex-1 bg-primary/20 rounded-t transition-all hover:bg-primary/30"
                     style={{ height: `${Math.max(height, 10)}%` }}
-                    title={`$${point.retail_price.toFixed(2)} - ${format(new Date(point.changed_at), "MMM d")}`}
+                    title={`$${point.retail_price.toFixed(3)} - ${format(new Date(point.changed_at), "MMM d")}`}
                   />
                 );
               })}
@@ -164,7 +164,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
               <Users className="h-4 w-4 text-primary" />
               <span className="text-sm">Member Price</span>
             </div>
-            <span className="font-semibold">${price.member_price.toFixed(2)}/gal</span>
+            <span className="font-semibold">${price.member_price.toFixed(3)}/gal</span>
           </div>
         )}
 
@@ -172,7 +172,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
         {price?.cost_basis !== undefined && price.cost_basis > 0 && (
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>Cost Basis</span>
-            <span>${price.cost_basis.toFixed(2)}/gal</span>
+            <span>${price.cost_basis.toFixed(3)}/gal</span>
           </div>
         )}
 
@@ -181,7 +181,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Margin</span>
             <span className="font-medium text-primary">
-              ${(price.retail_price - price.cost_basis).toFixed(2)}/gal
+              ${(price.retail_price - price.cost_basis).toFixed(3)}/gal
             </span>
           </div>
         )}
@@ -210,7 +210,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
                     <Input
                       id={`cost-${fuelType}`}
                       type="number"
-                      step="0.01"
+                      step="0.001"
                       value={costBasis}
                       onChange={(e) => setCostBasis(e.target.value)}
                       className="pl-8"
@@ -242,7 +242,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
                       <Input
                         id={`margin-${fuelType}`}
                         type="number"
-                        step="0.01"
+                        step="0.001"
                         value={autoMargin}
                         onChange={(e) => setAutoMargin(e.target.value)}
                         className="pl-8"
@@ -277,7 +277,7 @@ function PriceCard({ fuelType, label, price, history, onUpdate, isOwner }: Price
                       <Input
                         id={`discount-${fuelType}`}
                         type="number"
-                        step="0.01"
+                        step="0.001"
                         value={memberDiscount}
                         onChange={(e) => setMemberDiscount(e.target.value)}
                         className="pl-8"
@@ -373,14 +373,14 @@ export function PriceController({ isOwner }: PriceControllerProps) {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-muted-foreground">
-                      Cost: ${entry.cost_basis.toFixed(2)}
+                      Cost: ${entry.cost_basis.toFixed(3)}
                     </span>
                     <span className="font-medium">
-                      Retail: ${entry.retail_price.toFixed(2)}
+                      Retail: ${entry.retail_price.toFixed(3)}
                     </span>
                     {entry.member_price && (
                       <span className="text-primary">
-                        Member: ${entry.member_price.toFixed(2)}
+                        Member: ${entry.member_price.toFixed(3)}
                       </span>
                     )}
                   </div>
