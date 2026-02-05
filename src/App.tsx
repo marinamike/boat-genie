@@ -34,6 +34,7 @@ import MarinaDetails from "./pages/MarinaDetails";
 import MarinaSlipsPage from "./pages/MarinaSlipsPage";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import BusinessSettings from "./pages/BusinessSettings";
+import FuelDashboard from "./pages/FuelDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -108,6 +109,7 @@ function RoleBasedRoutes() {
               <Route path="/business" element={<BusinessDashboard />} />
               <Route path="/business/slips" element={<MarinaSlipsPage />} />
               <Route path="/business/jobs" element={<ProviderDashboard />} />
+              <Route path="/business/fuel" element={<FuelDashboard />} />
               <Route path="/business/settings" element={<BusinessSettings />} />
               <Route path="/profile" element={<Profile />} />
             </Route>

@@ -807,6 +807,320 @@ export type Database = {
           },
         ]
       }
+      fuel_deliveries: {
+        Row: {
+          business_id: string
+          cost_per_gallon: number | null
+          created_at: string
+          delivery_date: string
+          gallons_delivered: number
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          recorded_by: string
+          tank_id: string
+          total_cost: number | null
+          vendor_name: string | null
+        }
+        Insert: {
+          business_id: string
+          cost_per_gallon?: number | null
+          created_at?: string
+          delivery_date?: string
+          gallons_delivered: number
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          recorded_by: string
+          tank_id: string
+          total_cost?: number | null
+          vendor_name?: string | null
+        }
+        Update: {
+          business_id?: string
+          cost_per_gallon?: number | null
+          created_at?: string
+          delivery_date?: string
+          gallons_delivered?: number
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          recorded_by?: string
+          tank_id?: string
+          total_cost?: number | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_deliveries_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_deliveries_tank_id_fkey"
+            columns: ["tank_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_tanks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_pumps: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          lifetime_meter_gallons: number
+          pump_name: string
+          pump_number: string | null
+          tank_id: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lifetime_meter_gallons?: number
+          pump_name: string
+          pump_number?: string | null
+          tank_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lifetime_meter_gallons?: number
+          pump_name?: string
+          pump_number?: string | null
+          tank_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_pumps_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_pumps_tank_id_fkey"
+            columns: ["tank_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_tanks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_reconciliations: {
+        Row: {
+          business_id: string
+          created_at: string
+          discrepancy_gallons: number
+          discrepancy_percentage: number
+          id: string
+          measurement_type: string
+          notes: string | null
+          physical_reading_gallons: number
+          raw_measurement: number | null
+          recorded_at: string
+          recorded_by: string
+          tank_id: string
+          theoretical_volume_gallons: number
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          discrepancy_gallons: number
+          discrepancy_percentage: number
+          id?: string
+          measurement_type?: string
+          notes?: string | null
+          physical_reading_gallons: number
+          raw_measurement?: number | null
+          recorded_at?: string
+          recorded_by: string
+          tank_id: string
+          theoretical_volume_gallons: number
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          discrepancy_gallons?: number
+          discrepancy_percentage?: number
+          id?: string
+          measurement_type?: string
+          notes?: string | null
+          physical_reading_gallons?: number
+          raw_measurement?: number | null
+          recorded_at?: string
+          recorded_by?: string
+          tank_id?: string
+          theoretical_volume_gallons?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_reconciliations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_reconciliations_tank_id_fkey"
+            columns: ["tank_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_tanks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_tanks: {
+        Row: {
+          business_id: string
+          created_at: string
+          current_volume_gallons: number
+          fuel_type: string
+          id: string
+          is_active: boolean
+          last_delivery_date: string | null
+          low_level_threshold_gallons: number
+          notes: string | null
+          tank_name: string
+          total_capacity_gallons: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          current_volume_gallons?: number
+          fuel_type: string
+          id?: string
+          is_active?: boolean
+          last_delivery_date?: string | null
+          low_level_threshold_gallons?: number
+          notes?: string | null
+          tank_name: string
+          total_capacity_gallons?: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          current_volume_gallons?: number
+          fuel_type?: string
+          id?: string
+          is_active?: boolean
+          last_delivery_date?: string | null
+          low_level_threshold_gallons?: number
+          notes?: string | null
+          tank_name?: string
+          total_capacity_gallons?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_tanks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_transactions: {
+        Row: {
+          business_id: string
+          created_at: string
+          gallons_sold: number
+          id: string
+          notes: string | null
+          price_per_gallon: number
+          pump_id: string
+          recorded_at: string
+          recorded_by: string
+          reservation_id: string | null
+          tank_id: string
+          total_amount: number
+          vessel_id: string | null
+          vessel_name: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          gallons_sold: number
+          id?: string
+          notes?: string | null
+          price_per_gallon: number
+          pump_id: string
+          recorded_at?: string
+          recorded_by: string
+          reservation_id?: string | null
+          tank_id: string
+          total_amount: number
+          vessel_id?: string | null
+          vessel_name?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          gallons_sold?: number
+          id?: string
+          notes?: string | null
+          price_per_gallon?: number
+          pump_id?: string
+          recorded_at?: string
+          recorded_by?: string
+          reservation_id?: string | null
+          tank_id?: string
+          total_amount?: number
+          vessel_id?: string | null
+          vessel_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_transactions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_transactions_pump_id_fkey"
+            columns: ["pump_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_pumps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_transactions_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "marina_reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_transactions_tank_id_fkey"
+            columns: ["tank_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_tanks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_transactions_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       launch_cards: {
         Row: {
           additional_notes: string | null
