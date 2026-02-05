@@ -1,11 +1,16 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FuelTank, FuelDelivery } from "@/hooks/useFuelManagement";
-import { Truck } from "lucide-react";
+import { Truck, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DeliveryRequestFormProps {
   open: boolean;
@@ -15,6 +20,8 @@ interface DeliveryRequestFormProps {
     tank_id: string;
     gallons_requested: number;
     vendor_name?: string;
+    requested_date?: Date;
+    next_available?: boolean;
   }) => Promise<FuelDelivery | null>;
 }
 
@@ -24,6 +31,8 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
   const [fuelType, setFuelType] = useState("");
   const [gallonsRequested, setGallonsRequested] = useState("");
   const [vendorName, setVendorName] = useState("");
+  const [requestedDate, setRequestedDate] = useState<Date>();
+  const [nextAvailable, setNextAvailable] = useState(false);
 
   // Find the primary tank for selected fuel type (highest capacity active tank)
   const matchingTanks = tanks
@@ -42,6 +51,8 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
       tank_id: selectedTank.id,
       gallons_requested: parseFloat(gallonsRequested),
       vendor_name: vendorName || undefined,
+      requested_date: nextAvailable ? undefined : requestedDate,
+      next_available: nextAvailable,
     });
 
     setLoading(false);
@@ -51,6 +62,8 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
       setFuelType("");
       setGallonsRequested("");
       setVendorName("");
+      setRequestedDate(undefined);
+      setNextAvailable(false);
       onOpenChange(false);
     }
   };
@@ -125,6 +138,53 @@ export function DeliveryRequestForm({ open, onOpenChange, tanks, onCreateRequest
               placeholder="e.g., Fuel Distributors Inc."
             />
           </div>
+
+          {/* Next Available Checkbox */}
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="nextAvailable" 
+              checked={nextAvailable}
+              onCheckedChange={(checked) => {
+                setNextAvailable(checked === true);
+                if (checked) setRequestedDate(undefined);
+              }}
+            />
+            <Label htmlFor="nextAvailable" className="text-sm font-normal cursor-pointer">
+              Next available delivery
+            </Label>
+          </div>
+
+          {/* Requested Delivery Date */}
+          {!nextAvailable && (
+            <div className="space-y-2">
+              <Label>Requested Delivery Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !requestedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {requestedDate ? format(requestedDate, "PPP") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={requestedDate}
+                    onSelect={setRequestedDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading || !selectedTank || !gallonsRequested}>
             {loading ? "Creating..." : "Create Delivery Request"}
