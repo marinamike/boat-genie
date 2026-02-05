@@ -109,19 +109,26 @@ const Profile = () => {
   };
 
   const handleRoleSelect = async (newRole: AppRole) => {
-    if (newRole === "admin") {
-      // Redirect to marina registration
+    // For Business role, check if they need to register a marina first
+    if (newRole === "admin" && !hasMarina) {
       navigate("/register-marina");
       return;
     }
 
     const success = await updateRole(newRole);
     if (success) {
+      const roleLabels: Record<AppRole, string> = {
+        boat_owner: "Customer",
+        admin: "Business",
+        marina_staff: "Staff",
+      };
       toast({
         title: "Role Updated",
-        description: `You are now registered as a ${newRole === "provider" ? "Service Provider" : "Boat Owner"}.`,
+        description: `You are now registered as a ${roleLabels[newRole]}.`,
       });
       refetchRole();
+      // Reload to apply new role routing
+      window.location.reload();
     }
   };
 
