@@ -2078,6 +2078,60 @@ export type Database = {
         }
         Relationships: []
       }
+      parts_pull_log: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_item_id: string
+          notes: string | null
+          pulled_at: string
+          pulled_by: string
+          quantity: number
+          total_cost: number
+          unit_cost: number
+          work_order_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          notes?: string | null
+          pulled_at?: string
+          pulled_by: string
+          quantity?: number
+          total_cost: number
+          unit_cost: number
+          work_order_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          notes?: string | null
+          pulled_at?: string
+          pulled_by?: string
+          quantity?: number
+          total_cost?: number
+          unit_cost?: number
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_pull_log_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "store_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_pull_log_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_invites: {
         Row: {
           accepted_at: string | null
@@ -2736,6 +2790,142 @@ export type Database = {
           },
         ]
       }
+      sales_receipt_items: {
+        Row: {
+          created_at: string
+          description: string
+          fuel_transaction_id: string | null
+          id: string
+          inventory_item_id: string | null
+          item_type: string
+          line_total: number
+          quantity: number
+          receipt_id: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          fuel_transaction_id?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_type?: string
+          line_total?: number
+          quantity?: number
+          receipt_id: string
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          fuel_transaction_id?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_type?: string
+          line_total?: number
+          quantity?: number
+          receipt_id?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_receipt_items_fuel_transaction_id_fkey"
+            columns: ["fuel_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_receipt_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "store_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_receipt_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "sales_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_receipts: {
+        Row: {
+          boat_id: string | null
+          boat_name: string | null
+          business_id: string
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          id: string
+          is_guest_checkout: boolean
+          notes: string | null
+          payment_method: string | null
+          receipt_number: string
+          recorded_at: string
+          recorded_by: string
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          total_amount: number
+        }
+        Insert: {
+          boat_id?: string | null
+          boat_name?: string | null
+          business_id: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          id?: string
+          is_guest_checkout?: boolean
+          notes?: string | null
+          payment_method?: string | null
+          receipt_number: string
+          recorded_at?: string
+          recorded_by: string
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total_amount?: number
+        }
+        Update: {
+          boat_id?: string | null
+          boat_name?: string | null
+          business_id?: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          id?: string
+          is_guest_checkout?: boolean
+          notes?: string | null
+          payment_method?: string | null
+          receipt_number?: string
+          recorded_at?: string
+          recorded_by?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_receipts_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_receipts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_rates: {
         Row: {
           created_at: string
@@ -2812,6 +3002,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "staff_invites_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_inventory: {
+        Row: {
+          barcode: string | null
+          business_id: string
+          category: Database["public"]["Enums"]["store_item_category"]
+          created_at: string
+          current_quantity: number
+          description: string | null
+          id: string
+          is_active: boolean
+          is_part: boolean
+          name: string
+          reorder_point: number
+          retail_price: number
+          sku: string | null
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          business_id: string
+          category?: Database["public"]["Enums"]["store_item_category"]
+          created_at?: string
+          current_quantity?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_part?: boolean
+          name: string
+          reorder_point?: number
+          retail_price?: number
+          sku?: string | null
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          business_id?: string
+          category?: Database["public"]["Enums"]["store_item_category"]
+          created_at?: string
+          current_quantity?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_part?: boolean
+          name?: string
+          reorder_point?: number
+          retail_price?: number
+          sku?: string | null
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_inventory_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -3388,7 +3640,7 @@ export type Database = {
     }
     Enums: {
       app_role: "boat_owner" | "provider" | "admin" | "marina_staff"
-      business_module: "slips" | "service" | "fuel" | "ship_store"
+      business_module: "slips" | "service" | "fuel" | "ship_store" | "store"
       escrow_status:
         | "none"
         | "pending_quote"
@@ -3414,6 +3666,7 @@ export type Database = {
       pricing_model: "per_foot" | "flat_rate" | "per_hour"
       quote_status: "pending" | "accepted" | "rejected" | "expired"
       service_type: "genie_service" | "pro_service"
+      store_item_category: "parts" | "retail" | "consumables"
       wish_form_status:
         | "submitted"
         | "reviewed"
@@ -3554,7 +3807,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["boat_owner", "provider", "admin", "marina_staff"],
-      business_module: ["slips", "service", "fuel", "ship_store"],
+      business_module: ["slips", "service", "fuel", "ship_store", "store"],
       escrow_status: [
         "none",
         "pending_quote",
@@ -3582,6 +3835,7 @@ export const Constants = {
       pricing_model: ["per_foot", "flat_rate", "per_hour"],
       quote_status: ["pending", "accepted", "rejected", "expired"],
       service_type: ["genie_service", "pro_service"],
+      store_item_category: ["parts", "retail", "consumables"],
       wish_form_status: [
         "submitted",
         "reviewed",

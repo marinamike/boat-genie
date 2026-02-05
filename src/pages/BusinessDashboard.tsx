@@ -1,9 +1,12 @@
 import { useBusiness } from "@/contexts/BusinessContext";
+import { useStoreInventory } from "@/hooks/useStoreInventory";
+import { useFuelManagement } from "@/hooks/useFuelManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Ship, Wrench, Fuel, Store, Building2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Database } from "@/integrations/supabase/types";
+import { LowStockAlerts } from "@/components/store/LowStockAlerts";
 
 type BusinessModule = Database["public"]["Enums"]["business_module"];
 
@@ -12,10 +15,18 @@ const moduleConfig: Record<BusinessModule, { label: string; icon: React.ElementT
   service: { label: "Service Yard", icon: Wrench, href: "/business/jobs", color: "text-orange-500" },
   fuel: { label: "Fuel Dock", icon: Fuel, href: "/business/fuel", color: "text-green-500" },
   ship_store: { label: "Ship Store", icon: Store, href: "/business/store", color: "text-purple-500" },
+  store: { label: "Ship Store", icon: Store, href: "/business/store", color: "text-purple-500" },
 };
 
 export default function BusinessDashboard() {
   const { business, enabledModules, isOwner, isStaff, loading } = useBusiness();
+  const { lowStockItems } = useStoreInventory();
+  const { tanks } = useFuelManagement();
+
+  // Get low fuel tanks
+  const lowFuelTanks = tanks.filter(t => 
+    t.is_active && t.current_volume_gallons <= t.low_level_threshold_gallons
+  );
 
   if (loading) {
     return (
@@ -113,6 +124,20 @@ export default function BusinessDashboard() {
           </div>
         )}
       </div>
+
+      {/* Low Stock Alerts */}
+      {(lowStockItems.length > 0 || lowFuelTanks.length > 0) && (
+        <LowStockAlerts 
+          lowStockItems={lowStockItems} 
+          lowFuelTanks={lowFuelTanks.map(t => ({
+            id: t.id,
+            tank_name: t.tank_name,
+            fuel_type: t.fuel_type,
+            current_volume_gallons: t.current_volume_gallons,
+            low_level_threshold_gallons: t.low_level_threshold_gallons,
+          }))}
+        />
+      )}
 
       {/* Quick Stats Placeholder */}
       <div>

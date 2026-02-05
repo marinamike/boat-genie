@@ -14,7 +14,7 @@ const modules: { id: BusinessModule; label: string; description: string; icon: R
   { id: "slips", label: "Slip Management", description: "Manage dock slips and reservations", icon: Ship },
   { id: "service", label: "Service Yard", description: "Work orders and service provider coordination", icon: Wrench },
   { id: "fuel", label: "Fuel Dock", description: "Fuel sales and inventory tracking", icon: Fuel },
-  { id: "ship_store", label: "Ship Store", description: "Retail and inventory management", icon: Store },
+  { id: "store", label: "Ship Store", description: "Retail and inventory management", icon: Store },
 ];
 
 export function ModuleManager() {
