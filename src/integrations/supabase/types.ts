@@ -1028,6 +1028,7 @@ export type Database = {
           measurement_type: string
           notes: string | null
           physical_reading_gallons: number
+          pump_totalizer_readings: Json | null
           raw_measurement: number | null
           recorded_at: string
           recorded_by: string
@@ -1043,6 +1044,7 @@ export type Database = {
           measurement_type?: string
           notes?: string | null
           physical_reading_gallons: number
+          pump_totalizer_readings?: Json | null
           raw_measurement?: number | null
           recorded_at?: string
           recorded_by: string
@@ -1058,6 +1060,7 @@ export type Database = {
           measurement_type?: string
           notes?: string | null
           physical_reading_gallons?: number
+          pump_totalizer_readings?: Json | null
           raw_measurement?: number | null
           recorded_at?: string
           recorded_by?: string
