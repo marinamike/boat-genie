@@ -66,8 +66,8 @@ export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }:
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
-        <SheetHeader>
+      <SheetContent className="sm:max-w-md flex flex-col h-full">
+        <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
             Log Fuel Delivery
@@ -77,7 +77,7 @@ export function DeliveryLogForm({ open, onOpenChange, tanks, onRecordDelivery }:
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 mt-6 pb-4">
           {/* Tank Selection */}
           <div className="space-y-2">
             <Label htmlFor="tank">Select Tank *</Label>
