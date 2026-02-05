@@ -63,7 +63,7 @@ export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Fuel className="h-5 w-5" />
@@ -74,7 +74,7 @@ export function QuickSaleForm({ open, onOpenChange, pumps, defaultPricePerGallon
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-6 pb-6">
           {/* Pump Selection */}
           <div className="space-y-2">
             <Label htmlFor="pump">Select Pump *</Label>
