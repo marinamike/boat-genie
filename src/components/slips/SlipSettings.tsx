@@ -257,16 +257,16 @@ export function SlipSettings({
             <div className="space-y-2">
               <Label>Assign to Slip (Optional)</Label>
               <Select
-                value={meterForm.yard_asset_id}
+                value={meterForm.yard_asset_id || "none"}
                 onValueChange={(value) =>
-                  setMeterForm({ ...meterForm, yard_asset_id: value })
+                  setMeterForm({ ...meterForm, yard_asset_id: value === "none" ? "" : value })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a slip" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {assets.map((asset) => (
                     <SelectItem key={asset.id} value={asset.id}>
                       {asset.asset_name} ({asset.dock_section || "Unassigned"})
