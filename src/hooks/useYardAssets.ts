@@ -21,8 +21,11 @@ export interface YardAsset {
   is_available: boolean;
   current_boat_id: string | null;
   current_reservation_id: string | null;
-  monthly_rate: number | null;
-  daily_rate: number | null;
+  daily_rate_per_ft: number | null;
+  weekly_rate_per_ft: number | null;
+  monthly_rate_per_ft: number | null;
+  seasonal_rate_per_ft: number | null;
+  annual_rate_per_ft: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

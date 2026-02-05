@@ -3857,61 +3857,70 @@ export type Database = {
       }
       yard_assets: {
         Row: {
+          annual_rate_per_ft: number | null
           asset_name: string
           asset_type: Database["public"]["Enums"]["yard_asset_type"]
           business_id: string
           created_at: string
           current_boat_id: string | null
           current_reservation_id: string | null
-          daily_rate: number | null
+          daily_rate_per_ft: number | null
           dock_section: string | null
           id: string
           is_available: boolean | null
           max_beam_ft: number | null
           max_draft_ft: number | null
           max_loa_ft: number | null
-          monthly_rate: number | null
+          monthly_rate_per_ft: number | null
           notes: string | null
           position_order: number | null
+          seasonal_rate_per_ft: number | null
           updated_at: string
+          weekly_rate_per_ft: number | null
         }
         Insert: {
+          annual_rate_per_ft?: number | null
           asset_name: string
           asset_type?: Database["public"]["Enums"]["yard_asset_type"]
           business_id: string
           created_at?: string
           current_boat_id?: string | null
           current_reservation_id?: string | null
-          daily_rate?: number | null
+          daily_rate_per_ft?: number | null
           dock_section?: string | null
           id?: string
           is_available?: boolean | null
           max_beam_ft?: number | null
           max_draft_ft?: number | null
           max_loa_ft?: number | null
-          monthly_rate?: number | null
+          monthly_rate_per_ft?: number | null
           notes?: string | null
           position_order?: number | null
+          seasonal_rate_per_ft?: number | null
           updated_at?: string
+          weekly_rate_per_ft?: number | null
         }
         Update: {
+          annual_rate_per_ft?: number | null
           asset_name?: string
           asset_type?: Database["public"]["Enums"]["yard_asset_type"]
           business_id?: string
           created_at?: string
           current_boat_id?: string | null
           current_reservation_id?: string | null
-          daily_rate?: number | null
+          daily_rate_per_ft?: number | null
           dock_section?: string | null
           id?: string
           is_available?: boolean | null
           max_beam_ft?: number | null
           max_draft_ft?: number | null
           max_loa_ft?: number | null
-          monthly_rate?: number | null
+          monthly_rate_per_ft?: number | null
           notes?: string | null
           position_order?: number | null
+          seasonal_rate_per_ft?: number | null
           updated_at?: string
+          weekly_rate_per_ft?: number | null
         }
         Relationships: [
           {

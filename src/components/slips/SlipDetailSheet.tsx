@@ -252,27 +252,57 @@ export function SlipDetailSheet({
           </div>
 
           {/* Rates */}
-          {(asset.daily_rate || asset.monthly_rate) && (
+          {(asset.daily_rate_per_ft || asset.weekly_rate_per_ft || asset.monthly_rate_per_ft || asset.seasonal_rate_per_ft || asset.annual_rate_per_ft) && (
             <div>
-              <h3 className="font-semibold mb-3">Rates</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {asset.daily_rate && (
+              <h3 className="font-semibold mb-3">Rates (per foot)</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {asset.daily_rate_per_ft && (
                   <Card>
                     <CardContent className="py-3 text-center">
                       <div className="text-lg font-bold">
-                        ${asset.daily_rate}
+                        ${asset.daily_rate_per_ft}
                       </div>
-                      <div className="text-xs text-muted-foreground">Per Day</div>
+                      <div className="text-xs text-muted-foreground">Daily</div>
                     </CardContent>
                   </Card>
                 )}
-                {asset.monthly_rate && (
+                {asset.weekly_rate_per_ft && (
                   <Card>
                     <CardContent className="py-3 text-center">
                       <div className="text-lg font-bold">
-                        ${asset.monthly_rate}
+                        ${asset.weekly_rate_per_ft}
                       </div>
-                      <div className="text-xs text-muted-foreground">Per Month</div>
+                      <div className="text-xs text-muted-foreground">Weekly</div>
+                    </CardContent>
+                  </Card>
+                )}
+                {asset.monthly_rate_per_ft && (
+                  <Card>
+                    <CardContent className="py-3 text-center">
+                      <div className="text-lg font-bold">
+                        ${asset.monthly_rate_per_ft}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Monthly</div>
+                    </CardContent>
+                  </Card>
+                )}
+                {asset.seasonal_rate_per_ft && (
+                  <Card>
+                    <CardContent className="py-3 text-center">
+                      <div className="text-lg font-bold">
+                        ${asset.seasonal_rate_per_ft}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Seasonal</div>
+                    </CardContent>
+                  </Card>
+                )}
+                {asset.annual_rate_per_ft && (
+                  <Card>
+                    <CardContent className="py-3 text-center">
+                      <div className="text-lg font-bold">
+                        ${asset.annual_rate_per_ft}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Annual</div>
                     </CardContent>
                   </Card>
                 )}
