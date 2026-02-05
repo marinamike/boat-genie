@@ -6,11 +6,9 @@ import {
   Fuel,
   Store,
   Users,
-  Settings,
-  Crown
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Database } from "@/integrations/supabase/types";
 
@@ -38,10 +36,7 @@ const staticNavItems: NavItem[] = [
 
 export function BusinessLayout() {
   const location = useLocation();
-  const { isGodModeUser, isPreviewMode } = useAuth();
   const { enabledModules, hasModuleAccess, isOwner, loading } = useBusiness();
-
-  const showAdminNav = isGodModeUser && !isPreviewMode;
 
   // Filter nav items based on enabled modules and permissions
   const visibleModuleItems = moduleNavItems.filter((item) => {
@@ -58,7 +53,6 @@ export function BusinessLayout() {
   const allNavItems = [
     ...visibleModuleItems,
     ...visibleStaticItems,
-    ...(showAdminNav ? [{ href: "/admin", icon: Crown, label: "God Mode" }] : []),
   ];
 
   if (loading) {
@@ -79,7 +73,7 @@ export function BusinessLayout() {
           {allNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href || 
-              (item.href !== "/business" && item.href !== "/admin" && location.pathname.startsWith(item.href));
+              (item.href !== "/business" && location.pathname.startsWith(item.href));
 
             return (
               <Link
@@ -89,16 +83,11 @@ export function BusinessLayout() {
                   "flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-colors min-w-[48px]",
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground",
-                  item.href === "/admin" && "text-amber-500 hover:text-amber-600"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Icon 
-                  className={cn(
-                    "w-5 h-5", 
-                    isActive && "text-primary", 
-                    item.href === "/admin" && "text-amber-500"
-                  )} 
+                  className={cn("w-5 h-5", isActive && "text-primary")} 
                   strokeWidth={isActive ? 2.5 : 2} 
                 />
                 <span className={cn("text-[10px] mt-1 font-medium", isActive && "font-semibold")}>

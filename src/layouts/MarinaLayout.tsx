@@ -1,27 +1,20 @@
-import { Outlet } from "react-router-dom";
-import { Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Ship, 
   Users, 
-  Settings, 
-  Crown
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
 
 export function MarinaLayout() {
   const location = useLocation();
-  const { isGodModeUser, isPreviewMode } = useAuth();
-  
-  const showAdminNav = isGodModeUser && !isPreviewMode;
 
   const marinaNavItems = [
     { href: "/marina", icon: LayoutDashboard, label: "Command" },
     { href: "/marina/slips", icon: Ship, label: "Slips" },
     { href: "/marina/reservations", icon: Users, label: "Reservations" },
     { href: "/marina/settings", icon: Settings, label: "Settings" },
-    ...(showAdminNav ? [{ href: "/admin", icon: Crown, label: "God Mode" }] : []),
   ];
 
   return (
@@ -34,7 +27,7 @@ export function MarinaLayout() {
           {marinaNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href || 
-              (item.href !== "/marina" && item.href !== "/admin" && location.pathname.startsWith(item.href));
+              (item.href !== "/marina" && location.pathname.startsWith(item.href));
 
             return (
               <Link
@@ -44,11 +37,10 @@ export function MarinaLayout() {
                   "flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-colors min-w-[48px]",
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground",
-                  item.href === "/admin" && "text-amber-500 hover:text-amber-600"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon className={cn("w-5 h-5", isActive && "text-primary", item.href === "/admin" && "text-amber-500")} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon className={cn("w-5 h-5", isActive && "text-primary")} strokeWidth={isActive ? 2.5 : 2} />
                 <span className={cn("text-[10px] mt-1 font-medium", isActive && "font-semibold")}>
                   {item.label}
                 </span>

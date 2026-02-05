@@ -2,11 +2,9 @@ import { Outlet } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import { ClipboardCheck, Map, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
 
 export function StaffLayout() {
   const location = useLocation();
-  const { role, isGodModeUser, isPreviewMode } = useAuth();
   
   // Staff Navigation: QC Queue, Dock View, Profile
   const staffNavItems = [
