@@ -100,7 +100,7 @@ export function TankSetupForm({ open, onOpenChange, editTank }: TankSetupFormPro
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]" position="popper" sideOffset={4}>
                 <SelectItem value="diesel">Diesel</SelectItem>
                 <SelectItem value="gasoline">Gasoline (Regular)</SelectItem>
                 <SelectItem value="premium">Premium</SelectItem>
