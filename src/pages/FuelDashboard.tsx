@@ -21,8 +21,10 @@ import {
   Droplets,
   DollarSign,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from "lucide-react";
+import { FuelTank, FuelPump } from "@/hooks/useFuelManagement";
 
 export default function FuelDashboard() {
   const { business, isOwner, hasModuleAccess } = useBusiness();
@@ -36,6 +38,7 @@ export default function FuelDashboard() {
     createTank,
     updateTank,
     createPump,
+    updatePump,
     recordSale,
     recordDelivery,
     recordReconciliation,
@@ -46,6 +49,8 @@ export default function FuelDashboard() {
   const [showReconciliationForm, setShowReconciliationForm] = useState(false);
   const [showTankSetup, setShowTankSetup] = useState(false);
   const [showPumpSetup, setShowPumpSetup] = useState(false);
+  const [editingTank, setEditingTank] = useState<FuelTank | null>(null);
+  const [editingPump, setEditingPump] = useState<FuelPump | null>(null);
 
   const canWrite = isOwner || hasModuleAccess("fuel", "write");
 
@@ -186,7 +191,15 @@ export default function FuelDashboard() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {tanks.map(tank => (
-                  <TankGauge key={tank.id} tank={tank} />
+                  <TankGauge 
+                    key={tank.id} 
+                    tank={tank} 
+                    canEdit={canWrite}
+                    onEdit={() => {
+                      setEditingTank(tank);
+                      setShowTankSetup(true);
+                    }}
+                  />
                 ))}
               </div>
 
@@ -222,11 +235,26 @@ export default function FuelDashboard() {
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">
-                              {pump.lifetime_meter_gallons.toLocaleString()} gal
-                            </p>
-                            <p className="text-xs text-muted-foreground">Lifetime</p>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-sm font-medium">
+                                {pump.lifetime_meter_gallons.toLocaleString()} gal
+                              </p>
+                              <p className="text-xs text-muted-foreground">Lifetime</p>
+                            </div>
+                            {canWrite && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => {
+                                  setEditingPump(pump);
+                                  setShowPumpSetup(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -358,16 +386,25 @@ export default function FuelDashboard() {
       
       <TankSetupForm 
         open={showTankSetup} 
-        onOpenChange={setShowTankSetup}
+        onOpenChange={(open) => {
+          setShowTankSetup(open);
+          if (!open) setEditingTank(null);
+        }}
+        editTank={editingTank}
         onCreateTank={createTank}
         onUpdateTank={updateTank}
       />
       
       <PumpSetupForm 
         open={showPumpSetup} 
-        onOpenChange={setShowPumpSetup}
+        onOpenChange={(open) => {
+          setShowPumpSetup(open);
+          if (!open) setEditingPump(null);
+        }}
         tanks={tanks}
+        editPump={editingPump}
         onCreatePump={createPump}
+        onUpdatePump={updatePump}
       />
     </div>
   );

@@ -254,6 +254,22 @@ export function useFuelManagement() {
     return newPump;
   };
 
+  const updatePump = async (id: string, data: Partial<FuelPump>) => {
+    const { error } = await supabase
+      .from("fuel_pumps")
+      .update(data)
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error updating pump", description: error.message, variant: "destructive" });
+      return false;
+    }
+
+    toast({ title: "Pump updated" });
+    await fetchPumps();
+    return true;
+  };
+
   const recordSale = async (data: {
     pump_id: string;
     gallons_sold: number;
@@ -456,6 +472,7 @@ export function useFuelManagement() {
     createTank,
     updateTank,
     createPump,
+    updatePump,
     recordSale,
     recordDelivery,
     recordReconciliation,

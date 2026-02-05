@@ -1,13 +1,16 @@
 import { cn } from "@/lib/utils";
-import { Droplets, AlertTriangle } from "lucide-react";
+import { Droplets, AlertTriangle, Pencil } from "lucide-react";
 import { FuelTank } from "@/hooks/useFuelManagement";
+import { Button } from "@/components/ui/button";
 
 interface TankGaugeProps {
   tank: FuelTank;
   onClick?: () => void;
+  onEdit?: () => void;
+  canEdit?: boolean;
 }
 
-export function TankGauge({ tank, onClick }: TankGaugeProps) {
+export function TankGauge({ tank, onClick, onEdit, canEdit = false }: TankGaugeProps) {
   const fillPercentage = tank.total_capacity_gallons > 0
     ? (tank.current_volume_gallons / tank.total_capacity_gallons) * 100
     : 0;
@@ -30,7 +33,8 @@ export function TankGauge({ tank, onClick }: TankGaugeProps) {
     <div 
       onClick={onClick}
       className={cn(
-        "relative p-4 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-lg hover:border-primary/30",
+        "relative p-4 rounded-xl border bg-card transition-all hover:shadow-lg hover:border-primary/30",
+        onClick && "cursor-pointer",
         isLow && "border-destructive/50 bg-destructive/5"
       )}
     >
@@ -48,9 +52,24 @@ export function TankGauge({ tank, onClick }: TankGaugeProps) {
             <p className="text-xs text-muted-foreground capitalize">{tank.fuel_type}</p>
           </div>
         </div>
-        {isLow && (
-          <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
-        )}
+        <div className="flex items-center gap-2">
+          {isLow && (
+            <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
+          )}
+          {canEdit && onEdit && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Vertical Tank Gauge */}

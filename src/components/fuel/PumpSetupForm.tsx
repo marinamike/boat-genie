@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +11,12 @@ interface PumpSetupFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tanks: FuelTank[];
+  editPump?: FuelPump | null;
   onCreatePump: (data: Omit<FuelPump, "id" | "created_at" | "updated_at" | "business_id" | "tank">) => Promise<FuelPump | null>;
+  onUpdatePump: (id: string, data: Partial<FuelPump>) => Promise<boolean>;
 }
 
-export function PumpSetupForm({ open, onOpenChange, tanks, onCreatePump }: PumpSetupFormProps) {
+export function PumpSetupForm({ open, onOpenChange, tanks, editPump, onCreatePump, onUpdatePump }: PumpSetupFormProps) {
   const [loading, setLoading] = useState(false);
   
   const [pumpName, setPumpName] = useState("");
@@ -22,42 +24,63 @@ export function PumpSetupForm({ open, onOpenChange, tanks, onCreatePump }: PumpS
   const [tankId, setTankId] = useState("");
   const [lifetimeMeter, setLifetimeMeter] = useState("0");
 
+  // Reset form when opening or when editPump changes
+  useEffect(() => {
+    if (open) {
+      if (editPump) {
+        setPumpName(editPump.pump_name || "");
+        setPumpNumber(editPump.pump_number || "");
+        setTankId(editPump.tank_id || "");
+        setLifetimeMeter(editPump.lifetime_meter_gallons?.toString() || "0");
+      } else {
+        // Reset to defaults for new pump
+        setPumpName("");
+        setPumpNumber("");
+        setTankId("");
+        setLifetimeMeter("0");
+      }
+    }
+  }, [open, editPump]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pumpName || !tankId) return;
 
     setLoading(true);
     
-    const result = await onCreatePump({
+    const pumpData = {
       pump_name: pumpName,
       pump_number: pumpNumber || null,
       tank_id: tankId,
       lifetime_meter_gallons: parseFloat(lifetimeMeter || "0"),
       is_active: true,
-    });
+    };
+
+    let success = false;
+    if (editPump) {
+      success = await onUpdatePump(editPump.id, pumpData);
+    } else {
+      const result = await onCreatePump(pumpData);
+      success = !!result;
+    }
 
     setLoading(false);
     
-    if (result) {
-      // Reset form
-      setPumpName("");
-      setPumpNumber("");
-      setTankId("");
-      setLifetimeMeter("0");
+    if (success) {
       onOpenChange(false);
     }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Fuel className="h-5 w-5" />
-            Add Fuel Pump
+            {editPump ? "Edit Pump" : "Add Fuel Pump"}
           </SheetTitle>
           <SheetDescription>
-            Configure a new fuel pump
+            {editPump ? "Update pump configuration" : "Configure a new fuel pump"}
           </SheetDescription>
         </SheetHeader>
 
@@ -94,7 +117,12 @@ export function PumpSetupForm({ open, onOpenChange, tanks, onCreatePump }: PumpS
               <SelectTrigger>
                 <SelectValue placeholder="Choose a tank" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                className="z-[200]"
+                position="popper"
+                sideOffset={4}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
                 {tanks.filter(t => t.is_active).map(tank => (
                   <SelectItem key={tank.id} value={tank.id}>
                     {tank.tank_name} - {tank.fuel_type}
@@ -122,7 +150,7 @@ export function PumpSetupForm({ open, onOpenChange, tanks, onCreatePump }: PumpS
           </div>
 
           <Button type="submit" className="w-full" disabled={loading || !pumpName || !tankId}>
-            {loading ? "Adding..." : "Add Pump"}
+            {loading ? "Saving..." : editPump ? "Update Pump" : "Add Pump"}
           </Button>
         </form>
       </SheetContent>
