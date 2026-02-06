@@ -470,6 +470,21 @@ export function useRecurringBilling() {
           const boatData = lease.boat as { id: string; name: string; make?: string; model?: string } | null;
           const assetData = lease.asset as { id: string; asset_name: string } | null;
 
+          // Create unified customer invoice entry (triggers notification)
+          const sourceRef = `Monthly Rent - ${format(periodStart, "MMMM yyyy")}`;
+          await supabase
+            .from("customer_invoices")
+            .insert({
+              customer_id: lease.owner_id,
+              business_id: business.id,
+              source_type: "slip_lease",
+              source_id: invoice.id,
+              source_reference: sourceRef,
+              amount: grandTotal,
+              status: "pending",
+              due_date: format(dueDate, "yyyy-MM-dd"),
+            });
+
           results.push({
             leaseId: lease.id,
             boatName: boatData?.name || "Unknown Vessel",

@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Anchor, ArrowLeft, User, LogOut, Save, Loader2, Settings, Shield } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Anchor, ArrowLeft, User, LogOut, Save, Loader2, Settings, Shield, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, AppRole } from "@/hooks/useUserRole";
+import { CustomerBillingTab } from "@/components/billing/CustomerBillingTab";
 
 const PLATFORM_ADMIN_EMAIL = "info@marinamike.com";
 import { RoleSelector } from "@/components/onboarding/RoleSelector";
@@ -175,119 +177,138 @@ const Profile = () => {
         </div>
       </header>
 
-      <main className="px-4 py-6 space-y-6">
-        {/* Profile Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Details</CardTitle>
-            <CardDescription>Update your personal information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={profile?.email || ""} disabled className="bg-muted" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Captain Smith"
-                className="h-12"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-                className="h-12"
-              />
-            </div>
-            <Button onClick={handleSave} disabled={saving} className="w-full h-12 font-semibold">
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+      <main className="px-4 py-6">
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="billing" className="flex items-center gap-2">
+              <Receipt className="w-4 h-4" />
+              My Billing
+            </TabsTrigger>
+          </TabsList>
 
-        <Separator />
-
-        {/* Role Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Type</CardTitle>
-            <CardDescription>
-              Select your role to access the right features
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RoleSelector selectedRole={role} onSelect={handleRoleSelect} disabled={roleLoading || !userId} />
-          </CardContent>
-        </Card>
-
-        {/* Marina Plug-ins - Only for Marina Managers */}
-        {isAdmin && settings && (
-          <>
-            <Separator />
+          <TabsContent value="profile" className="space-y-6">
+            {/* Profile Details */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Plug-ins
-                </CardTitle>
-                <CardDescription>Enable or disable marina features</CardDescription>
+                <CardTitle>Profile Details</CardTitle>
+                <CardDescription>Update your personal information</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ModuleToggle
-                  modules={ALL_MODULES}
-                  enabledModules={settings.enabled_modules || []}
-                  onToggle={toggleModule}
-                />
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" value={profile?.email || ""} disabled className="bg-muted" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Captain Smith"
+                    className="h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(555) 123-4567"
+                    className="h-12"
+                  />
+                </div>
+                <Button onClick={handleSave} disabled={saving} className="w-full h-12 font-semibold">
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
-          </>
-        )}
 
-        <Separator />
+            <Separator />
 
-        {/* Platform Admin Link - Only for info@marinamike.com */}
-        {profile?.email === PLATFORM_ADMIN_EMAIL && (
-          <>
+            {/* Role Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Type</CardTitle>
+                <CardDescription>
+                  Select your role to access the right features
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RoleSelector selectedRole={role} onSelect={handleRoleSelect} disabled={roleLoading || !userId} />
+              </CardContent>
+            </Card>
+
+            {/* Marina Plug-ins - Only for Marina Managers */}
+            {isAdmin && settings && (
+              <>
+                <Separator />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Plug-ins
+                    </CardTitle>
+                    <CardDescription>Enable or disable marina features</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ModuleToggle
+                      modules={ALL_MODULES}
+                      enabledModules={settings.enabled_modules || []}
+                      onToggle={toggleModule}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            <Separator />
+
+            {/* Platform Admin Link - Only for info@marinamike.com */}
+            {profile?.email === PLATFORM_ADMIN_EMAIL && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/platform-admin")}
+                  className="w-full h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Platform Admin Dashboard
+                </Button>
+                <Separator />
+              </>
+            )}
+
+            {/* Logout */}
             <Button
               variant="outline"
-              onClick={() => navigate("/platform-admin")}
-              className="w-full h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              onClick={handleLogout}
+              className="w-full h-12 text-destructive hover:text-destructive hover:bg-destructive/10"
             >
-              <Shield className="w-4 h-4 mr-2" />
-              Platform Admin Dashboard
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
             </Button>
-            <Separator />
-          </>
-        )}
+          </TabsContent>
 
-        {/* Logout */}
-        <Button
-          variant="outline"
-          onClick={handleLogout}
-          className="w-full h-12 text-destructive hover:text-destructive hover:bg-destructive/10"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
+          <TabsContent value="billing">
+            <CustomerBillingTab />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* BottomNav handled by role-specific layouts */}

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { toast } from "sonner";
 import { BillingBreakdown } from "@/lib/stayBilling";
+import { format } from "date-fns";
 
 export interface StayMeterReading {
   id: string;
@@ -117,6 +118,7 @@ export function useStayBilling() {
     reservationId: string | null;
     dockStatusId: string;
     boatId: string | null;
+    ownerId?: string;
     checkInAt: Date;
     checkOutAt: Date;
     billing: BillingBreakdown;
@@ -141,6 +143,7 @@ export function useStayBilling() {
           dock_status_id: params.dockStatusId,
           business_id: business.id,
           boat_id: params.boatId,
+          owner_id: params.ownerId || null,
           check_in_at: params.checkInAt.toISOString(),
           check_out_at: params.checkOutAt.toISOString(),
           stay_days: params.billing.stayCalculation.totalDays,
@@ -168,6 +171,22 @@ export function useStayBilling() {
         .single();
 
       if (error) throw error;
+
+      // Create unified customer invoice entry if owner is known
+      if (params.ownerId) {
+        const sourceRef = `Slip Stay - ${format(params.checkInAt, "MMM d")} to ${format(params.checkOutAt, "MMM d, yyyy")}`;
+        await supabase
+          .from("customer_invoices")
+          .insert({
+            customer_id: params.ownerId,
+            business_id: business.id,
+            source_type: "slip_transient",
+            source_id: data.id,
+            source_reference: sourceRef,
+            amount: params.billing.grandTotal,
+            status: "pending",
+          });
+      }
 
       // Sync meter readings: update utility_meters with the checkout end readings
       const now = new Date().toISOString();

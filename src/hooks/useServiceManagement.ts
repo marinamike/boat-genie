@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { toast } from "sonner";
-import { differenceInDays, differenceInMinutes } from "date-fns";
+import { differenceInDays, differenceInMinutes, format } from "date-fns";
 
 // Types
 export type ServiceSpecialty = 
@@ -670,6 +670,22 @@ export function useServiceManagement() {
       .single();
 
     if (error) { toast.error("Failed to generate invoice: " + error.message); return null; }
+
+    // Create unified customer invoice entry
+    const sourceRef = `Service Invoice #${invoiceNumber}`;
+    await supabase
+      .from("customer_invoices")
+      .insert({
+        customer_id: ownerId,
+        business_id: business.id,
+        source_type: "service",
+        source_id: invoice.id,
+        source_reference: sourceRef,
+        invoice_number: invoiceNumber,
+        amount: totalAmount,
+        status: "pending",
+      });
+
     toast.success("Invoice generated");
     return invoice;
   };

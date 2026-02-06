@@ -328,6 +328,22 @@ export function useStoreInventory() {
       }
     }
 
+    // Create unified customer invoice entry if customer is identified
+    if (customer?.id) {
+      await supabase
+        .from("customer_invoices")
+        .insert({
+          customer_id: customer.id,
+          business_id: business.id,
+          source_type: "store",
+          source_id: (receipt as any).id,
+          source_reference: `Ship Store Receipt #${receiptNumber}`,
+          amount: totalAmount,
+          status: "paid", // POS sales are paid immediately
+          paid_at: new Date().toISOString(),
+        });
+    }
+
     toast({ title: "Sale Complete", description: `Receipt #${receiptNumber}` });
     await Promise.all([fetchInventory(), fetchReceipts()]);
 
