@@ -111,7 +111,7 @@ export function useStayBilling() {
   };
 
   /**
-   * Create a finalized invoice for a stay
+   * Create a finalized invoice for a stay and sync meter readings
    */
   const createInvoice = async (params: {
     reservationId: string | null;
@@ -120,8 +120,8 @@ export function useStayBilling() {
     checkInAt: Date;
     checkOutAt: Date;
     billing: BillingBreakdown;
-    powerReadings?: { start: number; end: number; rate: number };
-    waterReadings?: { start: number; end: number; rate: number };
+    powerMeterId?: string;
+    waterMeterId?: string;
     notes?: string;
   }): Promise<StayInvoice | null> => {
     if (!user || !business?.id) {
@@ -168,6 +168,30 @@ export function useStayBilling() {
         .single();
 
       if (error) throw error;
+
+      // Sync meter readings: update utility_meters with the checkout end readings
+      const now = new Date().toISOString();
+      
+      if (params.powerMeterId && powerUtil && powerUtil.endReading > 0) {
+        await supabase
+          .from("utility_meters")
+          .update({
+            current_reading: powerUtil.endReading,
+            last_reading_date: now,
+          })
+          .eq("id", params.powerMeterId);
+      }
+
+      if (params.waterMeterId && waterUtil && waterUtil.endReading > 0) {
+        await supabase
+          .from("utility_meters")
+          .update({
+            current_reading: waterUtil.endReading,
+            last_reading_date: now,
+          })
+          .eq("id", params.waterMeterId);
+      }
+
       toast.success("Invoice created successfully");
       return data as StayInvoice;
     } catch (error: any) {

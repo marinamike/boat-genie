@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Ship, CheckCircle, XCircle, Clock, MapPin, Loader2, AlertTriangle, DollarSign } from "lucide-react";
+import { Calendar, Ship, CheckCircle, XCircle, Clock, MapPin, Loader2, AlertTriangle, DollarSign, Zap, Droplets } from "lucide-react";
 import { useMarinaReservations, MarinaReservation, ReservationStatus } from "@/hooks/useMarinaReservations";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useLiveDockStatus, DockStatusWithDetails } from "@/hooks/useLiveDockStatus";
@@ -77,6 +77,10 @@ export function ReservationManager() {
   const [processing, setProcessing] = useState(false);
   const [boatDimensions, setBoatDimensions] = useState<BoatDimensions | null>(null);
   const [loadingSpecs, setLoadingSpecs] = useState(false);
+  
+  // Meter confirmation state for check-in
+  const [checkInPowerReading, setCheckInPowerReading] = useState("");
+  const [checkInWaterReading, setCheckInWaterReading] = useState("");
   
   // Checkout billing state
   const [checkoutReservation, setCheckoutReservation] = useState<MarinaReservation | null>(null);
@@ -157,6 +161,27 @@ export function ReservationManager() {
     });
   }, [assets, boatDimensions, selectedReservation?.boat?.length_ft]);
 
+  // Get meters for the selected slip (for check-in confirmation)
+  const checkInSlipAsset = useMemo(() => {
+    const slipName = selectedReservation?.assigned_slip || assignedSlip;
+    if (!slipName) return null;
+    return assets.find((a) => a.asset_name === slipName);
+  }, [selectedReservation?.assigned_slip, assignedSlip, assets]);
+
+  const checkInPowerMeter = useMemo(() => {
+    if (!checkInSlipAsset) return null;
+    return meters.find(
+      (m) => m.yard_asset_id === checkInSlipAsset.id && m.meter_type === "power" && m.is_active
+    );
+  }, [meters, checkInSlipAsset]);
+
+  const checkInWaterMeter = useMemo(() => {
+    if (!checkInSlipAsset) return null;
+    return meters.find(
+      (m) => m.yard_asset_id === checkInSlipAsset.id && m.meter_type === "water" && m.is_active
+    );
+  }, [meters, checkInSlipAsset]);
+
   // Find slip asset for checkout billing
   const checkoutSlipAsset = useMemo(() => {
     if (!checkoutReservation?.assigned_slip) return null;
@@ -170,6 +195,8 @@ export function ReservationManager() {
     setDockLocation(reservation.assigned_dock_location || "");
     setAdminNotes(reservation.admin_notes || "");
     setRejectionReason("");
+    setCheckInPowerReading("");
+    setCheckInWaterReading("");
   };
 
   const openCheckout = async (reservation: MarinaReservation) => {
@@ -209,6 +236,8 @@ export function ReservationManager() {
     setDockLocation("");
     setAdminNotes("");
     setRejectionReason("");
+    setCheckInPowerReading("");
+    setCheckInWaterReading("");
   };
 
   const handleCheckoutComplete = async () => {
@@ -239,11 +268,36 @@ export function ReservationManager() {
   const handleCheckIn = async () => {
     if (!selectedReservation) return;
     setProcessing(true);
+
+    // Build meter adjustments if user modified readings
+    let meterAdjustments: { powerMeterId?: string; powerReading?: number; waterMeterId?: string; waterReading?: number } | undefined;
+    
+    const expectedPower = checkInPowerMeter?.current_reading ?? 0;
+    const expectedWater = checkInWaterMeter?.current_reading ?? 0;
+    const enteredPower = checkInPowerReading ? parseFloat(checkInPowerReading) : expectedPower;
+    const enteredWater = checkInWaterReading ? parseFloat(checkInWaterReading) : expectedWater;
+
+    if (
+      (checkInPowerMeter && enteredPower !== expectedPower) ||
+      (checkInWaterMeter && enteredWater !== expectedWater)
+    ) {
+      meterAdjustments = {};
+      if (checkInPowerMeter && enteredPower !== expectedPower) {
+        meterAdjustments.powerMeterId = checkInPowerMeter.id;
+        meterAdjustments.powerReading = enteredPower;
+      }
+      if (checkInWaterMeter && enteredWater !== expectedWater) {
+        meterAdjustments.waterMeterId = checkInWaterMeter.id;
+        meterAdjustments.waterReading = enteredWater;
+      }
+    }
+
     await checkInBoat(
       selectedReservation.boat_id,
       selectedReservation.assigned_slip || assignedSlip,
       selectedReservation.stay_type,
-      selectedReservation.id
+      selectedReservation.id,
+      meterAdjustments
     );
     setProcessing(false);
     closeDialog();
@@ -521,14 +575,14 @@ export function ReservationManager() {
 
       {/* Check-In Dialog */}
       <Dialog open={actionType === "check-in"} onOpenChange={() => closeDialog()}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Check In Vessel</DialogTitle>
+            <DialogDescription>
+              Confirm check-in and verify starting meter readings for {selectedReservation?.boat?.name}.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Confirm check-in for {selectedReservation?.boat?.name}?
-            </p>
             {!selectedReservation?.assigned_slip && (
               <div className="space-y-2">
                 <Label htmlFor="slip-checkin">Assign Slip Number</Label>
@@ -563,6 +617,69 @@ export function ReservationManager() {
                     onChange={(e) => setAssignedSlip(e.target.value)}
                   />
                 )}
+              </div>
+            )}
+
+            {/* Meter Confirmation Section */}
+            {(checkInPowerMeter || checkInWaterMeter) && (
+              <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Confirm Starting Meter Readings
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Verify the physical meters match the expected values. Adjust if different.
+                </p>
+                <div className="grid gap-3">
+                  {checkInPowerMeter && (
+                    <div className="flex items-center gap-3 p-2 rounded-md bg-background">
+                      <div className="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
+                        <Zap className="w-4 h-4 text-warning" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{checkInPowerMeter.meter_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Last read: {checkInPowerMeter.last_reading_date 
+                            ? format(new Date(checkInPowerMeter.last_reading_date), "MMM d, yyyy")
+                            : "Never"}
+                        </p>
+                      </div>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="w-28"
+                        placeholder={String(checkInPowerMeter.current_reading || 0)}
+                        value={checkInPowerReading}
+                        onChange={(e) => setCheckInPowerReading(e.target.value)}
+                      />
+                      <span className="text-xs text-muted-foreground">kWh</span>
+                    </div>
+                  )}
+                  {checkInWaterMeter && (
+                    <div className="flex items-center gap-3 p-2 rounded-md bg-background">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                        <Droplets className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{checkInWaterMeter.meter_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Last read: {checkInWaterMeter.last_reading_date 
+                            ? format(new Date(checkInWaterMeter.last_reading_date), "MMM d, yyyy")
+                            : "Never"}
+                        </p>
+                      </div>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="w-28"
+                        placeholder={String(checkInWaterMeter.current_reading || 0)}
+                        value={checkInWaterReading}
+                        onChange={(e) => setCheckInWaterReading(e.target.value)}
+                      />
+                      <span className="text-xs text-muted-foreground">gal</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

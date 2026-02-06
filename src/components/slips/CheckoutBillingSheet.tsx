@@ -145,6 +145,8 @@ export function CheckoutBillingSheet({
         checkInAt: new Date(dockStatus.checked_in_at),
         checkOutAt: new Date(),
         billing,
+        powerMeterId: powerMeter?.id,
+        waterMeterId: waterMeter?.id,
       });
 
       if (invoice) {
