@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Anchor, ArrowLeft, User, LogOut, Save, Loader2, Settings } from "lucide-react";
+import { Anchor, ArrowLeft, User, LogOut, Save, Loader2, Settings, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, AppRole } from "@/hooks/useUserRole";
+
+const PLATFORM_ADMIN_EMAIL = "info@marinamike.com";
 import { RoleSelector } from "@/components/onboarding/RoleSelector";
 import { ModuleToggle } from "@/components/marina/ModuleToggle";
 import { useMarinaSettings, MarinaModule } from "@/hooks/useMarinaSettings";
@@ -261,6 +263,21 @@ const Profile = () => {
         )}
 
         <Separator />
+
+        {/* Platform Admin Link - Only for info@marinamike.com */}
+        {profile?.email === PLATFORM_ADMIN_EMAIL && (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/platform-admin")}
+              className="w-full h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Platform Admin Dashboard
+            </Button>
+            <Separator />
+          </>
+        )}
 
         {/* Logout */}
         <Button
