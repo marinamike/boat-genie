@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Settings, Zap, Droplets, Plus, Trash2 } from "lucide-react";
+import { Settings, Zap, Droplets, Plus, Trash2, Pencil } from "lucide-react";
 import { UtilityMeter, YardAsset } from "@/hooks/useYardAssets";
 import { Database } from "@/integrations/supabase/types";
 
@@ -46,6 +46,7 @@ export function SlipSettings({
   updateMeter,
 }: SlipSettingsProps) {
   const [showMeterForm, setShowMeterForm] = useState(false);
+  const [editingMeter, setEditingMeter] = useState<UtilityMeter | null>(null);
   const [meterForm, setMeterForm] = useState({
     meter_name: "",
     meter_type: "power" as MeterType,
@@ -55,6 +56,42 @@ export function SlipSettings({
     current_reading: "0",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setMeterForm({
+      meter_name: "",
+      meter_type: "power",
+      meter_number: "",
+      yard_asset_id: "",
+      rate_per_unit: "",
+      current_reading: "0",
+    });
+  };
+
+  const closeForm = () => {
+    setShowMeterForm(false);
+    setEditingMeter(null);
+    resetForm();
+  };
+
+  const openEditForm = (meter: UtilityMeter) => {
+    setMeterForm({
+      meter_name: meter.meter_name,
+      meter_type: meter.meter_type,
+      meter_number: meter.meter_number || "",
+      yard_asset_id: meter.yard_asset_id || "",
+      rate_per_unit: meter.rate_per_unit.toString(),
+      current_reading: meter.current_reading.toString(),
+    });
+    setEditingMeter(meter);
+    setShowMeterForm(true);
+  };
+
+  const openCreateForm = () => {
+    resetForm();
+    setEditingMeter(null);
+    setShowMeterForm(true);
+  };
 
   const handleCreateMeter = async () => {
     if (!meterForm.meter_name || !meterForm.rate_per_unit) return;
@@ -69,17 +106,36 @@ export function SlipSettings({
         rate_per_unit: parseFloat(meterForm.rate_per_unit),
         current_reading: parseFloat(meterForm.current_reading) || 0,
       });
-      setShowMeterForm(false);
-      setMeterForm({
-        meter_name: "",
-        meter_type: "power",
-        meter_number: "",
-        yard_asset_id: "",
-        rate_per_unit: "",
-        current_reading: "0",
-      });
+      closeForm();
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdateMeter = async () => {
+    if (!editingMeter || !meterForm.meter_name || !meterForm.rate_per_unit) return;
+    setSubmitting(true);
+
+    try {
+      await updateMeter(editingMeter.id, {
+        meter_name: meterForm.meter_name,
+        meter_type: meterForm.meter_type,
+        meter_number: meterForm.meter_number || null,
+        yard_asset_id: meterForm.yard_asset_id || null,
+        rate_per_unit: parseFloat(meterForm.rate_per_unit),
+        current_reading: parseFloat(meterForm.current_reading) || 0,
+      });
+      closeForm();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (editingMeter) {
+      handleUpdateMeter();
+    } else {
+      handleCreateMeter();
     }
   };
 
@@ -101,7 +157,7 @@ export function SlipSettings({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Utility Meters</CardTitle>
-          <Button size="sm" onClick={() => setShowMeterForm(true)}>
+          <Button size="sm" onClick={openCreateForm}>
             <Plus className="w-4 h-4 mr-2" />
             Add Meter
           </Button>
@@ -114,7 +170,7 @@ export function SlipSettings({
               <p className="text-sm text-muted-foreground mb-4">
                 Add power and water meters to track utility usage
               </p>
-              <Button onClick={() => setShowMeterForm(true)}>
+              <Button onClick={openCreateForm}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add First Meter
               </Button>
@@ -160,6 +216,13 @@ export function SlipSettings({
                           Current: {meter.current_reading.toLocaleString()}
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditForm(meter)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                       <Switch
                         checked={meter.is_active}
                         onCheckedChange={() => toggleMeterActive(meter)}
@@ -195,10 +258,10 @@ export function SlipSettings({
       </Card>
 
       {/* Add Meter Sheet */}
-      <Sheet open={showMeterForm} onOpenChange={setShowMeterForm}>
+      <Sheet open={showMeterForm} onOpenChange={(open) => !open && closeForm()}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Add Utility Meter</SheetTitle>
+            <SheetTitle>{editingMeter ? "Edit Meter" : "Add Utility Meter"}</SheetTitle>
           </SheetHeader>
 
           <div className="space-y-4 mt-6">
@@ -308,17 +371,19 @@ export function SlipSettings({
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setShowMeterForm(false)}
+                onClick={closeForm}
                 className="flex-1"
               >
                 Cancel
               </Button>
               <Button
-                onClick={handleCreateMeter}
+                onClick={handleSubmit}
                 disabled={!meterForm.meter_name || !meterForm.rate_per_unit || submitting}
                 className="flex-1"
               >
-                {submitting ? "Creating..." : "Create Meter"}
+                {submitting
+                  ? editingMeter ? "Saving..." : "Creating..."
+                  : editingMeter ? "Save Changes" : "Create Meter"}
               </Button>
             </div>
           </div>
