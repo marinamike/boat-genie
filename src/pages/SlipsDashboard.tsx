@@ -62,7 +62,7 @@ export default function SlipsDashboard() {
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4">
-          <SlipSettings {...yardAssets} />
+          <SlipSettings {...yardAssets} updateAsset={yardAssets.updateAsset} />
         </TabsContent>
       </Tabs>
     </div>
