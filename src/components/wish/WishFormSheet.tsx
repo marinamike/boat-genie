@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, Loader2, MapPin } from "lucide-react";
 import { useWishForm, SERVICE_CATEGORIES, ServiceCategory, ServiceRate } from "@/hooks/useWishForm";
-import { useAllProviderServices, ProviderService } from "@/hooks/useProviderServices";
+import { ProviderService } from "@/hooks/useProviderServices";
+import { useServiceProviders, useProviderServicesByBusiness, ServiceProvider } from "@/hooks/useServiceProviders";
+import { ProviderSearchResults } from "./ProviderSearchResults";
 import { formatPrice } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { ReservationRequestSheet } from "@/components/marina/ReservationRequestSheet";
@@ -33,7 +35,7 @@ interface WishFormSheetProps {
   onSuccess?: () => void;
 }
 
-type Step = "select-boat" | "select-category" | "form" | "find-marina";
+type Step = "select-boat" | "select-category" | "select-provider" | "form" | "find-marina";
 
 const categoryIcons: Record<string, typeof Sparkles> = {
   wash_detail: Sparkles,
@@ -53,6 +55,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   const [step, setStep] = useState<Step>("select-boat");
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
   const [selectedService, setSelectedService] = useState<string>("");
   const [selectedProviderService, setSelectedProviderService] = useState<(ProviderService & { provider?: { business_name: string | null } }) | null>(null);
   const [description, setDescription] = useState("");
@@ -65,9 +68,14 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
 
   const { loading, serviceRates, fetchServiceRates, calculatePrice, uploadPhotos, submitWish } = useWishForm();
   
-  // Fetch provider services based on selected category
-  const serviceCategory = selectedCategory ? CATEGORY_TO_SERVICE_CATEGORY[selectedCategory] : undefined;
-  const { services: providerServices, loading: loadingServices } = useAllProviderServices(serviceCategory);
+  // Fetch providers for the selected category
+  const { providers, loading: loadingProviders } = useServiceProviders(selectedCategory || undefined);
+  
+  // Fetch services for the selected provider
+  const { services: providerServices, loading: loadingServices } = useProviderServicesByBusiness(
+    selectedProvider?.id,
+    selectedCategory || undefined
+  );
 
   // Fetch boats if not provided
   useEffect(() => {
@@ -103,6 +111,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       setStep("select-boat");
       setSelectedBoat(null);
       setSelectedCategory(null);
+      setSelectedProvider(null);
       setSelectedService("");
       setSelectedProviderService(null);
       setDescription("");
@@ -115,6 +124,13 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       setDescription(prefilledDescription);
     }
   }, [open, prefilledDescription]);
+
+  // Reset provider and service when category changes
+  useEffect(() => {
+    setSelectedProvider(null);
+    setSelectedService("");
+    setSelectedProviderService(null);
+  }, [selectedCategory]);
 
   // Auto-select boat if only one, or use preselected boat
   useEffect(() => {
@@ -136,11 +152,11 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
     }
   }, [open, effectiveBoats, step, preselectedBoatId]);
 
-  // Reset selected service when category changes
+  // Reset selected service when provider changes
   useEffect(() => {
     setSelectedService("");
     setSelectedProviderService(null);
-  }, [selectedCategory]);
+  }, [selectedProvider]);
 
   const getMatchingServiceRate = (): ServiceRate | null => {
     if (!selectedService) return null;
@@ -179,8 +195,28 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
 
   const handleProviderServiceSelect = (serviceId: string) => {
     const service = providerServices.find(s => s.id === serviceId);
-    setSelectedProviderService(service || null);
-    setSelectedService(service?.service_name || "");
+    if (service) {
+      setSelectedProviderService({
+        ...service,
+        provider_id: selectedProvider?.id || "",
+        is_active: true,
+        is_locked: false,
+        locked_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        description: service.description || null,
+        provider: { business_name: selectedProvider?.business_name || null }
+      });
+      setSelectedService(service.service_name);
+    } else {
+      setSelectedProviderService(null);
+      setSelectedService("");
+    }
+  };
+
+  const handleSelectProvider = (provider: ServiceProvider) => {
+    setSelectedProvider(provider);
+    setStep("form");
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,7 +327,12 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
                 )}
                 onClick={() => {
                   setSelectedCategory(key);
-                  setStep("form");
+                  // For wash_detail, go to provider selection first
+                  if (key === "wash_detail") {
+                    setStep("select-provider");
+                  } else {
+                    setStep("form");
+                  }
                 }}
               >
                 <CardContent className="p-4 flex items-start gap-3">
@@ -332,19 +373,40 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
     const category = SERVICE_CATEGORIES[selectedCategory];
     const priceBreakdown = getPriceBreakdown();
 
-    // Use provider services for wash_detail category
-    const useProviderServices = selectedCategory === "wash_detail" && providerServices.length > 0;
+    // Use provider services for wash_detail category when provider is selected
+    const useProviderServicesDropdown = selectedCategory === "wash_detail" && selectedProvider && providerServices.length > 0;
+
+    // Determine back button behavior
+    const handleBackFromForm = () => {
+      if (selectedCategory === "wash_detail" && selectedProvider) {
+        setStep("select-provider");
+      } else {
+        setStep("select-category");
+      }
+    };
 
     return (
       <div className="space-y-5">
-        <Button variant="ghost" size="sm" onClick={() => setStep("select-category")} className="mb-2">
+        <Button variant="ghost" size="sm" onClick={handleBackFromForm} className="mb-2">
           <ChevronLeft className="w-4 h-4 mr-1" /> Back
         </Button>
 
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Badge variant="secondary">{selectedBoat?.name}</Badge>
-          <Badge variant="outline">{category.label}</Badge>
-        </div>
+        {/* Header with provider context for wash_detail */}
+        {selectedCategory === "wash_detail" && selectedProvider ? (
+          <div className="space-y-2 pb-2 border-b">
+            <h3 className="font-semibold text-lg">
+              Requesting {category.label} from {selectedProvider.business_name}
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{selectedBoat?.name}</Badge>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <Badge variant="secondary">{selectedBoat?.name}</Badge>
+            <Badge variant="outline">{category.label}</Badge>
+          </div>
+        )}
 
         {/* Service Selection - Provider Services for Wash & Detail */}
         {selectedCategory === "wash_detail" && (
@@ -355,7 +417,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm">Loading available services...</span>
               </div>
-            ) : useProviderServices ? (
+            ) : useProviderServicesDropdown ? (
               <Select value={selectedProviderService?.id || ""} onValueChange={handleProviderServiceSelect}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a service..." />
@@ -579,6 +641,15 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
           <div className="mt-6">
             {step === "select-boat" && renderBoatSelection()}
             {step === "select-category" && renderCategorySelection()}
+            {step === "select-provider" && selectedCategory && (
+              <ProviderSearchResults
+                providers={providers}
+                loading={loadingProviders}
+                categoryLabel={SERVICE_CATEGORIES[selectedCategory].label}
+                onBack={() => setStep("select-category")}
+                onSelectProvider={handleSelectProvider}
+              />
+            )}
             {step === "form" && renderForm()}
           </div>
         </SheetContent>
