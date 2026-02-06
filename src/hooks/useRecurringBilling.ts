@@ -103,12 +103,20 @@ export function useRecurringBilling() {
           .select("*")
           .in("id", meterIds);
 
-        if (meters) {
+      if (meters) {
+          // Get global rates for inheritance fallback
+          const powerGlobalRate = business?.power_rate_per_kwh ?? 0;
+          const waterGlobalRate = business?.water_rate_per_gallon ?? 0;
+
           for (const reading of meterReadings) {
             const meter = meters.find(m => m.id === reading.meter_id);
             if (meter) {
               const usage = reading.reading_value;
-              const total = usage * meter.rate_per_unit;
+              // Apply rate inheritance: meter rate > 0 ? meter rate : global rate
+              const effectiveRate = meter.rate_per_unit > 0 
+                ? meter.rate_per_unit 
+                : (meter.meter_type === "power" ? powerGlobalRate : waterGlobalRate);
+              const total = usage * effectiveRate;
               if (meter.meter_type === "power") {
                 powerUsage += usage;
                 powerTotal += total;

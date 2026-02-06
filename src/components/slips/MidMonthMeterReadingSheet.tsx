@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -6,6 +6,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,7 @@ export function MidMonthMeterReadingSheet({
   onComplete,
 }: MidMonthMeterReadingSheetProps) {
   const { recordMidStayReading, loading } = useRecurringBilling();
+  const { business } = useBusiness();
   const [powerReading, setPowerReading] = useState("");
   const [waterReading, setWaterReading] = useState("");
   const [notes, setNotes] = useState("");
@@ -69,6 +71,21 @@ export function MidMonthMeterReadingSheet({
   const waterMeter = meters.find(
     (m) => m.yard_asset_id === lease?.yard_asset_id && m.meter_type === "water" && m.is_active
   );
+
+  // Calculate effective rates with inheritance (meter rate > 0 ? meter rate : global rate)
+  const effectivePowerRate = useMemo(() => {
+    if (!powerMeter) return 0;
+    return powerMeter.rate_per_unit > 0 
+      ? powerMeter.rate_per_unit 
+      : (business?.power_rate_per_kwh ?? 0);
+  }, [powerMeter, business]);
+
+  const effectiveWaterRate = useMemo(() => {
+    if (!waterMeter) return 0;
+    return waterMeter.rate_per_unit > 0 
+      ? waterMeter.rate_per_unit 
+      : (business?.water_rate_per_gallon ?? 0);
+  }, [waterMeter, business]);
 
   const handleSubmit = async () => {
     if (!lease) return;
@@ -195,7 +212,8 @@ export function MidMonthMeterReadingSheet({
                       <div className="flex-1">
                         <p className="font-medium">{powerMeter.meter_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Rate: {formatCurrency(powerMeter.rate_per_unit)}/kWh
+                          Rate: {formatCurrency(effectivePowerRate)}/kWh
+                          {powerMeter.rate_per_unit > 0 && <span className="ml-1">(Custom)</span>}
                         </p>
                       </div>
                     </div>
@@ -225,7 +243,7 @@ export function MidMonthMeterReadingSheet({
                         <span className="font-medium">
                           {formatCurrency(
                             Math.max(0, parseFloat(powerReading) - (powerMeter.current_reading || 0)) *
-                              powerMeter.rate_per_unit
+                              effectivePowerRate
                           )}
                         </span>
                       </div>
@@ -243,7 +261,8 @@ export function MidMonthMeterReadingSheet({
                       <div className="flex-1">
                         <p className="font-medium">{waterMeter.meter_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Rate: {formatCurrency(waterMeter.rate_per_unit)}/gal
+                          Rate: {formatCurrency(effectiveWaterRate)}/gal
+                          {waterMeter.rate_per_unit > 0 && <span className="ml-1">(Custom)</span>}
                         </p>
                       </div>
                     </div>
@@ -273,7 +292,7 @@ export function MidMonthMeterReadingSheet({
                         <span className="font-medium">
                           {formatCurrency(
                             Math.max(0, parseFloat(waterReading) - (waterMeter.current_reading || 0)) *
-                              waterMeter.rate_per_unit
+                              effectiveWaterRate
                           )}
                         </span>
                       </div>
