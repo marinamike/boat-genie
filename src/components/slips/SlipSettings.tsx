@@ -330,11 +330,26 @@ export function SlipSettings({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {assets.map((asset) => (
-                    <SelectItem key={asset.id} value={asset.id}>
-                      {asset.asset_name} ({asset.dock_section || "Unassigned"})
-                    </SelectItem>
-                  ))}
+                  {assets.map((asset) => {
+                    const hasExistingMeter = meters.some(
+                      (m) => m.yard_asset_id === asset.id && m.meter_type === meterForm.meter_type
+                    );
+                    return (
+                      <SelectItem key={asset.id} value={asset.id}>
+                        <span className="flex items-center gap-2">
+                          {asset.asset_name}
+                          {asset.dock_section && (
+                            <span className="text-muted-foreground">• {asset.dock_section}</span>
+                          )}
+                          {hasExistingMeter && (
+                            <Badge variant="secondary" className="text-xs py-0 px-1.5">
+                              Has {meterForm.meter_type === "power" ? "Power" : "Water"}
+                            </Badge>
+                          )}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
