@@ -79,6 +79,21 @@ export function CheckoutBillingSheet({
     );
   }, [meters, slipAsset]);
 
+  // Calculate effective rates with inheritance logic (meter custom > 0 ? custom : global)
+  const effectivePowerRate = useMemo(() => {
+    if (!powerMeter) return 0;
+    return powerMeter.rate_per_unit && powerMeter.rate_per_unit > 0
+      ? powerMeter.rate_per_unit
+      : (business?.power_rate_per_kwh ?? 0);
+  }, [powerMeter, business]);
+
+  const effectiveWaterRate = useMemo(() => {
+    if (!waterMeter) return 0;
+    return waterMeter.rate_per_unit && waterMeter.rate_per_unit > 0
+      ? waterMeter.rate_per_unit
+      : (business?.water_rate_per_gallon ?? 0);
+  }, [waterMeter, business]);
+
   // Reset inputs when sheet opens
   useEffect(() => {
     if (open) {
@@ -109,9 +124,13 @@ export function CheckoutBillingSheet({
 
     const utilities = [];
 
-    // Use business global utility rates with fallback to meter rates
-    const powerRatePerUnit = business?.power_rate_per_kwh ?? powerMeter?.rate_per_unit ?? 0;
-    const waterRatePerUnit = business?.water_rate_per_gallon ?? waterMeter?.rate_per_unit ?? 0;
+    // Utility rates: meter custom override (>0) takes priority, else global business rate
+    const powerRatePerUnit = powerMeter?.rate_per_unit && powerMeter.rate_per_unit > 0
+      ? powerMeter.rate_per_unit
+      : (business?.power_rate_per_kwh ?? 0);
+    const waterRatePerUnit = waterMeter?.rate_per_unit && waterMeter.rate_per_unit > 0
+      ? waterMeter.rate_per_unit
+      : (business?.water_rate_per_gallon ?? 0);
 
     // Power calculation
     if (powerMeter) {
@@ -299,7 +318,8 @@ export function CheckoutBillingSheet({
                       <div>
                         <p className="font-medium">{powerMeter.meter_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Rate: {formatCurrency(powerMeter.rate_per_unit)}/kWh
+                          Rate: {formatCurrency(effectivePowerRate)}/kWh
+                          {powerMeter.rate_per_unit > 0 && <span className="ml-1 text-warning">(Custom)</span>}
                         </p>
                       </div>
                     </div>
@@ -350,7 +370,8 @@ export function CheckoutBillingSheet({
                       <div>
                         <p className="font-medium">{waterMeter.meter_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Rate: {formatCurrency(waterMeter.rate_per_unit)}/gal
+                          Rate: {formatCurrency(effectiveWaterRate)}/gal
+                          {waterMeter.rate_per_unit > 0 && <span className="ml-1 text-primary">(Custom)</span>}
                         </p>
                       </div>
                     </div>
@@ -394,7 +415,18 @@ export function CheckoutBillingSheet({
             )}
           </div>
 
-          <Separator />
+          {/* Utilities Subtotal */}
+          {billing && billing.utilities.length > 0 && (
+            <>
+              <div className="p-4 rounded-lg border bg-muted/30">
+                <div className="flex justify-between font-semibold">
+                  <span>Utilities Subtotal</span>
+                  <span>{formatCurrency(billing.utilities.reduce((sum, u) => sum + u.total, 0))}</span>
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
 
           {/* Grand Total */}
           {billing && (
