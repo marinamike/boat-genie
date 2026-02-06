@@ -361,6 +361,23 @@ export function useYardAssets() {
     }
   };
 
+  const deleteMeter = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("utility_meters")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success("Meter deleted");
+      await fetchMeters();
+      return true;
+    } catch (error: any) {
+      toast.error("Failed to delete meter: " + error.message);
+      return false;
+    }
+  };
+
   // Record meter reading
   const recordMeterReading = async (
     meterId: string,
@@ -577,6 +594,7 @@ export function useYardAssets() {
     assignBoatToSlip,
     createMeter,
     updateMeter,
+    deleteMeter,
     recordMeterReading,
     createLease,
     updateLease,
