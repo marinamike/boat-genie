@@ -8,29 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Ship, CheckCircle, XCircle, Clock, MapPin, Loader2, AlertTriangle, LogOut } from "lucide-react";
+import { Calendar, Ship, CheckCircle, XCircle, Clock, MapPin, Loader2, AlertTriangle, DollarSign } from "lucide-react";
 import { useMarinaReservations, MarinaReservation, ReservationStatus } from "@/hooks/useMarinaReservations";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { useLiveDockStatus } from "@/hooks/useLiveDockStatus";
-import { useYardAssets, YardAsset } from "@/hooks/useYardAssets";
+import { useLiveDockStatus, DockStatusWithDetails } from "@/hooks/useLiveDockStatus";
+import { useYardAssets } from "@/hooks/useYardAssets";
+import { CheckoutBillingSheet } from "@/components/slips/CheckoutBillingSheet";
 import { supabase } from "@/integrations/supabase/client";
-import { format, differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
+import { format } from "date-fns";
 
-const formatDuration = (checkedInAt: string) => {
-  const start = new Date(checkedInAt);
-  const now = new Date();
-  
-  const days = differenceInDays(now, start);
-  const hours = differenceInHours(now, start) % 24;
-  const minutes = differenceInMinutes(now, start) % 60;
-  
-  const parts = [];
-  if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
-  if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
-  if (parts.length === 0) parts.push(`${minutes} minute${minutes !== 1 ? "s" : ""}`);
-  
-  return parts.join(", ");
-};
 
 const statusBadgeVariant = (status: ReservationStatus) => {
   switch (status) {
@@ -78,12 +64,12 @@ interface BoatDimensions {
 
 export function ReservationManager() {
   const { business } = useBusiness();
-  const { reservations, loading, approveReservation, rejectReservation } = useMarinaReservations("marina", business?.id);
+  const { reservations, loading, approveReservation, rejectReservation, refetch } = useMarinaReservations("marina", business?.id);
   const { checkInBoat, checkOutBoat } = useLiveDockStatus();
-  const { assets } = useYardAssets();
+  const { assets, meters } = useYardAssets();
   
   const [selectedReservation, setSelectedReservation] = useState<MarinaReservation | null>(null);
-  const [actionType, setActionType] = useState<"approve" | "reject" | "check-in" | "check-out" | null>(null);
+  const [actionType, setActionType] = useState<"approve" | "reject" | "check-in" | null>(null);
   const [assignedSlip, setAssignedSlip] = useState("");
   const [dockLocation, setDockLocation] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
@@ -91,7 +77,11 @@ export function ReservationManager() {
   const [processing, setProcessing] = useState(false);
   const [boatDimensions, setBoatDimensions] = useState<BoatDimensions | null>(null);
   const [loadingSpecs, setLoadingSpecs] = useState(false);
-  const [dockStatusRecord, setDockStatusRecord] = useState<{ id: string; checked_in_at: string } | null>(null);
+  
+  // Checkout billing state
+  const [checkoutReservation, setCheckoutReservation] = useState<MarinaReservation | null>(null);
+  const [checkoutDockStatus, setCheckoutDockStatus] = useState<DockStatusWithDetails | null>(null);
+  const [showBillingSheet, setShowBillingSheet] = useState(false);
 
   const pendingReservations = reservations.filter(r => r.status === "pending");
   const approvedReservations = reservations.filter(r => r.status === "approved");
@@ -167,27 +157,45 @@ export function ReservationManager() {
     });
   }, [assets, boatDimensions, selectedReservation?.boat?.length_ft]);
 
-  const openAction = async (reservation: MarinaReservation, type: "approve" | "reject" | "check-in" | "check-out") => {
+  // Find slip asset for checkout billing
+  const checkoutSlipAsset = useMemo(() => {
+    if (!checkoutReservation?.assigned_slip) return null;
+    return assets.find((a) => a.asset_name === checkoutReservation.assigned_slip);
+  }, [checkoutReservation, assets]);
+
+  const openAction = async (reservation: MarinaReservation, type: "approve" | "reject" | "check-in") => {
     setSelectedReservation(reservation);
     setActionType(type);
     setAssignedSlip(reservation.assigned_slip || "");
     setDockLocation(reservation.assigned_dock_location || "");
     setAdminNotes(reservation.admin_notes || "");
     setRejectionReason("");
-    setDockStatusRecord(null);
+  };
 
-    // Fetch dock_status record for checkout
-    if (type === "check-out") {
-      const { data } = await supabase
-        .from("dock_status")
-        .select("id, checked_in_at")
-        .eq("reservation_id", reservation.id)
-        .eq("is_active", true)
-        .maybeSingle();
-      
-      if (data) {
-        setDockStatusRecord(data);
-      }
+  const openCheckout = async (reservation: MarinaReservation) => {
+    // Fetch dock_status record for the reservation
+    const { data } = await supabase
+      .from("dock_status")
+      .select("id, boat_id, slip_number, stay_type, is_active, checked_in_at, checked_out_at")
+      .eq("reservation_id", reservation.id)
+      .eq("is_active", true)
+      .maybeSingle();
+    
+    if (data) {
+      // Fetch boat details
+      const { data: boat } = await supabase
+        .from("boats")
+        .select("id, name, make, model, length_ft")
+        .eq("id", data.boat_id)
+        .single();
+
+      setCheckoutDockStatus({
+        ...data,
+        boat: boat || null,
+        active_work_orders: [],
+      });
+      setCheckoutReservation(reservation);
+      setShowBillingSheet(true);
     }
   };
 
@@ -198,7 +206,15 @@ export function ReservationManager() {
     setDockLocation("");
     setAdminNotes("");
     setRejectionReason("");
-    setDockStatusRecord(null);
+  };
+
+  const handleCheckoutComplete = async () => {
+    if (!checkoutDockStatus) return;
+    await checkOutBoat(checkoutDockStatus.id);
+    setCheckoutDockStatus(null);
+    setCheckoutReservation(null);
+    setShowBillingSheet(false);
+    refetch();
   };
 
   const handleApprove = async () => {
@@ -228,15 +244,9 @@ export function ReservationManager() {
     );
     setProcessing(false);
     closeDialog();
+    refetch();
   };
 
-  const handleCheckOut = async () => {
-    if (!dockStatusRecord) return;
-    setProcessing(true);
-    await checkOutBoat(dockStatusRecord.id);
-    setProcessing(false);
-    closeDialog();
-  };
 
   const renderReservationCard = (reservation: MarinaReservation) => (
     <div
@@ -308,8 +318,8 @@ export function ReservationManager() {
             </Button>
           )}
           {reservation.status === "checked_in" && (
-            <Button size="sm" variant="outline" onClick={() => openAction(reservation, "check-out")}>
-              <LogOut className="w-4 h-4 mr-1" />
+            <Button size="sm" variant="outline" onClick={() => openCheckout(reservation)}>
+              <DollarSign className="w-4 h-4 mr-1" />
               Check Out
             </Button>
           )}
@@ -563,79 +573,16 @@ export function ReservationManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Check-Out Dialog */}
-      <Dialog open={actionType === "check-out"} onOpenChange={() => closeDialog()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Check Out Vessel</DialogTitle>
-            <DialogDescription>
-              Review the stay duration before checking out this vessel.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedReservation && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted/50 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Ship className="w-5 h-5 text-primary" />
-                  <span className="font-semibold text-lg">
-                    {selectedReservation.boat?.name || "Unknown Vessel"}
-                  </span>
-                </div>
-                {selectedReservation.boat && (
-                  <p className="text-sm text-muted-foreground">
-                    {selectedReservation.boat.make} {selectedReservation.boat.model}
-                    {selectedReservation.boat.length_ft && ` • ${selectedReservation.boat.length_ft}ft`}
-                  </p>
-                )}
-                {selectedReservation.assigned_slip && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline">Slip {selectedReservation.assigned_slip}</Badge>
-                    <Badge variant="secondary" className="capitalize">
-                      {selectedReservation.stay_type}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-
-              {dockStatusRecord && (
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Checked In</p>
-                    <p className="font-medium">
-                      {format(new Date(dockStatusRecord.checked_in_at), "MMM d, yyyy 'at' h:mm a")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Duration</p>
-                    <p className="font-medium text-primary">
-                      {formatDuration(dockStatusRecord.checked_in_at)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {selectedReservation.boat?.length_ft && (
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 text-sm">
-                  <p className="text-muted-foreground mb-1">Billing Reference</p>
-                  <p className="font-medium">
-                    Vessel Length: {selectedReservation.boat.length_ft}ft
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Final billing calculated based on stay duration and per-foot rates
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDialog} disabled={processing}>Cancel</Button>
-            <Button onClick={handleCheckOut} disabled={processing || !dockStatusRecord}>
-              {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <LogOut className="w-4 h-4 mr-2" />}
-              Confirm Check Out
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Checkout Billing Sheet */}
+      <CheckoutBillingSheet
+        open={showBillingSheet}
+        onOpenChange={setShowBillingSheet}
+        dockStatus={checkoutDockStatus}
+        reservationId={checkoutReservation?.id}
+        slipAsset={checkoutSlipAsset}
+        meters={meters}
+        onCheckoutComplete={handleCheckoutComplete}
+      />
     </>
   );
 }

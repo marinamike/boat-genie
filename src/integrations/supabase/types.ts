@@ -3808,6 +3808,179 @@ export type Database = {
           },
         ]
       }
+      stay_invoices: {
+        Row: {
+          boat_id: string | null
+          business_id: string
+          check_in_at: string
+          check_out_at: string
+          created_at: string
+          dock_status_id: string
+          finalized_at: string | null
+          finalized_by: string | null
+          grand_total: number
+          id: string
+          notes: string | null
+          power_end_reading: number | null
+          power_rate: number | null
+          power_start_reading: number | null
+          power_total: number | null
+          power_usage: number | null
+          rate_per_day: number
+          rate_tier: string
+          reservation_id: string | null
+          status: string
+          stay_days: number
+          stay_subtotal: number
+          updated_at: string
+          vessel_length_ft: number
+          water_end_reading: number | null
+          water_rate: number | null
+          water_start_reading: number | null
+          water_total: number | null
+          water_usage: number | null
+        }
+        Insert: {
+          boat_id?: string | null
+          business_id: string
+          check_in_at: string
+          check_out_at: string
+          created_at?: string
+          dock_status_id: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          grand_total?: number
+          id?: string
+          notes?: string | null
+          power_end_reading?: number | null
+          power_rate?: number | null
+          power_start_reading?: number | null
+          power_total?: number | null
+          power_usage?: number | null
+          rate_per_day?: number
+          rate_tier: string
+          reservation_id?: string | null
+          status?: string
+          stay_days: number
+          stay_subtotal?: number
+          updated_at?: string
+          vessel_length_ft?: number
+          water_end_reading?: number | null
+          water_rate?: number | null
+          water_start_reading?: number | null
+          water_total?: number | null
+          water_usage?: number | null
+        }
+        Update: {
+          boat_id?: string | null
+          business_id?: string
+          check_in_at?: string
+          check_out_at?: string
+          created_at?: string
+          dock_status_id?: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          grand_total?: number
+          id?: string
+          notes?: string | null
+          power_end_reading?: number | null
+          power_rate?: number | null
+          power_start_reading?: number | null
+          power_total?: number | null
+          power_usage?: number | null
+          rate_per_day?: number
+          rate_tier?: string
+          reservation_id?: string | null
+          status?: string
+          stay_days?: number
+          stay_subtotal?: number
+          updated_at?: string
+          vessel_length_ft?: number
+          water_end_reading?: number | null
+          water_rate?: number | null
+          water_start_reading?: number | null
+          water_total?: number | null
+          water_usage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stay_invoices_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stay_invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stay_invoices_dock_status_id_fkey"
+            columns: ["dock_status_id"]
+            isOneToOne: false
+            referencedRelation: "dock_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stay_invoices_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "marina_reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stay_meter_readings: {
+        Row: {
+          created_at: string
+          dock_status_id: string
+          id: string
+          meter_id: string
+          reading_type: string
+          reading_value: number
+          recorded_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          dock_status_id: string
+          id?: string
+          meter_id: string
+          reading_type: string
+          reading_value?: number
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          dock_status_id?: string
+          id?: string
+          meter_id?: string
+          reading_type?: string
+          reading_value?: number
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stay_meter_readings_dock_status_id_fkey"
+            columns: ["dock_status_id"]
+            isOneToOne: false
+            referencedRelation: "dock_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stay_meter_readings_meter_id_fkey"
+            columns: ["meter_id"]
+            isOneToOne: false
+            referencedRelation: "utility_meters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_inventory: {
         Row: {
           barcode: string | null
