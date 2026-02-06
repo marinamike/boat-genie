@@ -207,7 +207,7 @@ export function SlipSettings({
   };
 
   const handleCreateMeter = async () => {
-    if (!meterForm.meter_name || !meterForm.rate_per_unit) return;
+    if (!meterForm.meter_name) return;
     setSubmitting(true);
 
     try {
@@ -216,7 +216,7 @@ export function SlipSettings({
         meter_type: meterForm.meter_type,
         meter_number: meterForm.meter_number || null,
         yard_asset_id: meterForm.yard_asset_id || null,
-        rate_per_unit: parseFloat(meterForm.rate_per_unit),
+        rate_per_unit: meterForm.rate_per_unit ? parseFloat(meterForm.rate_per_unit) : 0, // 0 = inherit global
         current_reading: parseFloat(meterForm.current_reading) || 0,
       });
       closeForm();
@@ -226,7 +226,7 @@ export function SlipSettings({
   };
 
   const handleUpdateMeter = async () => {
-    if (!editingMeter || !meterForm.meter_name || !meterForm.rate_per_unit) return;
+    if (!editingMeter || !meterForm.meter_name) return;
     setSubmitting(true);
 
     try {
@@ -235,7 +235,7 @@ export function SlipSettings({
         meter_type: meterForm.meter_type,
         meter_number: meterForm.meter_number || null,
         yard_asset_id: meterForm.yard_asset_id || null,
-        rate_per_unit: parseFloat(meterForm.rate_per_unit),
+        rate_per_unit: meterForm.rate_per_unit ? parseFloat(meterForm.rate_per_unit) : 0, // 0 = inherit global
         current_reading: parseFloat(meterForm.current_reading) || 0,
       });
       closeForm();
@@ -558,6 +558,14 @@ export function SlipSettings({
             <div className="space-y-3">
               {meters.map((meter) => {
                 const asset = assets.find((a) => a.id === meter.yard_asset_id);
+                // Rate inheritance: custom rate if > 0, else global business rate
+                const hasCustomRate = meter.rate_per_unit > 0;
+                const effectiveRate = hasCustomRate
+                  ? meter.rate_per_unit
+                  : meter.meter_type === "power"
+                    ? (business?.power_rate_per_kwh ?? 0)
+                    : (business?.water_rate_per_gallon ?? 0);
+
                 return (
                   <div
                     key={meter.id}
@@ -576,6 +584,11 @@ export function SlipSettings({
                       <div>
                         <div className="font-semibold flex items-center gap-2">
                           {meter.meter_name}
+                          {hasCustomRate && (
+                            <Badge variant="outline" className="text-primary border-primary text-xs">
+                              Custom
+                            </Badge>
+                          )}
                           {!meter.is_active && (
                             <Badge variant="secondary">Inactive</Badge>
                           )}
@@ -589,7 +602,7 @@ export function SlipSettings({
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div className="font-mono text-sm">
-                          ${meter.rate_per_unit}/{meter.meter_type === "power" ? "kWh" : "gal"}
+                          ${effectiveRate.toFixed(2)}/{meter.meter_type === "power" ? "kWh" : "gal"}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Current: {meter.current_reading.toLocaleString()}
@@ -753,17 +766,23 @@ export function SlipSettings({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>
-                  Rate per {meterForm.meter_type === "power" ? "kWh" : "Gallon"} *
+                  Rate per {meterForm.meter_type === "power" ? "kWh" : "Gallon"}
                 </Label>
                 <Input
                   type="number"
                   step="0.01"
-                  placeholder={meterForm.meter_type === "power" ? "0.15" : "0.01"}
+                  placeholder="Leave empty for global rate"
                   value={meterForm.rate_per_unit}
                   onChange={(e) =>
                     setMeterForm({ ...meterForm, rate_per_unit: e.target.value })
                   }
                 />
+                <span className="text-xs text-muted-foreground">
+                  Global: ${meterForm.meter_type === "power" 
+                    ? (business?.power_rate_per_kwh ?? 0).toFixed(2) 
+                    : (business?.water_rate_per_gallon ?? 0).toFixed(2)
+                  }/{meterForm.meter_type === "power" ? "kWh" : "gal"}
+                </span>
               </div>
               <div className="space-y-2">
                 <Label>Starting Reading</Label>
@@ -789,7 +808,7 @@ export function SlipSettings({
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={!meterForm.meter_name || !meterForm.rate_per_unit || submitting}
+                disabled={!meterForm.meter_name || submitting}
                 className="flex-1"
               >
                 {submitting

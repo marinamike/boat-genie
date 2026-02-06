@@ -24,6 +24,7 @@ import {
 import { Zap, Droplets, Plus, TrendingUp, History } from "lucide-react";
 import { UtilityMeter, MeterReading, YardAsset } from "@/hooks/useYardAssets";
 import { format } from "date-fns";
+import { useBusiness } from "@/contexts/BusinessContext";
 
 interface MeterReadingsProps {
   assets: YardAsset[];
@@ -45,6 +46,7 @@ export function MeterReadings({
   loading,
   recordMeterReading,
 }: MeterReadingsProps) {
+  const { business } = useBusiness();
   const [showReadingForm, setShowReadingForm] = useState(false);
   const [selectedMeterId, setSelectedMeterId] = useState("");
   const [newReading, setNewReading] = useState("");
@@ -55,6 +57,19 @@ export function MeterReadings({
   const selectedAsset = selectedMeter
     ? assets.find((a) => a.id === selectedMeter.yard_asset_id)
     : null;
+
+  // Rate inheritance: Use meter's custom rate if > 0, otherwise use global business rate
+  const getEffectiveRate = (meter: UtilityMeter) => {
+    if (meter.rate_per_unit > 0) {
+      return meter.rate_per_unit; // Custom rate
+    }
+    // Global rate fallback
+    return meter.meter_type === "power"
+      ? (business?.power_rate_per_kwh ?? 0)
+      : (business?.water_rate_per_gallon ?? 0);
+  };
+
+  const isCustomRate = (meter: UtilityMeter) => meter.rate_per_unit > 0;
 
   const handleSubmit = async () => {
     if (!selectedMeterId || !newReading) return;
@@ -79,8 +94,9 @@ export function MeterReadings({
   const getUsagePreview = () => {
     if (!selectedMeter || !newReading) return null;
     const usage = parseFloat(newReading) - selectedMeter.current_reading;
-    const charge = usage * selectedMeter.rate_per_unit;
-    return { usage, charge };
+    const effectiveRate = getEffectiveRate(selectedMeter);
+    const charge = usage * effectiveRate;
+    return { usage, charge, rate: effectiveRate };
   };
 
   const usagePreview = getUsagePreview();
@@ -178,6 +194,9 @@ export function MeterReadings({
                   .filter((r) => r.meter_id === meter.id)
                   .slice(0, 3);
 
+                const effectiveRate = getEffectiveRate(meter);
+                const hasCustom = isCustomRate(meter);
+
                 return (
                   <Card key={meter.id} className="border">
                     <CardContent className="py-4">
@@ -189,7 +208,14 @@ export function MeterReadings({
                             <Droplets className="w-5 h-5 text-blue-600" />
                           )}
                           <div>
-                            <div className="font-semibold">{meter.meter_name}</div>
+                            <div className="font-semibold flex items-center gap-2">
+                              {meter.meter_name}
+                              {hasCustom && (
+                                <Badge variant="outline" className="text-primary border-primary text-xs">
+                                  Custom
+                                </Badge>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {asset?.asset_name || "Unassigned"}
                               {meter.meter_number && ` • #${meter.meter_number}`}
@@ -214,7 +240,7 @@ export function MeterReadings({
                         <div>
                           <div className="text-muted-foreground">Rate</div>
                           <div className="font-mono text-lg">
-                            ${meter.rate_per_unit}
+                            ${effectiveRate.toFixed(2)}
                             <span className="text-xs text-muted-foreground ml-1">
                               /{meter.meter_type === "power" ? "kWh" : "gal"}
                             </span>
@@ -359,8 +385,11 @@ export function MeterReadings({
                   </div>
                   <div className="flex justify-between mt-1">
                     <span className="text-muted-foreground">Rate</span>
-                    <span className="font-mono">
-                      ${selectedMeter.rate_per_unit}/{selectedMeter.meter_type === "power" ? "kWh" : "gal"}
+                    <span className="font-mono flex items-center gap-1">
+                      ${getEffectiveRate(selectedMeter).toFixed(2)}/{selectedMeter.meter_type === "power" ? "kWh" : "gal"}
+                      {!isCustomRate(selectedMeter) && (
+                        <span className="text-xs text-muted-foreground">(Global)</span>
+                      )}
                     </span>
                   </div>
                   {selectedAsset?.current_boat_id && selectedAsset.boat && (
