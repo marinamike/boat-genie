@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { DockStatusWithDetails } from "@/hooks/useLiveDockStatus";
 import { UtilityMeter, YardAsset } from "@/hooks/useYardAssets";
 import { useStayBilling } from "@/hooks/useStayBilling";
+import { useBusiness } from "@/contexts/BusinessContext";
 import {
   calculateBestRate,
   calculateStayDuration,
@@ -56,6 +57,7 @@ export function CheckoutBillingSheet({
   onCheckoutComplete,
 }: CheckoutBillingSheetProps) {
   const { createInvoice, loading } = useStayBilling();
+  const { business } = useBusiness();
   const [processing, setProcessing] = useState(false);
 
   // Meter reading inputs
@@ -93,12 +95,13 @@ export function CheckoutBillingSheet({
     const checkOutAt = new Date();
     const vesselLengthFt = dockStatus.boat?.length_ft || 0;
 
+    // Rate inheritance: slip-specific rates first, then business defaults
     const rates: StayRates = {
-      daily_rate_per_ft: slipAsset.daily_rate_per_ft || 0,
-      weekly_rate_per_ft: slipAsset.weekly_rate_per_ft || 0,
-      monthly_rate_per_ft: slipAsset.monthly_rate_per_ft || 0,
-      seasonal_rate_per_ft: slipAsset.seasonal_rate_per_ft || 0,
-      annual_rate_per_ft: slipAsset.annual_rate_per_ft || 0,
+      daily_rate_per_ft: slipAsset.daily_rate_per_ft ?? business?.default_daily_rate_per_ft ?? 0,
+      weekly_rate_per_ft: slipAsset.weekly_rate_per_ft ?? business?.default_weekly_rate_per_ft ?? 0,
+      monthly_rate_per_ft: slipAsset.monthly_rate_per_ft ?? business?.default_monthly_rate_per_ft ?? 0,
+      seasonal_rate_per_ft: slipAsset.seasonal_rate_per_ft ?? business?.default_seasonal_rate_per_ft ?? 0,
+      annual_rate_per_ft: slipAsset.annual_rate_per_ft ?? business?.default_annual_rate_per_ft ?? 0,
     };
 
     const durationDays = calculateStayDuration(checkInAt, checkOutAt);
@@ -131,7 +134,7 @@ export function CheckoutBillingSheet({
       utilities,
       grandTotal: Math.round((stayCalculation.staySubtotal + utilityTotal) * 100) / 100,
     };
-  }, [dockStatus, slipAsset, powerMeter, waterMeter, powerEndReading, waterEndReading]);
+  }, [dockStatus, slipAsset, powerMeter, waterMeter, powerEndReading, waterEndReading, business]);
 
   const handleFinalizeBilling = async () => {
     if (!dockStatus || !billing) return;
