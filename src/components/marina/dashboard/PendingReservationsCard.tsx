@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, Ship, CheckCircle, XCircle, Zap, Loader2 } from "lucide-react";
 import { useMarinaReservations, MarinaReservation } from "@/hooks/useMarinaReservations";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -13,7 +14,8 @@ interface PendingReservationsCardProps {
 }
 
 export function PendingReservationsCard({ onApprove, onReject }: PendingReservationsCardProps) {
-  const { reservations, loading } = useMarinaReservations("marina");
+  const { business } = useBusiness();
+  const { reservations, loading } = useMarinaReservations("marina", business?.id);
   const navigate = useNavigate();
 
   const pendingReservations = reservations.filter(r => r.status === "pending");

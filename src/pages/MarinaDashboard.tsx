@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Anchor, MessageSquare, Settings, Loader2 } from "lucide-react";
 
@@ -11,25 +10,19 @@ import { LeaseVaultCard } from "@/components/marina/dashboard/LeaseVaultCard";
 import { LiveDockList } from "@/components/marina/LiveDockList";
 import { MarinaChatSheet } from "@/components/marina/dashboard/MarinaChatSheet";
 import { useMarinaReservations, MarinaReservation } from "@/hooks/useMarinaReservations";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MarineLoadingScreen } from "@/components/ui/marine-loading";
 
-interface Marina {
-  id: string;
-  marina_name: string;
-  address: string | null;
-}
-
 const MarinaDashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [marina, setMarina] = useState<Marina | null>(null);
+  const { business, loading } = useBusiness();
   const [chatOpen, setChatOpen] = useState(false);
   const [chatWorkOrderId, setChatWorkOrderId] = useState<string | undefined>();
   const navigate = useNavigate();
-  const { approveReservation, rejectReservation } = useMarinaReservations("marina");
+  const { approveReservation, rejectReservation } = useMarinaReservations("marina", business?.id);
 
   // Approval dialog state
   const [approvalDialog, setApprovalDialog] = useState<{
@@ -40,28 +33,6 @@ const MarinaDashboard = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    const fetchMarina = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/login");
-        return;
-      }
-
-      const { data } = await supabase
-        .from("marinas")
-        .select("id, marina_name, address")
-        .eq("manager_id", user.id)
-        .maybeSingle();
-
-      if (data) {
-        setMarina(data);
-      }
-      setLoading(false);
-    };
-
-    fetchMarina();
-  }, [navigate]);
 
   const handleApproveClick = (reservation: MarinaReservation) => {
     setApprovalDialog({ type: "approve", reservation });
@@ -109,7 +80,7 @@ const MarinaDashboard = () => {
                 <Anchor className="w-5 h-5 text-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-lg">{marina?.marina_name || "Marina Dashboard"}</h1>
+                <h1 className="font-bold text-lg">{business?.business_name || "Marina Dashboard"}</h1>
                 <p className="text-sm text-primary-foreground/80">Command Center</p>
               </div>
             </div>

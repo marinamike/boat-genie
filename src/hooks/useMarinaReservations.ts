@@ -59,7 +59,7 @@ interface CreateReservationParams {
   };
 }
 
-export function useMarinaReservations(role: "owner" | "marina" = "owner") {
+export function useMarinaReservations(role: "owner" | "marina" = "owner", businessId?: string) {
   const [reservations, setReservations] = useState<MarinaReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -77,6 +77,9 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
       // If owner, filter by owner_id
       if (role === "owner") {
         query = query.eq("owner_id", user.id);
+      } else if (role === "marina" && businessId) {
+        // Filter by business_id for marina role
+        query = query.eq("business_id", businessId);
       }
 
       const { data, error } = await query;
@@ -127,7 +130,7 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
     } finally {
       setLoading(false);
     }
-  }, [role, toast]);
+  }, [role, businessId, toast]);
 
   useEffect(() => {
     fetchReservations();
