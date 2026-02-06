@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { DockStatusWithDetails } from "@/hooks/useLiveDockStatus";
 import { UtilityMeter, YardAsset } from "@/hooks/useYardAssets";
 import { useStayBilling } from "@/hooks/useStayBilling";
+import { useLiveDockStatus } from "@/hooks/useLiveDockStatus";
 import { useBusiness } from "@/contexts/BusinessContext";
 import {
   calculateBestRate,
@@ -57,6 +58,7 @@ export function CheckoutBillingSheet({
   onCheckoutComplete,
 }: CheckoutBillingSheetProps) {
   const { createInvoice, loading } = useStayBilling();
+  const { checkOutBoat } = useLiveDockStatus();
   const { business } = useBusiness();
   const [processing, setProcessing] = useState(false);
 
@@ -176,6 +178,8 @@ export function CheckoutBillingSheet({
       });
 
       if (invoice) {
+        // Check out the boat - this updates dock_status and releases the yard asset
+        await checkOutBoat(dockStatus.id);
         onCheckoutComplete();
         onOpenChange(false);
       }
