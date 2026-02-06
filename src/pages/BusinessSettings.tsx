@@ -40,8 +40,21 @@ export default function BusinessSettings() {
   // Show setup form if no business exists
   if (!business) {
     return (
-      <div className="container max-w-2xl mx-auto p-4 pt-8">
+      <div className="container max-w-2xl mx-auto p-4 pt-8 space-y-6">
         <BusinessSetupForm />
+        
+        <Card>
+          <CardContent className="pt-6">
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              className="w-full"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
