@@ -1,86 +1,125 @@
 
 
-# Move Stay Subtotal to Unified Summary Section
+# Fix Mid-Month Meter Reading Rate Inheritance
 
-## Current Layout
-The billing sheet currently shows:
-1. Stay Charges section with details AND the Stay Subtotal inside it
-2. Utility Readings section with meter inputs
-3. Utilities Subtotal (separate box)
-4. Grand Total
+## Problem Identified
 
-## Goal
-Create a cleaner summary section where both subtotals appear together right before the Grand Total:
-- Stay Charges section shows only the breakdown details (rate tier, rate per day, vessel length, days)
-- Utility Readings section shows meter inputs and individual charges
-- New unified summary section with Stay Subtotal + Utilities Subtotal together
-- Grand Total
+The Mid-Month Meter Reading sheet has the same rate inheritance bug we fixed in the checkout billing. It displays and calculates using raw meter rates instead of applying the inheritance pattern:
+- If `meter.rate_per_unit > 0`: use the custom meter rate
+- Otherwise: fall back to global business rate (`power_rate_per_kwh` or `water_rate_per_gallon`)
 
-## Changes to Make
-
-**File:** `src/components/slips/CheckoutBillingSheet.tsx`
-
-### 1. Remove Stay Subtotal from Stay Charges section
-Remove the Separator and subtotal lines (287-291) from inside the Stay Charges box, so it only shows the rate breakdown details.
-
-### 2. Create unified Subtotals section
-Replace the current "Utilities Subtotal" section with a combined subtotals section that shows both:
+## Current Behavior
 
 ```text
-+------------------------------------------+
-| Stay Subtotal                   $150.00  |
-| Utilities Subtotal               $10.00  |
-+------------------------------------------+
-| [Grand Total Box]              $160.00   |
-+------------------------------------------+
+Rate: $0.00/kWh   <-- Shows raw meter rate (0 means inheriting)
+Usage: 50.00 kWh = $0.00   <-- Calculates using $0.00 rate
 ```
 
-### Visual Result
+## Expected Behavior
 
-**Before:**
 ```text
-STAY CHARGES
-├─ Rate Tier: Daily
-├─ Rate per Day: $2.00/ft
-├─ Vessel Length: 30 ft
-├─ Days: 1
-└─ Stay Subtotal: $60.00  <-- Inside the box
-
-UTILITY READINGS
-├─ Power meter inputs
-└─ Water meter inputs
-
-Utilities Subtotal: $10.00  <-- Separate
-
-Grand Total: $70.00
+Rate: $0.15/kWh   <-- Shows effective rate (inherited from global)
+Usage: 50.00 kWh = $7.50   <-- Calculates using $0.15 rate
 ```
 
-**After:**
-```text
-STAY CHARGES
-├─ Rate Tier: Daily
-├─ Rate per Day: $2.00/ft
-├─ Vessel Length: 30 ft
-└─ Days: 1  <-- No subtotal here
+## Files to Modify
 
-UTILITY READINGS
-├─ Power meter inputs
-└─ Water meter inputs
+### 1. `src/components/slips/MidMonthMeterReadingSheet.tsx`
 
-+---------------------------+
-| Stay Subtotal:    $60.00  |  <-- Both together
-| Utilities Subtotal: $10.00|
-+---------------------------+
+**Changes:**
 
-Grand Total: $70.00
+1. Import `useBusiness` hook to access global rates
+2. Add `useMemo` hooks to calculate effective rates with inheritance logic
+3. Update rate display (lines 198, 246) to show effective rates
+4. Update usage calculations (lines 227-229, 275-277) to use effective rates
+5. Add "(Custom)" label when meter has an override rate
+
+### 2. `src/hooks/useRecurringBilling.ts`
+
+**Changes:**
+
+Update the `generateMonthlyInvoice` function (line 111) to apply rate inheritance when calculating utility charges from meter readings.
+
+## Implementation Details
+
+### MidMonthMeterReadingSheet.tsx
+
+Add imports and effective rate calculation:
+```typescript
+import { useBusiness } from "@/contexts/BusinessContext";
+import { useMemo } from "react";
+
+// Inside component:
+const { business } = useBusiness();
+
+const effectivePowerRate = useMemo(() => {
+  if (!powerMeter) return 0;
+  return powerMeter.rate_per_unit > 0 
+    ? powerMeter.rate_per_unit 
+    : (business?.power_rate_per_kwh ?? 0);
+}, [powerMeter, business]);
+
+const effectiveWaterRate = useMemo(() => {
+  if (!waterMeter) return 0;
+  return waterMeter.rate_per_unit > 0 
+    ? waterMeter.rate_per_unit 
+    : (business?.water_rate_per_gallon ?? 0);
+}, [waterMeter, business]);
 ```
 
-## Technical Details
+Update display (line 198):
+```typescript
+// Before:
+Rate: {formatCurrency(powerMeter.rate_per_unit)}/kWh
 
-### Lines to modify in CheckoutBillingSheet.tsx:
+// After:
+Rate: {formatCurrency(effectivePowerRate)}/kWh
+{powerMeter.rate_per_unit > 0 && <span className="ml-1 text-xs">(Custom)</span>}
+```
 
-1. **Lines 287-291**: Remove the Separator and Stay Subtotal from inside the Stay Charges box
-2. **Lines 418-429**: Replace the Utilities Subtotal section with a combined summary showing both subtotals
+Update calculation (lines 227-229):
+```typescript
+// Before:
+{formatCurrency(usage * powerMeter.rate_per_unit)}
 
-The new combined section will always show Stay Subtotal (when billing exists), and conditionally show Utilities Subtotal only when there are utility charges.
+// After:
+{formatCurrency(usage * effectivePowerRate)}
+```
+
+Same changes apply for water meter at lines 246 and 275-277.
+
+### useRecurringBilling.ts
+
+Update the `generateMonthlyInvoice` function to fetch business rates and apply inheritance:
+
+```typescript
+// Get business rates for inheritance
+const powerGlobalRate = business?.power_rate_per_kwh ?? 0;
+const waterGlobalRate = business?.water_rate_per_gallon ?? 0;
+
+for (const reading of meterReadings) {
+  const meter = meters.find(m => m.id === reading.meter_id);
+  if (meter) {
+    const usage = reading.reading_value;
+    // Apply rate inheritance
+    const effectiveRate = meter.rate_per_unit > 0 
+      ? meter.rate_per_unit 
+      : (meter.meter_type === "power" ? powerGlobalRate : waterGlobalRate);
+    const total = usage * effectiveRate;
+    // ... rest of logic
+  }
+}
+```
+
+## Summary of Changes
+
+| File | Line(s) | Change |
+|------|---------|--------|
+| MidMonthMeterReadingSheet.tsx | Top imports | Add `useBusiness`, `useMemo` imports |
+| MidMonthMeterReadingSheet.tsx | After line 63 | Add `business` from hook and `effectivePowerRate`/`effectiveWaterRate` memos |
+| MidMonthMeterReadingSheet.tsx | Line 198 | Display `effectivePowerRate` with optional "(Custom)" label |
+| MidMonthMeterReadingSheet.tsx | Lines 227-229 | Use `effectivePowerRate` in calculation |
+| MidMonthMeterReadingSheet.tsx | Line 246 | Display `effectiveWaterRate` with optional "(Custom)" label |
+| MidMonthMeterReadingSheet.tsx | Lines 275-277 | Use `effectiveWaterRate` in calculation |
+| useRecurringBilling.ts | Lines 106-120 | Apply rate inheritance when calculating utility totals |
 
