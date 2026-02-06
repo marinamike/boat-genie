@@ -1,14 +1,16 @@
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useStoreInventory } from "@/hooks/useStoreInventory";
 import { useFuelManagement } from "@/hooks/useFuelManagement";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Ship, Wrench, Fuel, Store, Building2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Ship, Wrench, Fuel, Store, Building2, CheckCircle2, AlertCircle, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Database } from "@/integrations/supabase/types";
 import { LowStockAlerts } from "@/components/store/LowStockAlerts";
 
 type BusinessModule = Database["public"]["Enums"]["business_module"];
+const PLATFORM_ADMIN_EMAIL = "info@marinamike.com";
 
 const moduleConfig: Record<BusinessModule, { label: string; icon: React.ElementType; href: string; color: string }> = {
   slips: { label: "Slip Management", icon: Ship, href: "/business/slips", color: "text-blue-500" },
@@ -22,6 +24,9 @@ export default function BusinessDashboard() {
   const { business, enabledModules, isOwner, isStaff, loading } = useBusiness();
   const { lowStockItems } = useStoreInventory();
   const { tanks } = useFuelManagement();
+  const { user } = useAuth();
+
+  const isPlatformAdmin = user?.email === PLATFORM_ADMIN_EMAIL;
 
   // Get low fuel tanks
   const lowFuelTanks = tanks.filter(t => 
@@ -32,6 +37,46 @@ export default function BusinessDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Platform admin sees admin overview instead of setup prompt
+  if (!business && isPlatformAdmin) {
+    return (
+      <div className="container max-w-4xl mx-auto p-4 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Platform Admin View</h1>
+            <p className="text-muted-foreground">No business profile attached</p>
+          </div>
+          <Badge variant="default" className="flex items-center gap-1 bg-primary text-primary-foreground">
+            <Shield className="w-3 h-3" />
+            Platform Admin
+          </Badge>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Business Module Overview</CardTitle>
+            <CardDescription>
+              You're viewing the Business dashboard as a platform admin. Create or select a business profile to manage operations, or use the Platform Admin suite for global oversight.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-3">
+            <Link
+              to="/business/settings"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Create Business Profile
+            </Link>
+            <Link
+              to="/platform-admin"
+              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+            >
+              Go to Platform Admin
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
