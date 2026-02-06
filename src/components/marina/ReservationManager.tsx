@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Calendar, Ship, CheckCircle, XCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { useMarinaReservations, MarinaReservation, ReservationStatus } from "@/hooks/useMarinaReservations";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { useLiveDockStatus } from "@/hooks/useLiveDockStatus";
 import { format } from "date-fns";
 
@@ -51,7 +52,8 @@ const statusLabel = (status: ReservationStatus) => {
 };
 
 export function ReservationManager() {
-  const { reservations, loading, approveReservation, rejectReservation } = useMarinaReservations("marina");
+  const { business } = useBusiness();
+  const { reservations, loading, approveReservation, rejectReservation } = useMarinaReservations("marina", business?.id);
   const { checkInBoat } = useLiveDockStatus();
   
   const [selectedReservation, setSelectedReservation] = useState<MarinaReservation | null>(null);
