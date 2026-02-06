@@ -27,6 +27,10 @@ export default function SlipsDashboard() {
             <Grid3X3 className="w-4 h-4" />
             <span className="hidden sm:inline">Dock Grid</span>
           </TabsTrigger>
+          <TabsTrigger value="reservations" className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            <span className="hidden sm:inline">Reservations</span>
+          </TabsTrigger>
           <TabsTrigger value="leases" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Leases</span>
@@ -39,14 +43,14 @@ export default function SlipsDashboard() {
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">Settings</span>
           </TabsTrigger>
-          <TabsTrigger value="reservations" className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            <span className="hidden sm:inline">Reservations</span>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="grid" className="mt-4">
           <DockGrid {...yardAssets} />
+        </TabsContent>
+
+        <TabsContent value="reservations" className="mt-4">
+          <ReservationManager />
         </TabsContent>
 
         <TabsContent value="leases" className="mt-4">
@@ -59,10 +63,6 @@ export default function SlipsDashboard() {
 
         <TabsContent value="settings" className="mt-4">
           <SlipSettings {...yardAssets} />
-        </TabsContent>
-
-        <TabsContent value="reservations" className="mt-4">
-          <ReservationManager />
         </TabsContent>
       </Tabs>
     </div>
