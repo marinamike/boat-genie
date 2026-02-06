@@ -1,35 +1,82 @@
 
-## Summary
-The "Marina Mike's" business you created isn't appearing in the Platform Admin verification queue because of a missing database security policy. The platform admin account can't read pending businesses from the database.
 
-## Root Cause
-The `businesses` table has Row-Level Security (RLS) enabled with these policies:
-- Business owners can only see their own business
-- Customers can only see verified businesses (`is_verified = true`)
-- Staff can only see their assigned business
+## Fix: Marina Reservations Not Showing for Business Owners
 
-**Missing**: A policy that allows the platform admin (info@marinamike.com) to view ALL businesses, including those with `verification_status = 'pending'`.
+### Problem Summary
+When you log in as the marina owner and go to the marina dashboard, reservation requests don't appear. This is happening for two reasons:
 
-## Solution
-Add a new RLS policy that grants the platform admin full SELECT access to all businesses. This uses the existing `is_platform_admin()` function that's already configured for your account.
+1. **Database permissions issue**: The system is checking an old database table (`marinas`) to see if you're a marina manager, but your business is registered in the new `businesses` table.
 
-## Database Changes Required
-### Add Platform Admin SELECT Policy
+2. **Query logic issue**: The reservations are linked to your business, but the dashboard isn't filtering reservations by your specific business.
+
+---
+
+### Solution
+
+#### Step 1: Update Database Security Policy
+Add a new permission rule that allows business owners to see reservations for their business.
+
+**Database Change:**
 ```sql
-CREATE POLICY "Platform admin can view all businesses"
-  ON public.businesses
-  FOR SELECT
+-- Allow business owners to manage reservations for their business
+CREATE POLICY "Business owners can manage their reservations"
+  ON public.marina_reservations
+  FOR ALL
   TO authenticated
-  USING (is_platform_admin());
+  USING (
+    business_id IN (
+      SELECT id FROM public.businesses 
+      WHERE owner_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    business_id IN (
+      SELECT id FROM public.businesses 
+      WHERE owner_id = auth.uid()
+    )
+  );
 ```
 
-This policy will allow info@marinamike.com to read all business records, which means the Verification Queue will properly display pending businesses.
+#### Step 2: Update Reservation Fetching Logic
+Modify the reservation hook to filter reservations by the current business.
 
-## Files Changed
-No code changes needed - the `VerificationQueue.tsx` component is already correctly querying for `verification_status = 'pending'`. The issue is purely a database permission problem.
+**File: `src/hooks/useMarinaReservations.ts`**
+- Add `businessId` parameter for marina role
+- Filter query by `business_id` when fetching for a marina
+- Update the interface to accept business context
 
-## Testing Steps
-1. Log in as info@marinamike.com
-2. Navigate to Platform Admin (/platform-admin)
-3. The "Verification Queue" should now show "Marina Mike's" with a pending status
-4. You should be able to Verify, Reject, or Suspend the business
+#### Step 3: Update Dashboard Components
+Wire up the BusinessContext so the marina dashboard uses the correct business ID.
+
+**File: `src/components/marina/dashboard/PendingReservationsCard.tsx`**
+- Import and use `useBusiness()` hook to get the business ID
+- Pass `businessId` to the reservations hook
+
+**File: `src/components/marina/ReservationManager.tsx`**
+- Same updates to use `useBusiness()` for filtering
+
+**File: `src/pages/MarinaDashboard.tsx`**
+- Remove the old `marinas` table query
+- Use `useBusiness()` to get business name and ID
+
+---
+
+### Technical Details
+
+**Current Data in Database:**
+- Your reservation exists: `3121a5a7-dc21-491c-b8fc-97c763553e06`
+- It's linked to business: `c005a02d-6e76-4dca-9b6c-93732d9ef81c` (Marina Mike's)
+- Business owner is: `625d51fb-ffce-4a1d-9efa-44a2de812140`
+
+**Files to Modify:**
+1. Database migration (new RLS policy)
+2. `src/hooks/useMarinaReservations.ts` - Add business filtering
+3. `src/components/marina/dashboard/PendingReservationsCard.tsx` - Use business context
+4. `src/components/marina/ReservationManager.tsx` - Use business context
+5. `src/pages/MarinaDashboard.tsx` - Switch from marinas to businesses table
+
+---
+
+### Expected Result
+After these changes, when you log in as the marina owner and visit the marina dashboard, you'll see the pending reservation request from the boat owner, and you'll be able to approve or reject it.
+
