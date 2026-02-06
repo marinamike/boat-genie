@@ -85,15 +85,15 @@ export function useQCQueue() {
         (boatProfiles || []).map(bp => [bp.boat_id, bp])
       );
 
-      // Get provider names
+      // Get provider names from businesses table (unified schema)
       const providerIds = [...new Set(workOrders.map(wo => wo.provider_id).filter(Boolean))];
       let providerMap = new Map<string, string>();
       if (providerIds.length > 0) {
         const { data: providers } = await supabase
-          .from("provider_profiles")
-          .select("user_id, business_name")
-          .in("user_id", providerIds);
-        providerMap = new Map((providers || []).map(p => [p.user_id, p.business_name || "Unknown"]));
+          .from("businesses")
+          .select("owner_id, business_name")
+          .in("owner_id", providerIds);
+        providerMap = new Map((providers || []).map(p => [p.owner_id, p.business_name || "Unknown"]));
       }
 
       // Get owner names
@@ -153,7 +153,7 @@ export function useQCQueue() {
       // Filter for marina staff - only show boats at their marina
       if (isMarinaStaff && marina) {
         queueItems = queueItems.filter(
-          item => item.marina_name?.toLowerCase() === marina.marina_name.toLowerCase()
+          item => item.marina_name?.toLowerCase() === marina.business_name.toLowerCase()
         );
       }
 
@@ -185,15 +185,15 @@ export function useQCQueue() {
 
       if (error) throw error;
 
-      // Get provider names
+      // Get provider names from businesses table (unified schema)
       const providerIds = [...new Set((data || []).map(wo => wo.provider_id).filter(Boolean))];
       let providerMap = new Map<string, string>();
       if (providerIds.length > 0) {
         const { data: providers } = await supabase
-          .from("provider_profiles")
-          .select("user_id, business_name")
-          .in("user_id", providerIds);
-        providerMap = new Map((providers || []).map(p => [p.user_id, p.business_name || "Unknown"]));
+          .from("businesses")
+          .select("owner_id, business_name")
+          .in("owner_id", providerIds);
+        providerMap = new Map((providers || []).map(p => [p.owner_id, p.business_name || "Unknown"]));
       }
 
       const active: ActiveWorkOrder[] = (data || []).map(wo => ({
@@ -238,15 +238,15 @@ export function useQCQueue() {
 
       if (error) throw error;
 
-      // Get provider names
+      // Get provider names from businesses table (unified schema)
       const providerIds = [...new Set((data || []).map(wo => wo.provider_id).filter(Boolean))];
       let providerMap = new Map<string, string>();
       if (providerIds.length > 0) {
         const { data: providers } = await supabase
-          .from("provider_profiles")
-          .select("user_id, business_name")
-          .in("user_id", providerIds);
-        providerMap = new Map((providers || []).map(p => [p.user_id, p.business_name || "Unknown"]));
+          .from("businesses")
+          .select("owner_id, business_name")
+          .in("owner_id", providerIds);
+        providerMap = new Map((providers || []).map(p => [p.owner_id, p.business_name || "Unknown"]));
       }
 
       const upcoming: ActiveWorkOrder[] = (data || []).map(wo => ({

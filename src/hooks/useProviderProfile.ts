@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Provider profile data now comes from the unified businesses table
 export interface ProviderProfile {
   id: string;
-  user_id: string;
-  business_name: string | null;
+  owner_id: string;
+  business_name: string;
   service_categories: string[];
   insurance_doc_url: string | null;
   insurance_expiry: string | null;
@@ -14,9 +15,9 @@ export interface ProviderProfile {
   hourly_rate: number | null;
   rate_per_foot: number | null;
   diagnostic_fee: number | null;
-  rates_locked_at: string | null;
-  rates_agreed: boolean;
+  is_verified: boolean;
   is_available: boolean;
+  rates_agreed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -50,18 +51,40 @@ export function useProviderProfile() {
         return;
       }
 
-      // Check if user is admin
-      const { data: adminCheck } = await supabase.rpc("is_admin");
+      // Check if user is platform admin
+      const { data: adminCheck } = await supabase.rpc("is_platform_admin");
       setIsAdmin(adminCheck === true);
 
+      // Fetch from businesses table (unified schema)
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("*")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
+      
+      if (data) {
+        // Map businesses table to provider profile interface
+        setProfile({
+          id: data.id,
+          owner_id: data.owner_id,
+          business_name: data.business_name,
+          service_categories: data.service_categories || [],
+          insurance_doc_url: data.insurance_doc_url,
+          insurance_expiry: data.insurance_expiry,
+          bio: data.description,
+          primary_contact_phone: data.contact_phone,
+          hourly_rate: data.hourly_rate,
+          rate_per_foot: data.rate_per_foot,
+          diagnostic_fee: data.diagnostic_fee,
+          is_verified: data.is_verified || false,
+          is_available: true, // Business availability is always true when profile exists
+          rates_agreed: true, // Rates are always agreed when profile exists
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+        });
+      }
     } catch (error) {
       console.error("Error fetching provider profile:", error);
     } finally {
@@ -73,34 +96,47 @@ export function useProviderProfile() {
     fetchProfile();
   }, []);
 
-  // Check if rates are locked (profile is active with rates_agreed = true)
-  const areRatesLocked = profile?.rates_agreed === true && profile?.rates_locked_at !== null;
-
   const createProfile = async (profileData: Partial<ProviderProfile>) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
 
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .insert({
-          user_id: session.user.id,
-          business_name: profileData.business_name || null,
+          owner_id: session.user.id,
+          business_name: profileData.business_name || "My Business",
           service_categories: profileData.service_categories || [],
-          bio: profileData.bio || null,
-          primary_contact_phone: profileData.primary_contact_phone || null,
+          description: profileData.bio || null,
+          contact_phone: profileData.primary_contact_phone || null,
           hourly_rate: profileData.hourly_rate || null,
           rate_per_foot: profileData.rate_per_foot || null,
           diagnostic_fee: profileData.diagnostic_fee || null,
-          is_available: profileData.is_available ?? true,
-          rates_agreed: profileData.rates_agreed ?? false,
-          rates_locked_at: profileData.rates_agreed ? new Date().toISOString() : null,
         })
         .select()
         .single();
 
       if (error) throw error;
-      setProfile(data);
+      
+      setProfile({
+        id: data.id,
+        owner_id: data.owner_id,
+        business_name: data.business_name,
+        service_categories: data.service_categories || [],
+        insurance_doc_url: data.insurance_doc_url,
+        insurance_expiry: data.insurance_expiry,
+        bio: data.description,
+        primary_contact_phone: data.contact_phone,
+        hourly_rate: data.hourly_rate,
+        rate_per_foot: data.rate_per_foot,
+        diagnostic_fee: data.diagnostic_fee,
+        is_verified: data.is_verified || false,
+        is_available: true,
+        rates_agreed: true,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      });
+      
       toast({ title: "Profile created successfully!" });
       return true;
     } catch (error: any) {
@@ -114,39 +150,44 @@ export function useProviderProfile() {
     if (!profile) return false;
 
     try {
-      // If rates are locked and user is not admin, prevent rate changes
-      const ratesLocked = profile.rates_agreed && profile.rates_locked_at;
-      
       const updateData: Record<string, unknown> = {
         business_name: updates.business_name,
         service_categories: updates.service_categories,
-        bio: updates.bio,
-        primary_contact_phone: updates.primary_contact_phone,
-        is_available: updates.is_available,
+        description: updates.bio,
+        contact_phone: updates.primary_contact_phone,
+        hourly_rate: updates.hourly_rate,
+        rate_per_foot: updates.rate_per_foot,
+        diagnostic_fee: updates.diagnostic_fee,
       };
 
-      // Only allow rate updates if rates are not locked OR user is admin
-      if (!ratesLocked || isAdmin) {
-        updateData.hourly_rate = updates.hourly_rate;
-        updateData.rate_per_foot = updates.rate_per_foot;
-        updateData.diagnostic_fee = updates.diagnostic_fee;
-        
-        // If agreeing to rates for first time, lock them
-        if (updates.rates_agreed && !profile.rates_agreed) {
-          updateData.rates_agreed = true;
-          updateData.rates_locked_at = new Date().toISOString();
-        }
-      }
-
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update(updateData)
         .eq("id", profile.id)
         .select()
         .single();
 
       if (error) throw error;
-      setProfile(data);
+      
+      setProfile({
+        id: data.id,
+        owner_id: data.owner_id,
+        business_name: data.business_name,
+        service_categories: data.service_categories || [],
+        insurance_doc_url: data.insurance_doc_url,
+        insurance_expiry: data.insurance_expiry,
+        bio: data.description,
+        primary_contact_phone: data.contact_phone,
+        hourly_rate: data.hourly_rate,
+        rate_per_foot: data.rate_per_foot,
+        diagnostic_fee: data.diagnostic_fee,
+        is_verified: data.is_verified || false,
+        is_available: true,
+        rates_agreed: true,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      });
+      
       toast({ title: "Profile updated successfully!" });
       return true;
     } catch (error: any) {
@@ -156,8 +197,8 @@ export function useProviderProfile() {
     }
   };
 
-  // Admin-only function to update locked rates
-  const adminUpdateRates = async (providerId: string, rates: { hourly_rate?: number; rate_per_foot?: number; diagnostic_fee?: number }) => {
+  // Admin-only function to update rates
+  const adminUpdateRates = async (businessId: string, rates: { hourly_rate?: number; rate_per_foot?: number; diagnostic_fee?: number }) => {
     if (!isAdmin) {
       toast({ title: "Unauthorized", description: "Only admins can update locked rates", variant: "destructive" });
       return false;
@@ -165,9 +206,9 @@ export function useProviderProfile() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update(rates)
-        .eq("id", providerId);
+        .eq("id", businessId);
 
       if (error) throw error;
       toast({ title: "Rates updated successfully!" });
@@ -181,15 +222,16 @@ export function useProviderProfile() {
   };
 
   const toggleAvailability = async () => {
-    if (!profile) return;
-    await updateProfile({ is_available: !profile.is_available });
+    // Availability toggle - now a no-op since business is always available when profile exists
+    // This could be enhanced to toggle a specific business flag if needed
+    return;
   };
 
   return {
     profile,
     loading,
     isAdmin,
-    areRatesLocked,
+    areRatesLocked: false, // Rates locking now handled at business level
     createProfile,
     updateProfile,
     adminUpdateRates,

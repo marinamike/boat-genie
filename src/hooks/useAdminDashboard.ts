@@ -3,13 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { AppRole } from "@/contexts/AuthContext";
 
-const GOD_MODE_EMAIL = "info@marinamike.com";
+const PLATFORM_ADMIN_EMAIL = "info@marinamike.com";
 
 export interface MarketplaceHealth {
   totalWishes: number;
   activeWorkOrders: number;
   completedWorkOrders: number;
-  totalPlatformRevenue: number; // 5% service fee + 5% lead fee
+  totalPlatformRevenue: number;
 }
 
 export interface UserWithRole {
@@ -69,8 +69,7 @@ export function useAdminDashboard() {
         return;
       }
 
-      // Only allow specific email for God Mode
-      const hasAccess = session.user.email === GOD_MODE_EMAIL;
+      const hasAccess = session.user.email === PLATFORM_ADMIN_EMAIL;
       setIsGodMode(hasAccess);
 
       if (hasAccess) {
@@ -91,18 +90,15 @@ export function useAdminDashboard() {
 
   const fetchMarketplaceHealth = async () => {
     try {
-      // Get total wishes
       const { count: wishCount } = await supabase
         .from("wish_forms")
         .select("*", { count: "exact", head: true });
 
-      // Get active work orders
       const { count: activeCount } = await supabase
         .from("work_orders")
         .select("*", { count: "exact", head: true })
         .in("status", ["pending", "assigned", "in_progress"]);
 
-      // Get completed work orders with revenue
       const { data: completedOrders } = await supabase
         .from("work_orders")
         .select("service_fee, lead_fee")
@@ -125,7 +121,6 @@ export function useAdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      // Get profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("id, email, full_name, created_at")
@@ -133,7 +128,6 @@ export function useAdminDashboard() {
 
       if (profilesError) throw profilesError;
 
-      // Get roles
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
@@ -176,17 +170,17 @@ export function useAdminDashboard() {
 
       if (error) throw error;
 
-      // Get provider names
+      // Get provider names from businesses table (unified schema)
       const providerIds = [...new Set((data || []).map(wo => wo.provider_id).filter(Boolean))];
       let providerMap = new Map<string, string>();
 
       if (providerIds.length > 0) {
-        const { data: providers } = await supabase
-          .from("provider_profiles")
-          .select("user_id, business_name")
-          .in("user_id", providerIds);
+        const { data: businesses } = await supabase
+          .from("businesses")
+          .select("owner_id, business_name")
+          .in("owner_id", providerIds);
 
-        providerMap = new Map((providers || []).map(p => [p.user_id, p.business_name || "Unknown"]));
+        providerMap = new Map((businesses || []).map(b => [b.owner_id, b.business_name || "Unknown"]));
       }
 
       const workOrdersWithDetails: WorkOrderWithDetails[] = (data || []).map(wo => ({
@@ -227,7 +221,6 @@ export function useAdminDashboard() {
 
       if (error) throw error;
 
-      // Get provider names and disputer names
       const providerIds = [...new Set((data || []).map(wo => wo.provider_id).filter(Boolean))];
       const disputerIds = [...new Set((data || []).map(wo => wo.disputed_by).filter(Boolean))];
       
@@ -235,11 +228,11 @@ export function useAdminDashboard() {
       let disputerMap = new Map<string, string>();
 
       if (providerIds.length > 0) {
-        const { data: providers } = await supabase
-          .from("provider_profiles")
-          .select("user_id, business_name")
-          .in("user_id", providerIds);
-        providerMap = new Map((providers || []).map(p => [p.user_id, p.business_name || "Unknown"]));
+        const { data: businesses } = await supabase
+          .from("businesses")
+          .select("owner_id, business_name")
+          .in("owner_id", providerIds);
+        providerMap = new Map((businesses || []).map(b => [b.owner_id, b.business_name || "Unknown"]));
       }
 
       if (disputerIds.length > 0) {
