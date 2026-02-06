@@ -284,11 +284,6 @@ export function CheckoutBillingSheet({
                   <span className="text-muted-foreground">Days</span>
                   <span>{billing.stayCalculation.totalDays}</span>
                 </div>
-                <Separator />
-                <div className="flex justify-between font-semibold">
-                  <span>Stay Subtotal</span>
-                  <span>{formatCurrency(billing.stayCalculation.staySubtotal)}</span>
-                </div>
               </div>
             </div>
           )}
@@ -415,17 +410,20 @@ export function CheckoutBillingSheet({
             )}
           </div>
 
-          {/* Utilities Subtotal */}
-          {billing && billing.utilities.length > 0 && (
-            <>
-              <div className="p-4 rounded-lg border bg-muted/30">
+          {/* Subtotals Summary */}
+          {billing && (
+            <div className="p-4 rounded-lg border bg-muted/30 space-y-2">
+              <div className="flex justify-between font-semibold">
+                <span>Stay Subtotal</span>
+                <span>{formatCurrency(billing.stayCalculation.staySubtotal)}</span>
+              </div>
+              {billing.utilities.length > 0 && (
                 <div className="flex justify-between font-semibold">
                   <span>Utilities Subtotal</span>
                   <span>{formatCurrency(billing.utilities.reduce((sum, u) => sum + u.total, 0))}</span>
                 </div>
-              </div>
-              <Separator />
-            </>
+              )}
+            </div>
           )}
 
           {/* Grand Total */}
