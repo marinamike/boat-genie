@@ -37,6 +37,7 @@ import BusinessSettings from "./pages/BusinessSettings";
 import FuelDashboard from "./pages/FuelDashboard";
 import StoreDashboard from "./pages/StoreDashboard";
 import ServiceDashboard from "./pages/ServiceDashboard";
+import PlatformAdmin from "./pages/PlatformAdmin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +68,7 @@ function RoleBasedRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/platform-admin" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -84,6 +86,7 @@ function RoleBasedRoutes() {
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="/marina/:id" element={<MarinaDetails />} />
+          <Route path="/platform-admin" element={<PlatformAdmin />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
@@ -97,6 +100,7 @@ function RoleBasedRoutes() {
             <Route path="/dry-stack" element={<DryStackLaunch />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
+          <Route path="/platform-admin" element={<PlatformAdmin />} />
           <Route path="/" element={<Navigate to="/dock" replace />} />
           <Route path="*" element={<Navigate to="/dock" replace />} />
         </Routes>
@@ -116,6 +120,7 @@ function RoleBasedRoutes() {
               <Route path="/business/settings" element={<BusinessSettings />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
+            <Route path="/platform-admin" element={<PlatformAdmin />} />
             <Route path="/" element={<Navigate to="/business" replace />} />
             <Route path="*" element={<Navigate to="/business" replace />} />
           </Routes>

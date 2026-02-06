@@ -4883,6 +4883,7 @@ export type Database = {
       is_business_owner: { Args: { _business_id: string }; Returns: boolean }
       is_business_staff: { Args: { _business_id: string }; Returns: boolean }
       is_marina_manager: { Args: never; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       owns_boat: { Args: { _boat_id: string }; Returns: boolean }
     }
     Enums: {
