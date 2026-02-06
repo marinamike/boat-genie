@@ -65,7 +65,7 @@ const PlatformAdmin = () => {
             variant="ghost" 
             size="icon" 
             className="text-destructive-foreground hover:bg-destructive-foreground/10"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/")}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
