@@ -1,80 +1,35 @@
 
-## What’s actually happening (root cause)
-The crash is coming from the Radix Checkbox component when it is **controlled** (`checked={...}`) and its value is changed by a **parent click handler** inside a `<form>`. This is a known failure mode that produces the exact stack you’re seeing (`setRef` / `composeRefs` / “Maximum update depth exceeded”).
+## Summary
+The "Marina Mike's" business you created isn't appearing in the Platform Admin verification queue because of a missing database security policy. The platform admin account can't read pending businesses from the database.
 
-In your `BusinessSetupForm`, each module option is rendered like this:
-- A parent `<div onClick={() => toggleModule(...) }>` changes React state
-- Inside that parent is a controlled Radix `<Checkbox checked={isSelected} ... />`
+## Root Cause
+The `businesses` table has Row-Level Security (RLS) enabled with these policies:
+- Business owners can only see their own business
+- Customers can only see verified businesses (`is_verified = true`)
+- Staff can only see their assigned business
 
-Clicking the option causes the parent click → state update → Checkbox rerender/ref churn → Radix ref composition loops → React throws “Maximum update depth exceeded” and you get a blank screen.
+**Missing**: A policy that allows the platform admin (info@marinamike.com) to view ALL businesses, including those with `verification_status = 'pending'`.
 
-## Goal
-Keep the same UI (clickable module tiles with a checkbox indicator), but remove the “parent click drives controlled Radix checkbox” pattern that triggers the infinite loop.
+## Solution
+Add a new RLS policy that grants the platform admin full SELECT access to all businesses. This uses the existing `is_platform_admin()` function that's already configured for your account.
 
-## Proposed fix (safe + minimal behavioral change)
-Refactor the module picker so that:
-1) The checkbox itself is the interaction source via `onCheckedChange`
-2) The tile is still clickable by using a `<label>`/`htmlFor` relationship (so clicking anywhere toggles the checkbox)
-3) Remove the parent `onClick` handler entirely
-
-This mirrors how your `MarinaRegistrationForm` already uses Checkbox safely:
-- `checked={isSelected}`
-- `onCheckedChange={() => handleToggle(...)}`
-(no parent click handler driving the state)
-
-## Files to change
-### 1) `src/components/business/BusinessSetupForm.tsx`
-Update the module options rendering:
-
-- Remove:
-  - `onClick={() => toggleModule(module.id)}` from the wrapper
-  - `pointer-events-none` from the Checkbox (we want the Checkbox to receive events)
-- Add:
-  - A stable `id` for each checkbox, e.g. `id={`module-${module.id}`}`
-  - `onCheckedChange={() => toggleModule(module.id)}`
-  - Wrap the whole tile in a `<label htmlFor=...>` (or a `<Label asChild>` pattern if you prefer) so the entire tile toggles the checkbox without a parent click handler.
-
-Implementation shape (conceptual):
-```tsx
-const checkboxId = `module-${module.id}`;
-
-<label
-  htmlFor={checkboxId}
-  className={...tile classes depending on isSelected...}
->
-  <Checkbox
-    id={checkboxId}
-    checked={isSelected}
-    onCheckedChange={() => toggleModule(module.id)}
-    className="mt-1"
-  />
-  ...rest of tile content...
-</label>
+## Database Changes Required
+### Add Platform Admin SELECT Policy
+```sql
+CREATE POLICY "Platform admin can view all businesses"
+  ON public.businesses
+  FOR SELECT
+  TO authenticated
+  USING (is_platform_admin());
 ```
 
-Notes:
-- Keeping the state update inside `onCheckedChange` avoids the Radix controlled-checkbox + parent click loop.
-- Using `label/htmlFor` preserves the “click anywhere in the tile” UX.
+This policy will allow info@marinamike.com to read all business records, which means the Verification Queue will properly display pending businesses.
 
-## Validation / testing steps
-1) Go to `/business/settings` while you have no business created yet (so the setup form is visible).
-2) Click each module tile repeatedly (single + rapid clicks):
-   - The checkbox UI should toggle reliably
-   - No blank screen
-   - No console error
-3) Fill in business name and submit:
-   - Business should be created with `enabled_modules` matching the selected tiles
-4) Quick regression check:
-   - Visit any other screen using checkboxes (e.g. Marina registration amenities, staff permissions) to ensure no side effects.
+## Files Changed
+No code changes needed - the `VerificationQueue.tsx` component is already correctly querying for `verification_status = 'pending'`. The issue is purely a database permission problem.
 
-## Optional hardening (if you want extra safety)
-If you still ever see ref-related loops with Radix checkboxes elsewhere, a fallback approach is to use a simple native checkbox for this specific “tile picker” UI. But the label + onCheckedChange approach should resolve it cleanly without replacing components.
-
-## Why this will fix it
-It removes the exact trigger condition:
-- “Controlled Radix checkbox inside a form where a parent click triggers the controlled value change”
-and replaces it with:
-- “Controlled Radix checkbox manages the change event itself (onCheckedChange)”
-which is the recommended controlled pattern and matches working areas of your codebase.
-
-(Reference: Radix primitives issue reports describe this specific infinite loop scenario with controlled checkboxes in forms when a parent click changes state.)
+## Testing Steps
+1. Log in as info@marinamike.com
+2. Navigate to Platform Admin (/platform-admin)
+3. The "Verification Queue" should now show "Marina Mike's" with a pending status
+4. You should be able to Verify, Reject, or Suspend the business
