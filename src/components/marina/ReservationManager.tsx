@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Calendar, Ship, CheckCircle, XCircle, Clock, MapPin, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Ship, CheckCircle, XCircle, Clock, MapPin, Loader2, AlertTriangle } from "lucide-react";
 import { useMarinaReservations, MarinaReservation, ReservationStatus } from "@/hooks/useMarinaReservations";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useLiveDockStatus } from "@/hooks/useLiveDockStatus";
+import { useYardAssets, YardAsset } from "@/hooks/useYardAssets";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
 const statusBadgeVariant = (status: ReservationStatus) => {
@@ -51,10 +54,17 @@ const statusLabel = (status: ReservationStatus) => {
   }
 };
 
+interface BoatDimensions {
+  loa: number | null;
+  beam: number | null;
+  draft: number | null;
+}
+
 export function ReservationManager() {
   const { business } = useBusiness();
   const { reservations, loading, approveReservation, rejectReservation } = useMarinaReservations("marina", business?.id);
   const { checkInBoat } = useLiveDockStatus();
+  const { assets } = useYardAssets();
   
   const [selectedReservation, setSelectedReservation] = useState<MarinaReservation | null>(null);
   const [actionType, setActionType] = useState<"approve" | "reject" | "check-in" | null>(null);
@@ -63,10 +73,82 @@ export function ReservationManager() {
   const [adminNotes, setAdminNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [boatDimensions, setBoatDimensions] = useState<BoatDimensions | null>(null);
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
 
   const pendingReservations = reservations.filter(r => r.status === "pending");
   const approvedReservations = reservations.filter(r => r.status === "approved");
   const activeReservations = reservations.filter(r => r.status === "checked_in");
+
+  // Fetch boat specs when dialog opens for approve/check-in
+  useEffect(() => {
+    const fetchBoatSpecs = async () => {
+      if (!selectedReservation?.boat_id || (actionType !== "approve" && actionType !== "check-in")) {
+        setBoatDimensions(null);
+        return;
+      }
+
+      setLoadingSpecs(true);
+      try {
+        const { data } = await supabase
+          .from("boat_specs")
+          .select("loa_ft, beam_ft, draft_engines_down_ft")
+          .eq("boat_id", selectedReservation.boat_id)
+          .maybeSingle();
+
+        if (data) {
+          setBoatDimensions({
+            loa: data.loa_ft,
+            beam: data.beam_ft,
+            draft: data.draft_engines_down_ft,
+          });
+        } else {
+          // Fallback to boats table
+          setBoatDimensions({
+            loa: selectedReservation.boat?.length_ft || null,
+            beam: null,
+            draft: null,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching boat specs:", error);
+        setBoatDimensions({
+          loa: selectedReservation.boat?.length_ft || null,
+          beam: null,
+          draft: null,
+        });
+      } finally {
+        setLoadingSpecs(false);
+      }
+    };
+
+    fetchBoatSpecs();
+  }, [selectedReservation?.boat_id, actionType]);
+
+  // Filter slips that fit the boat
+  const fittingSlips = useMemo(() => {
+    if (!assets.length) return [];
+
+    const boatLoa = boatDimensions?.loa || selectedReservation?.boat?.length_ft || 0;
+    const boatBeam = boatDimensions?.beam || 0;
+    const boatDraft = boatDimensions?.draft || 0;
+
+    return assets.filter((slip) => {
+      // Must be available (no boat currently assigned)
+      if (!slip.is_available || slip.current_boat_id) return false;
+
+      // Check LOA if slip has a max
+      if (slip.max_loa_ft && boatLoa > 0 && boatLoa > slip.max_loa_ft) return false;
+
+      // Check beam if slip has a max and boat has beam specs
+      if (slip.max_beam_ft && boatBeam > 0 && boatBeam > slip.max_beam_ft) return false;
+
+      // Check draft if slip has a max and boat has draft specs
+      if (slip.max_draft_ft && boatDraft > 0 && boatDraft > slip.max_draft_ft) return false;
+
+      return true;
+    });
+  }, [assets, boatDimensions, selectedReservation?.boat?.length_ft]);
 
   const openAction = (reservation: MarinaReservation, type: "approve" | "reject" | "check-in") => {
     setSelectedReservation(reservation);
@@ -264,14 +346,61 @@ export function ReservationManager() {
             <DialogTitle>Approve Reservation</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {selectedReservation?.boat && (
+              <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                <p className="font-medium">{selectedReservation.boat.name}</p>
+                <p className="text-muted-foreground">
+                  {selectedReservation.boat.make} {selectedReservation.boat.model}
+                  {(boatDimensions?.loa || selectedReservation.boat.length_ft) && 
+                    ` • ${boatDimensions?.loa || selectedReservation.boat.length_ft}ft LOA`}
+                  {boatDimensions?.beam && ` • ${boatDimensions.beam}ft beam`}
+                  {boatDimensions?.draft && ` • ${boatDimensions.draft}ft draft`}
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="slip">Assign Slip Number</Label>
-              <Input
-                id="slip"
-                placeholder="e.g., A-15"
-                value={assignedSlip}
-                onChange={(e) => setAssignedSlip(e.target.value)}
-              />
+              {loadingSpecs ? (
+                <div className="flex items-center gap-2 h-10 px-3 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading available slips...
+                </div>
+              ) : fittingSlips.length > 0 ? (
+                <Select value={assignedSlip} onValueChange={setAssignedSlip}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a slip..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fittingSlips.map((slip) => (
+                      <SelectItem key={slip.id} value={slip.asset_name}>
+                        <div className="flex flex-col">
+                          <span>
+                            {slip.dock_section && `${slip.dock_section} - `}{slip.asset_name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Max: {slip.max_loa_ft || "∞"}ft
+                            {slip.max_beam_ft && ` × ${slip.max_beam_ft}ft beam`}
+                            {slip.max_draft_ft && ` × ${slip.max_draft_ft}ft draft`}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
+                    <AlertTriangle className="w-4 h-4" />
+                    No slips available that fit this vessel
+                  </div>
+                  <Input
+                    id="slip"
+                    placeholder="Enter slip manually..."
+                    value={assignedSlip}
+                    onChange={(e) => setAssignedSlip(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">Dock Location (optional)</Label>
@@ -343,12 +472,37 @@ export function ReservationManager() {
             {!selectedReservation?.assigned_slip && (
               <div className="space-y-2">
                 <Label htmlFor="slip-checkin">Assign Slip Number</Label>
-                <Input
-                  id="slip-checkin"
-                  placeholder="e.g., A-15"
-                  value={assignedSlip}
-                  onChange={(e) => setAssignedSlip(e.target.value)}
-                />
+                {loadingSpecs ? (
+                  <div className="flex items-center gap-2 h-10 px-3 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading available slips...
+                  </div>
+                ) : fittingSlips.length > 0 ? (
+                  <Select value={assignedSlip} onValueChange={setAssignedSlip}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a slip..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fittingSlips.map((slip) => (
+                        <SelectItem key={slip.id} value={slip.asset_name}>
+                          <span>
+                            {slip.dock_section && `${slip.dock_section} - `}{slip.asset_name}
+                            <span className="text-xs text-muted-foreground ml-2">
+                              (Max: {slip.max_loa_ft || "∞"}ft)
+                            </span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="slip-checkin"
+                    placeholder="Enter slip manually..."
+                    value={assignedSlip}
+                    onChange={(e) => setAssignedSlip(e.target.value)}
+                  />
+                )}
               </div>
             )}
           </div>
