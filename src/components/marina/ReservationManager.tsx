@@ -173,13 +173,16 @@ export function ReservationManager() {
   };
 
   const openCheckout = async (reservation: MarinaReservation) => {
-    // Fetch dock_status record for the reservation
-    const { data } = await supabase
+    // Fetch dock_status record for the reservation - use order + limit to get most recent
+    const { data: dockRecords } = await supabase
       .from("dock_status")
       .select("id, boat_id, slip_number, stay_type, is_active, checked_in_at, checked_out_at")
       .eq("reservation_id", reservation.id)
       .eq("is_active", true)
-      .maybeSingle();
+      .order("checked_in_at", { ascending: false })
+      .limit(1);
+    
+    const data = dockRecords?.[0];
     
     if (data) {
       // Fetch boat details
