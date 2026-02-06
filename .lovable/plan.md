@@ -1,140 +1,154 @@
 
-
-## Smart Slip Assignment with Boat Fit Validation
+## Check-Out Flow with Billing Duration
 
 ### What You're Asking For
-When approving a reservation, the slip assignment field should be a dropdown showing only slips that:
-1. Are available (not currently occupied)
-2. Can physically accommodate the boat's dimensions (length, beam, draft)
+After a boat is checked in, there needs to be a clear way to check it out. The check-in to check-out timestamps are critical for calculating final billing.
 
 ### Current State
-Right now, the "Assign Slip Number" field is a simple text input where you type a slip name manually. The system has all the data needed for smart filtering:
+- **LiveDockList.tsx**: Has a small LogOut icon button for each vessel, but no confirmation dialog
+- **ReservationManager.tsx**: Shows "Currently Checked In" reservations but has no checkout button
+- **useLiveDockStatus.ts**: The `checkOutBoat` function exists and records `checked_out_at` timestamp
 
-**Boat measurements available:**
-- `boats.length_ft` - boat length
-- `boat_specs.loa_ft` - length overall (more precise)
-- `boat_specs.beam_ft` - width of boat
-- `boat_specs.draft_engines_down_ft` - how deep the boat sits
-
-**Slip measurements available:**
-- `yard_assets.max_loa_ft` - maximum length the slip can hold
-- `yard_assets.max_beam_ft` - maximum width
-- `yard_assets.max_draft_ft` - maximum draft/depth
-- `yard_assets.is_available` - whether slip is free
-- `yard_assets.current_boat_id` - null if empty
+The checkout happens too quickly (one click) with no confirmation, no duration display, and no billing summary.
 
 ### Solution
 
-#### Step 1: Fetch Available Slips
-When the Approve dialog opens, query yard_assets for the business to get all slips with their dimensions.
+#### Changes to ReservationManager.tsx
+Add a "Check Out" button for reservations with `checked_in` status, with a confirmation dialog that shows:
+- Vessel name and slip assignment
+- Check-in timestamp
+- Current duration (calculated from check-in to now)
+- Per-foot rate for the stay type
+- Estimated total based on duration
 
-#### Step 2: Filter by Boat Measurements
-Compare the boat's specs from the reservation to each slip's max dimensions:
-- Boat LOA must be less than or equal to slip's `max_loa_ft`
-- Boat beam must be less than or equal to slip's `max_beam_ft`
-- Boat draft must be less than or equal to slip's `max_draft_ft`
-- Slip must be available (`is_available = true` and `current_boat_id = null`)
+#### Changes to LiveDockList.tsx
+Replace the simple LogOut icon button with a proper "Check Out" button that opens a confirmation dialog showing:
+- Vessel details
+- Stay duration since check-in
+- Confirmation before checking out
 
-#### Step 3: Replace Input with Select Dropdown
-The simple text input becomes a dropdown showing:
-- Available slips that fit the boat (labeled as "Available - Fits")
-- Warning badges for slips that don't fit (optionally shown but disabled)
+### Technical Implementation
 
----
+**File 1: `src/components/marina/ReservationManager.tsx`**
 
-### Technical Changes
-
-**File: `src/components/marina/ReservationManager.tsx`**
-
-1. **Add imports:**
-   - Import `Select`, `SelectContent`, `SelectItem`, `SelectTrigger`, `SelectValue` components
-   - Import `useYardAssets` hook to get slips
-
-2. **Fetch boat specs when dialog opens:**
-   - Query `boat_specs` table for the selected reservation's boat
-   - Get `loa_ft`, `beam_ft`, `draft_engines_down_ft`
-
-3. **Filter available slips:**
-   - Filter `yard_assets` where:
-     - `is_available = true`
-     - `current_boat_id = null`
-     - `max_loa_ft >= boat.loa_ft` (or boat.length_ft as fallback)
-     - `max_beam_ft >= boat.beam_ft` (if boat has beam)
-     - `max_draft_ft >= boat.draft_ft` (if boat has draft)
-
-4. **Replace Input with Select:**
-   - Change the slip assignment from `<Input>` to `<Select>`
-   - Show slip name, dock section, and dimensions in dropdown items
-   - Show a message if no suitable slips are available
-
-**New State to Add:**
+1. Add "check-out" to the `actionType` union:
 ```typescript
-const [availableSlips, setAvailableSlips] = useState<YardAsset[]>([]);
-const [loadingSlips, setLoadingSlips] = useState(false);
-const [boatDimensions, setBoatDimensions] = useState<{
-  loa: number | null;
-  beam: number | null;
-  draft: number | null;
-} | null>(null);
+const [actionType, setActionType] = useState<"approve" | "reject" | "check-in" | "check-out" | null>(null);
 ```
 
-**Filter Logic:**
+2. Import `checkOutBoat` from `useLiveDockStatus`:
 ```typescript
-const fittingSlips = availableSlips.filter(slip => {
-  if (!slip.is_available || slip.current_boat_id) return false;
-  
-  const loa = boatDimensions?.loa || selectedReservation?.boat?.length_ft || 0;
-  const beam = boatDimensions?.beam || 0;
-  const draft = boatDimensions?.draft || 0;
-  
-  // Check each dimension if the slip has a max specified
-  if (slip.max_loa_ft && loa > slip.max_loa_ft) return false;
-  if (slip.max_beam_ft && beam > 0 && beam > slip.max_beam_ft) return false;
-  if (slip.max_draft_ft && draft > 0 && draft > slip.max_draft_ft) return false;
-  
-  return true;
-});
+const { checkInBoat, checkOutBoat } = useLiveDockStatus();
 ```
 
----
-
-### UI Changes
-
-**Before (current):**
-```
-Assign Slip Number
-+--------------------------------+
-| e.g., A-15                    |
-+--------------------------------+
+3. Add state for the dock status ID (needed for checkout):
+```typescript
+const [dockStatusId, setDockStatusId] = useState<string | null>(null);
 ```
 
-**After (new dropdown):**
-```
-Assign Slip Number
-+--------------------------------+
-| Select a slip...           v  |
-+--------------------------------+
-  | D20 - Max: 60ft x 18ft       |
-  | D21 - Max: 50ft x 16ft       |
-  | (Dock A) A-01 - Max: 45ft    |
-+--------------------------------+
+4. Add "Check Out" button for `checked_in` reservations in `renderReservationCard`:
+```typescript
+{reservation.status === "checked_in" && (
+  <Button size="sm" variant="outline" onClick={() => openAction(reservation, "check-out")}>
+    <LogOut className="w-4 h-4 mr-1" />
+    Check Out
+  </Button>
+)}
 ```
 
-Each dropdown item will show:
-- Slip name (e.g., "D20")
-- Dock section if available (e.g., "Dock A")
-- Maximum dimensions (e.g., "Max: 60ft LOA, 18ft beam")
+5. Fetch dock_status record when opening checkout dialog:
+```typescript
+// Query dock_status to find the active record for this reservation
+const { data: dockRecord } = await supabase
+  .from("dock_status")
+  .select("id, checked_in_at")
+  .eq("reservation_id", reservation.id)
+  .eq("is_active", true)
+  .single();
+```
 
----
+6. Add Check-Out Dialog showing:
+   - Vessel name and slip
+   - Check-in timestamp
+   - Duration (formatted as days, hours, minutes)
+   - Confirm Check-Out button
 
-### Edge Cases Handled
+7. Add `handleCheckOut` function:
+```typescript
+const handleCheckOut = async () => {
+  if (!dockStatusId) return;
+  setProcessing(true);
+  await checkOutBoat(dockStatusId);
+  setProcessing(false);
+  closeDialog();
+};
+```
 
-1. **No suitable slips available:** Show a warning message and allow manual text entry as fallback
-2. **Missing boat specs:** Use `boats.length_ft` as fallback for LOA, skip beam/draft checks if not available
-3. **Missing slip dimensions:** If a slip has no max dimensions set, include it as available (no size restriction)
+**File 2: `src/components/marina/LiveDockList.tsx`**
 
----
+1. Add Dialog components for checkout confirmation:
+```typescript
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+```
+
+2. Add state for selected dock status and dialog visibility:
+```typescript
+const [checkoutTarget, setCheckoutTarget] = useState<DockStatusWithDetails | null>(null);
+```
+
+3. Replace the icon-only LogOut button with a labeled button:
+```typescript
+<Button
+  variant="outline"
+  size="sm"
+  onClick={() => setCheckoutTarget(status)}
+>
+  <LogOut className="w-4 h-4 mr-1" />
+  Check Out
+</Button>
+```
+
+4. Add confirmation dialog showing:
+   - Vessel name
+   - Slip number
+   - Check-in time
+   - Duration (e.g., "2 days, 5 hours")
+   - Confirm button
+
+5. Calculate duration helper:
+```typescript
+const calculateDuration = (checkedInAt: string) => {
+  const start = new Date(checkedInAt);
+  const now = new Date();
+  const diffMs = now.getTime() - start.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  return { days, hours };
+};
+```
+
+### Duration & Billing Display
+
+The check-out dialog will show:
+```
++----------------------------------------+
+|  Check Out Vessel                      |
++----------------------------------------+
+|  Vessel: Sea Breeze                    |
+|  Slip: D20                             |
+|                                        |
+|  Checked In: Feb 6, 2026 at 10:30 AM   |
+|  Duration: 2 days, 5 hours             |
+|                                        |
+|  Stay Type: Transient                  |
+|  Rate: $2.50/ft per day                |
+|  Vessel Length: 35ft                   |
+|  Estimated: ~$175.00                   |
+|                                        |
+|  [Cancel]              [Confirm Checkout]|
++----------------------------------------+
+```
 
 ### Files to Modify
-1. `src/components/marina/ReservationManager.tsx` - Main changes to the approve dialog
-
+1. `src/components/marina/ReservationManager.tsx` - Add checkout action and dialog
+2. `src/components/marina/LiveDockList.tsx` - Improve checkout button with confirmation dialog
