@@ -54,6 +54,15 @@ interface ReservationRequestSheetProps {
 
 type Step = "select-boat" | "select-marina" | "select-stay" | "vessel-specs" | "form" | "upload-docs";
 
+const SHORE_POWER_OPTIONS = [
+  { value: "none", label: "No shore power needed" },
+  { value: "30A", label: "30 Amp (120V)" },
+  { value: "50A-125V", label: "50 Amp (125V)" },
+  { value: "50A-250V", label: "50 Amp (250V)" },
+  { value: "100A-1P", label: "100 Amp (single phase)" },
+  { value: "100A-3P", label: "100 Amp (3-phase)" },
+];
+
 const STAY_TYPES: { value: StayType; label: string; description: string; requiresDocs: boolean }[] = [
   {
     value: "transient",
@@ -207,6 +216,10 @@ export function ReservationRequestSheet({
         
         if (data) {
           setBoatSpecs(data as BoatSpecs);
+          // Pre-populate power requirements from boat specs if available
+          if (data.shore_power && !powerRequirements) {
+            setPowerRequirements(data.shore_power);
+          }
         } else {
           // Use boat length as fallback for LOA
           setBoatSpecs({
@@ -667,24 +680,21 @@ export function ReservationRequestSheet({
           </div>
         </div>
 
-        {marina?.power_options && marina.power_options.length > 0 && (
-          <div className="space-y-2">
-            <Label>Power Requirements</Label>
-            <Select value={powerRequirements} onValueChange={setPowerRequirements}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select power needs..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No shore power needed</SelectItem>
-                {marina.power_options.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div className="space-y-2">
+          <Label>Shore Power Needed *</Label>
+          <Select value={powerRequirements} onValueChange={setPowerRequirements}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select power needs..." />
+            </SelectTrigger>
+            <SelectContent>
+              {SHORE_POWER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="space-y-2">
           <Label htmlFor="requests">Special Requests</Label>
@@ -702,7 +712,7 @@ export function ReservationRequestSheet({
         type="button"
         className="w-full"
         onClick={handleSubmit}
-        disabled={submitting || !arrivalDate}
+        disabled={submitting || !arrivalDate || !powerRequirements}
       >
         {submitting ? (
           <>

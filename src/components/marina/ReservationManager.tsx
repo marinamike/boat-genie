@@ -56,6 +56,20 @@ const statusLabel = (status: ReservationStatus) => {
   }
 };
 
+const SHORE_POWER_LABELS: Record<string, string> = {
+  "none": "No Power",
+  "30A": "30A (120V)",
+  "50A-125V": "50A (125V)",
+  "50A-250V": "50A (250V)",
+  "100A-1P": "100A (1P)",
+  "100A-3P": "100A (3P)",
+};
+
+const getPowerLabel = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  return SHORE_POWER_LABELS[value] || value;
+};
+
 interface BoatDimensions {
   loa: number | null;
   beam: number | null;
@@ -346,6 +360,15 @@ export function ReservationManager() {
             </Badge>
           </div>
 
+          {reservation.power_requirements && reservation.power_requirements !== "none" && (
+            <div className="flex items-center gap-1 mt-1 text-sm">
+              <Zap className="w-3.5 h-3.5 text-warning" />
+              <span className="text-muted-foreground">
+                {getPowerLabel(reservation.power_requirements)}
+              </span>
+            </div>
+          )}
+
           {reservation.assigned_slip && (
             <div className="flex items-center gap-1 mt-2 text-sm">
               <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
@@ -470,6 +493,12 @@ export function ReservationManager() {
                   {boatDimensions?.beam && ` • ${boatDimensions.beam}ft beam`}
                   {boatDimensions?.draft && ` • ${boatDimensions.draft}ft draft`}
                 </p>
+                {selectedReservation.power_requirements && selectedReservation.power_requirements !== "none" && (
+                  <div className="flex items-center gap-1 mt-1 text-warning">
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Power: {getPowerLabel(selectedReservation.power_requirements)}</span>
+                  </div>
+                )}
               </div>
             )}
             <div className="space-y-2">
