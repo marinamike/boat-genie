@@ -45,6 +45,9 @@ interface InvoiceDetailSheetProps {
   onPayNow?: (invoice: CustomerInvoice) => void;
 }
 
+// Re-export CardDetails type from PaymentModal for consistency
+export type { CardDetails } from "./PaymentModal";
+
 export function InvoiceDetailSheet({ invoice, open, onOpenChange, onPayNow }: InvoiceDetailSheetProps) {
   const { getServiceInvoiceDetails, getSlipInvoiceDetails, getLeaseInvoiceDetails, getStoreReceiptDetails } = useCustomerInvoices();
   const [details, setDetails] = useState<ServiceInvoiceDetails | SlipInvoiceDetails | LeaseInvoiceDetails | StoreReceiptDetails | null>(null);

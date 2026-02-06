@@ -25,6 +25,19 @@ export interface CustomerInvoice {
   };
 }
 
+export interface PaymentResult {
+  success: boolean;
+  transactionId?: string;
+  cardLastFour?: string;
+}
+
+export interface CardDetails {
+  number: string;
+  expiry: string;
+  cvv: string;
+  name: string;
+}
+
 export interface ServiceInvoiceDetails {
   id: string;
   invoice_number: string;
@@ -247,6 +260,118 @@ export function useCustomerInvoices() {
     }
   };
 
+  const processPayment = async (
+    invoiceId: string,
+    amount: number,
+    cardDetails: CardDetails
+  ): Promise<PaymentResult> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Get card brand from first digit
+      const getCardBrand = (num: string) => {
+        if (num.startsWith("4")) return "visa";
+        if (num.startsWith("5")) return "mastercard";
+        if (num.startsWith("3")) return "amex";
+        if (num.startsWith("6")) return "discover";
+        return "card";
+      };
+
+      const cardLastFour = cardDetails.number.slice(-4);
+      const cardBrand = getCardBrand(cardDetails.number);
+
+      // Create payment transaction record
+      const { data: transaction, error: txError } = await supabase
+        .from("payment_transactions")
+        .insert({
+          customer_invoice_id: invoiceId,
+          customer_id: user.id,
+          amount,
+          payment_method: "card",
+          card_last_four: cardLastFour,
+          card_brand: cardBrand,
+          status: "processing",
+        })
+        .select("id")
+        .single();
+
+      if (txError) throw txError;
+
+      // Simulate payment processing delay (1.5 seconds)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Update transaction to completed
+      const { error: updateTxError } = await supabase
+        .from("payment_transactions")
+        .update({
+          status: "completed",
+          processed_at: new Date().toISOString(),
+        })
+        .eq("id", transaction.id);
+
+      if (updateTxError) throw updateTxError;
+
+      // Update customer invoice to paid
+      const { error: invoiceError } = await supabase
+        .from("customer_invoices")
+        .update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+        })
+        .eq("id", invoiceId);
+
+      if (invoiceError) throw invoiceError;
+
+      // Get invoice details to update source table
+      const invoice = invoices.find((i) => i.id === invoiceId);
+      if (invoice) {
+        // Update the source table status based on source_type
+        switch (invoice.source_type) {
+          case "slip_transient":
+            await supabase
+              .from("stay_invoices")
+              .update({ status: "paid" })
+              .eq("id", invoice.source_id);
+            break;
+          case "slip_lease":
+            await supabase
+              .from("recurring_invoices")
+              .update({ status: "paid" })
+              .eq("id", invoice.source_id);
+            break;
+          case "service":
+            await supabase
+              .from("service_invoices")
+              .update({ status: "paid" })
+              .eq("id", invoice.source_id);
+            break;
+          case "store":
+          case "fuel":
+            // Sales receipts are immediate transactions, no status update needed
+            break;
+        }
+      }
+
+      // Refresh invoices
+      await fetchInvoices();
+
+      return {
+        success: true,
+        transactionId: transaction.id,
+        cardLastFour,
+      };
+    } catch (error: any) {
+      console.error("Error processing payment:", error);
+      toast({
+        title: "Payment Failed",
+        description: error.message || "Failed to process payment. Please try again.",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+  };
+
   useEffect(() => {
     fetchInvoices();
 
@@ -293,5 +418,6 @@ export function useCustomerInvoices() {
     getLeaseInvoiceDetails,
     getStoreReceiptDetails,
     markAsPaid,
+    processPayment,
   };
 }
