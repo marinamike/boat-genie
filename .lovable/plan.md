@@ -1,147 +1,86 @@
 
-# Fix Checkout Billing: Display Correct Utility Rates and Add Subtotal
 
-## Problems Identified
+# Move Stay Subtotal to Unified Summary Section
 
-### 1. Utility Rate Display Shows Raw Meter Rate
-In the checkout billing sheet, the displayed rate under each meter shows:
-```typescript
-Rate: {formatCurrency(powerMeter.rate_per_unit)}/kWh  // Shows raw meter rate
-```
+## Current Layout
+The billing sheet currently shows:
+1. Stay Charges section with details AND the Stay Subtotal inside it
+2. Utility Readings section with meter inputs
+3. Utilities Subtotal (separate box)
+4. Grand Total
 
-But the calculation uses the correct inherited rate:
-```typescript
-const powerRatePerUnit = business?.power_rate_per_kwh ?? powerMeter?.rate_per_unit ?? 0;
-```
+## Goal
+Create a cleaner summary section where both subtotals appear together right before the Grand Total:
+- Stay Charges section shows only the breakdown details (rate tier, rate per day, vessel length, days)
+- Utility Readings section shows meter inputs and individual charges
+- New unified summary section with Stay Subtotal + Utilities Subtotal together
+- Grand Total
 
-This disconnect causes confusion - the display shows `$0.00/kWh` (or old stored rate) while the actual calculation uses the global rate.
+## Changes to Make
 
-### 2. Missing Utilities Subtotal
-The billing breakdown shows:
-- Stay Subtotal: $X.XX
-- Individual meter charges
-- Grand Total: $X.XX
+**File:** `src/components/slips/CheckoutBillingSheet.tsx`
 
-But lacks a clear "Utilities Subtotal" line before the grand total.
+### 1. Remove Stay Subtotal from Stay Charges section
+Remove the Separator and subtotal lines (287-291) from inside the Stay Charges box, so it only shows the rate breakdown details.
 
-## Solution
-
-### File to Modify
-`src/components/slips/CheckoutBillingSheet.tsx`
-
-### Changes
-
-#### 1. Display Effective Rate with Inheritance
-Calculate effective rates in a useMemo and display those instead of raw meter rates:
-
-```typescript
-// Calculate effective rates with inheritance logic
-const effectivePowerRate = useMemo(() => {
-  if (!powerMeter) return 0;
-  return powerMeter.rate_per_unit > 0 
-    ? powerMeter.rate_per_unit 
-    : (business?.power_rate_per_kwh ?? 0);
-}, [powerMeter, business]);
-
-const effectiveWaterRate = useMemo(() => {
-  if (!waterMeter) return 0;
-  return waterMeter.rate_per_unit > 0 
-    ? waterMeter.rate_per_unit 
-    : (business?.water_rate_per_gallon ?? 0);
-}, [waterMeter, business]);
-```
-
-Then update the display:
-```typescript
-// Before:
-<p className="text-xs text-muted-foreground">
-  Rate: {formatCurrency(powerMeter.rate_per_unit)}/kWh
-</p>
-
-// After:
-<p className="text-xs text-muted-foreground">
-  Rate: {formatCurrency(effectivePowerRate)}/kWh
-  {powerMeter.rate_per_unit > 0 && <span className="ml-1">(Custom)</span>}
-</p>
-```
-
-#### 2. Add Utilities Subtotal Section
-After the utility meters section and before Grand Total, add:
-
-```typescript
-{/* Utilities Subtotal */}
-{billing && billing.utilities.length > 0 && (
-  <div className="p-4 rounded-lg border bg-muted/30">
-    <div className="flex justify-between font-semibold">
-      <span>Utilities Subtotal</span>
-      <span>{formatCurrency(
-        billing.utilities.reduce((sum, u) => sum + u.total, 0)
-      )}</span>
-    </div>
-  </div>
-)}
-```
-
-### UI After Changes
+### 2. Create unified Subtotals section
+Replace the current "Utilities Subtotal" section with a combined subtotals section that shows both:
 
 ```text
-+----------------------------------------+
-| UTILITY READINGS                       |
-+----------------------------------------+
-| [Power Icon] D20 Power                 |
-| Rate: $0.15/kWh                   <-- Fixed: shows effective rate
-|                                        |
-| Start Reading: [100]                   |
-| End Reading:   [150]                   |
-| Usage: 50.00 kWh           $7.50       |
-+----------------------------------------+
-| [Water Icon] D20 Water                 |
-| Rate: $0.05/gal                   <-- Fixed: shows effective rate
-|                                        |
-| Start Reading: [200]                   |
-| End Reading:   [250]                   |
-| Usage: 50.00 gal           $2.50       |
-+----------------------------------------+
-|                                        |
-| Utilities Subtotal            $10.00   | <-- NEW
-|                                        |
-+----------------------------------------+
-| [Grand Total Box]             $XXX.XX  |
-+----------------------------------------+
++------------------------------------------+
+| Stay Subtotal                   $150.00  |
+| Utilities Subtotal               $10.00  |
++------------------------------------------+
+| [Grand Total Box]              $160.00   |
++------------------------------------------+
 ```
 
-### Calculation Logic Update
-Also need to fix the billing calculation to properly apply inheritance:
+### Visual Result
 
-```typescript
-// Current (correct for calculation, but need to also use in billing object):
-const powerRatePerUnit = powerMeter?.rate_per_unit > 0 
-  ? powerMeter.rate_per_unit 
-  : (business?.power_rate_per_kwh ?? 0);
+**Before:**
+```text
+STAY CHARGES
+├─ Rate Tier: Daily
+├─ Rate per Day: $2.00/ft
+├─ Vessel Length: 30 ft
+├─ Days: 1
+└─ Stay Subtotal: $60.00  <-- Inside the box
 
-const waterRatePerUnit = waterMeter?.rate_per_unit > 0 
-  ? waterMeter.rate_per_unit 
-  : (business?.water_rate_per_gallon ?? 0);
+UTILITY READINGS
+├─ Power meter inputs
+└─ Water meter inputs
+
+Utilities Subtotal: $10.00  <-- Separate
+
+Grand Total: $70.00
 ```
 
-The current logic at lines 113-114 prefers business rate over meter rate:
-```typescript
-const powerRatePerUnit = business?.power_rate_per_kwh ?? powerMeter?.rate_per_unit ?? 0;
+**After:**
+```text
+STAY CHARGES
+├─ Rate Tier: Daily
+├─ Rate per Day: $2.00/ft
+├─ Vessel Length: 30 ft
+└─ Days: 1  <-- No subtotal here
+
+UTILITY READINGS
+├─ Power meter inputs
+└─ Water meter inputs
+
++---------------------------+
+| Stay Subtotal:    $60.00  |  <-- Both together
+| Utilities Subtotal: $10.00|
++---------------------------+
+
+Grand Total: $70.00
 ```
 
-This should be changed to respect the custom override pattern (meter rate > 0 means custom):
-```typescript
-const powerRatePerUnit = powerMeter?.rate_per_unit && powerMeter.rate_per_unit > 0 
-  ? powerMeter.rate_per_unit 
-  : (business?.power_rate_per_kwh ?? 0);
-```
+## Technical Details
 
-## Summary of Changes
+### Lines to modify in CheckoutBillingSheet.tsx:
 
-| Location | Change |
-|----------|--------|
-| Lines 68-80 | Add `effectivePowerRate` and `effectiveWaterRate` useMemo hooks |
-| Lines 113-114 | Update rate calculation to use inheritance pattern (meter > 0 ? meter : global) |
-| Line 302-303 | Display `effectivePowerRate` with optional "(Custom)" label |
-| Line 352-353 | Display `effectiveWaterRate` with optional "(Custom)" label |
-| After line 394 | Add "Utilities Subtotal" section with calculated total |
+1. **Lines 287-291**: Remove the Separator and Stay Subtotal from inside the Stay Charges box
+2. **Lines 418-429**: Replace the Utilities Subtotal section with a combined summary showing both subtotals
+
+The new combined section will always show Stay Subtotal (when billing exists), and conditionally show Utilities Subtotal only when there are utility charges.
+
