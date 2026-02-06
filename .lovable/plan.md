@@ -1,60 +1,101 @@
 
 
-# Move Rates & Billing to Slips Dashboard
+# Add Electricity Type to Reservation Requests
 
 ## Overview
-The Rates & Billing UI was incorrectly added to Business Settings (`/business/settings`). It needs to be moved to the Slips Dashboard (`/business/slips`) where it belongs operationally.
+Marina operators need to know the vessel's shore power requirements when reviewing reservation requests to properly assign slips. The power field exists in the database but is underutilized in the current UI.
 
-## Current Problem
-- **Wrong location**: Rates tab is in Business Settings (Modules, Rates, Staff, Account)
-- **Correct location**: Should be in Slips Dashboard Settings tab or as a dedicated tab
+## Current State
+- The `power_requirements` field exists in `marina_reservations` table
+- Power selection only appears if the marina has configured `power_options` 
+- Power requirements are not visible in the ReservationManager when reviewing/approving requests
+- Boat specs can store `shore_power` but this isn't prominently featured
 
-## Solution Options
+## Solution
 
-Based on the Slips Dashboard structure (5 tabs: Dock Grid, Reservations, Leases, Meters, Settings), there are two options:
+### 1. Always Show Power Selection in Reservation Form
+Update the ReservationRequestSheet to always display a power requirements selector with standard shore power options, regardless of marina configuration:
 
-**Option A - Integrate into Settings Tab**: Add the rates sections (Global Slip Rates, Utility Pricing, Slip Inventory) directly into the existing SlipSettings component alongside the Utility Meters section.
+**Standard Options:**
+- No shore power needed
+- 30 Amp (120V)
+- 50 Amp (125V)  
+- 50 Amp (250V)
+- 100 Amp (single phase)
+- 100 Amp (3-phase)
 
-**Option B - Replace Settings Tab**: Replace the current Settings tab content entirely with the RatesBillingSettings component, which already includes meter-related functionality.
+Pre-populate with the boat's stored `shore_power` spec if available.
 
-**Recommended: Option A** - This maintains the existing meter management UI while adding the new rates functionality.
+### 2. Display Power Requirements in Reservation Cards
+Add a prominent power badge to the reservation card in ReservationManager so marina staff can immediately see power needs when reviewing requests.
 
-## Changes Required
-
-### 1. Update SlipSettings.tsx
-Add three new sections above the Utility Meters section:
-- **Global Slip Rates**: Daily, Weekly, Monthly, Seasonal, Annual per-foot pricing
-- **Utility Pricing**: Electric $/kWh and Water $/gallon defaults
-- **Slip Inventory Manager**: Table view with edit capability
-
-### 2. Update BusinessSettings.tsx
-- Remove the "Rates" tab
-- Revert to 3 tabs: Modules, Staff, Account
-
-### 3. Pass Business Context to SlipSettings
-- SlipSettings needs access to the business context for reading/writing global rates
-- Update the component props or use the context directly
+### 3. Show Power in Approval Dialog
+Display the requested power requirements in the approval dialog alongside LOA, beam, and draft specs to help with slip assignment decisions.
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/pages/BusinessSettings.tsx` | Remove "Rates" tab, revert to 3 tabs |
-| `src/components/slips/SlipSettings.tsx` | Add Global Rates, Utility Pricing, and Slip Inventory sections |
-| `src/pages/SlipsDashboard.tsx` | May need to pass additional props to SlipSettings |
+| `src/components/marina/ReservationRequestSheet.tsx` | Always show power selector with standard options; remove marina-conditional logic |
+| `src/components/marina/ReservationManager.tsx` | Add power display to reservation cards and approval dialog |
 
-## UI Structure After Change
+## UI Changes
 
+### Reservation Request Form (Vessel Specs Step)
 ```text
-Slips Dashboard (/business/slips)
-├── Dock Grid
-├── Reservations  
-├── Leases
-├── Meters
-└── Settings
-    ├── Global Slip Rates (Daily, Weekly, Monthly, Seasonal, Annual)
-    ├── Utility Pricing (Electric $/kWh, Water $/gallon)
-    ├── Slip Inventory Manager (Table with Edit)
-    └── Utility Meters (existing functionality)
++----------------------------------+
+| Vessel Specifications            |
+| LOA: 53ft  |  Beam: 16ft        |
+| Draft: 4ft |  Power: 50A        |
++----------------------------------+
+| Shore Power Needed *             |
+| [   50 Amp (125V)          v ]   | <-- Always visible
++----------------------------------+
 ```
+
+### Reservation Card (Manager View)
+```text
++------------------------------------------+
+| Yacht Sea                 [Pending]      |
+| HCB Suenos - 53ft                        |
+| Owner: John Smith                        |
+| Feb 10 - Feb 15    [Transient]           |
+| [Zap] 50 Amp (125V)          <-- NEW     |
++------------------------------------------+
+```
+
+### Approval Dialog
+```text
++------------------------------------------+
+| Approve Reservation                      |
+|------------------------------------------|
+| Yacht Sea                                |
+| HCB Suenos - 53ft LOA - 16ft beam        |
+| [Zap] Power: 50 Amp (125V)    <-- NEW    |
+|------------------------------------------|
+| Assign Slip Number                       |
+| [ Select a slip...               v ]     |
++------------------------------------------+
+```
+
+## Implementation Details
+
+### Power Options Constant
+Define a reusable constant for standard shore power types:
+```typescript
+const SHORE_POWER_OPTIONS = [
+  { value: "none", label: "No shore power needed" },
+  { value: "30A", label: "30 Amp (120V)" },
+  { value: "50A-125V", label: "50 Amp (125V)" },
+  { value: "50A-250V", label: "50 Amp (250V)" },
+  { value: "100A-1P", label: "100 Amp (single phase)" },
+  { value: "100A-3P", label: "100 Amp (3-phase)" },
+];
+```
+
+### Pre-population Logic
+When the vessel specs step loads, pre-select the power option that matches the boat's stored `shore_power` value if available.
+
+### Required Field
+Make the power selection a required field since it's critical for slip assignment.
 
