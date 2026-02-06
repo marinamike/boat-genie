@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,8 +15,10 @@ import {
   ChevronRight,
   FileText
 } from "lucide-react";
-import { useCustomerInvoices, CustomerInvoice } from "@/hooks/useCustomerInvoices";
+import { useCustomerInvoices, CustomerInvoice, PaymentResult } from "@/hooks/useCustomerInvoices";
 import { InvoiceDetailSheet } from "./InvoiceDetailSheet";
+import { PaymentModal, CardDetails } from "./PaymentModal";
+import { PaymentSuccessDialog } from "./PaymentSuccessDialog";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -72,9 +74,14 @@ const getStatusBadge = (status: string) => {
 };
 
 export function CustomerBillingTab() {
-  const { invoices, loading, markAsPaid } = useCustomerInvoices();
+  const { invoices, loading, processPayment } = useCustomerInvoices();
   const [selectedInvoice, setSelectedInvoice] = useState<CustomerInvoice | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [invoiceToPayFrom, setInvoiceToPayFrom] = useState<CustomerInvoice | null>(null);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [lastPaymentResult, setLastPaymentResult] = useState<PaymentResult | null>(null);
+  const [lastPaidAmount, setLastPaidAmount] = useState(0);
 
   const pendingInvoices = invoices.filter((i) => i.status === "pending");
   const paidInvoices = invoices.filter((i) => i.status === "paid");
@@ -85,10 +92,25 @@ export function CustomerBillingTab() {
     setDetailSheetOpen(true);
   };
 
-  const handlePayNow = async (invoice: CustomerInvoice) => {
-    // In a real implementation, this would open a payment modal/flow
-    // For now, we'll just mark it as paid directly
-    await markAsPaid(invoice.id);
+  const handleOpenPaymentModal = (invoice: CustomerInvoice) => {
+    setInvoiceToPayFrom(invoice);
+    setPaymentModalOpen(true);
+  };
+
+  const handlePaymentSubmit = async (
+    invoiceId: string,
+    amount: number,
+    cardDetails: CardDetails
+  ): Promise<boolean> => {
+    const result = await processPayment(invoiceId, amount, cardDetails);
+    if (result.success) {
+      setLastPaymentResult(result);
+      setLastPaidAmount(amount);
+      setPaymentModalOpen(false);
+      setDetailSheetOpen(false);
+      setSuccessDialogOpen(true);
+    }
+    return result.success;
   };
 
   if (loading) {
@@ -137,7 +159,7 @@ export function CustomerBillingTab() {
               key={invoice.id} 
               invoice={invoice} 
               onView={() => handleViewInvoice(invoice)}
-              onPayNow={() => handlePayNow(invoice)}
+              onPayNow={() => handleOpenPaymentModal(invoice)}
             />
           ))}
         </div>
@@ -178,7 +200,24 @@ export function CustomerBillingTab() {
         invoice={selectedInvoice}
         open={detailSheetOpen}
         onOpenChange={setDetailSheetOpen}
-        onPayNow={handlePayNow}
+        onPayNow={handleOpenPaymentModal}
+      />
+
+      {/* Payment Modal */}
+      <PaymentModal
+        invoice={invoiceToPayFrom}
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        onSubmit={handlePaymentSubmit}
+      />
+
+      {/* Payment Success Dialog */}
+      <PaymentSuccessDialog
+        open={successDialogOpen}
+        onOpenChange={setSuccessDialogOpen}
+        amount={lastPaidAmount}
+        transactionId={lastPaymentResult?.transactionId}
+        cardLastFour={lastPaymentResult?.cardLastFour}
       />
     </div>
   );

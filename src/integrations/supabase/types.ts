@@ -2670,6 +2670,53 @@ export type Database = {
           },
         ]
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          card_brand: string | null
+          card_last_four: string | null
+          created_at: string
+          customer_id: string
+          customer_invoice_id: string
+          id: string
+          payment_method: string
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          card_brand?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          customer_id: string
+          customer_invoice_id: string
+          id?: string
+          payment_method?: string
+          processed_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          card_brand?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_invoice_id?: string
+          id?: string
+          payment_method?: string
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_customer_invoice_id_fkey"
+            columns: ["customer_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "customer_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_invites: {
         Row: {
           accepted_at: string | null
