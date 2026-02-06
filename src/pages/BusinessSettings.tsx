@@ -1,12 +1,33 @@
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { ModuleManager } from "@/components/business/ModuleManager";
 import { StaffManager } from "@/components/business/StaffManager";
 import { BusinessSetupForm } from "@/components/business/BusinessSetupForm";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Puzzle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Users, Puzzle, User, LogOut, Shield } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+
+const PLATFORM_ADMIN_EMAIL = "info@marinamike.com";
 
 export default function BusinessSettings() {
   const { business, isOwner, loading } = useBusiness();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been logged out successfully.",
+    });
+    navigate("/login");
+  };
 
   if (loading) {
     return (
@@ -33,7 +54,7 @@ export default function BusinessSettings() {
       </div>
 
       <Tabs defaultValue="modules" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <Puzzle className="w-4 h-4" />
             Modules
@@ -41,6 +62,10 @@ export default function BusinessSettings() {
           <TabsTrigger value="staff" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Staff
+          </TabsTrigger>
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <User className="w-4 h-4" />
+            Account
           </TabsTrigger>
         </TabsList>
 
@@ -50,6 +75,54 @@ export default function BusinessSettings() {
 
         <TabsContent value="staff" className="mt-4">
           <StaffManager />
+        </TabsContent>
+
+        <TabsContent value="account" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account</CardTitle>
+              <CardDescription>Manage your account settings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Email</p>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+
+              <Separator />
+
+              <Button
+                variant="outline"
+                onClick={() => navigate("/profile")}
+                className="w-full"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Edit Profile
+              </Button>
+
+              {user?.email === PLATFORM_ADMIN_EMAIL && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/platform-admin")}
+                  className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Platform Admin
+                </Button>
+              )}
+
+              <Separator />
+
+              <Button
+                variant="destructive"
+                onClick={handleLogout}
+                className="w-full"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
