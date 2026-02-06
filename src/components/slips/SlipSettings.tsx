@@ -28,6 +28,7 @@ interface SlipSettingsProps {
   loading: boolean;
   createMeter: (meter: Partial<UtilityMeter>) => Promise<any>;
   updateMeter: (id: string, updates: Partial<UtilityMeter>) => Promise<boolean>;
+  deleteMeter?: (id: string) => Promise<boolean>;
   updateAsset?: (id: string, updates: Partial<YardAsset>) => Promise<boolean>;
 }
 
@@ -37,6 +38,7 @@ export function SlipSettings({
   loading,
   createMeter,
   updateMeter,
+  deleteMeter,
   updateAsset,
 }: SlipSettingsProps) {
   const { business, refreshBusiness } = useBusiness();
@@ -593,6 +595,7 @@ export function SlipSettings({
         }}
         onUpdate={updateMeter}
         onCreate={createMeter}
+        onDelete={deleteMeter}
       />
     </div>
   );

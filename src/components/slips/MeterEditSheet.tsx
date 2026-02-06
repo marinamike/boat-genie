@@ -18,7 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Zap, Droplets } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Zap, Droplets, Trash2 } from "lucide-react";
 import { UtilityMeter, YardAsset } from "@/hooks/useYardAssets";
 import { Database } from "@/integrations/supabase/types";
 
@@ -36,6 +47,7 @@ interface MeterEditSheetProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: (id: string, updates: Partial<UtilityMeter>) => Promise<boolean>;
   onCreate: (meter: Partial<UtilityMeter>) => Promise<any>;
+  onDelete?: (id: string) => Promise<boolean>;
 }
 
 export function MeterEditSheet({
@@ -47,6 +59,7 @@ export function MeterEditSheet({
   onOpenChange,
   onUpdate,
   onCreate,
+  onDelete,
 }: MeterEditSheetProps) {
   const isEditing = !!meter;
 
@@ -125,11 +138,48 @@ export function MeterEditSheet({
     }
   };
 
+  const handleDelete = async () => {
+    if (!meter || !onDelete) return;
+    setSubmitting(true);
+    try {
+      await onDelete(meter.id);
+      onOpenChange(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-md overflow-y-auto">
-        <SheetHeader>
+        <SheetHeader className="flex flex-row items-center justify-between">
           <SheetTitle>{isEditing ? "Edit Meter" : "Add Utility Meter"}</SheetTitle>
+          {isEditing && onDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Meter</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{meter?.meter_name}"? This action cannot be undone. Any associated meter readings will remain in the system.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </SheetHeader>
 
         <div className="space-y-4 mt-6">
