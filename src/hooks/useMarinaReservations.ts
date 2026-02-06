@@ -138,11 +138,11 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Insert the reservation
+      // Insert the reservation - use business_id for unified businesses table
       const { data: reservation, error } = await supabase
         .from("marina_reservations")
         .insert({
-          marina_id: params.marinaId || null,
+          business_id: params.marinaId || null, // marinaId is actually a business_id now
           boat_id: params.boatId,
           owner_id: user.id,
           stay_type: params.stayType,
@@ -157,32 +157,26 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
 
       if (error) throw error;
 
-      // Check if marina is a subscriber (has is_claimed = true)
-      let isMarinaSubscriber = false;
-      let marinaData: { marina_name: string; contact_email: string | null; is_claimed: boolean } | null = null;
+      // Check if business is a subscriber (has is_verified = true)
+      let isBusinessSubscriber = false;
+      let businessData: { business_name: string; contact_email: string | null; is_verified: boolean; owner_id: string } | null = null;
 
       if (params.marinaId) {
-        const { data: marina } = await supabase
-          .from("marinas")
-          .select("marina_name, contact_email, is_claimed")
+        const { data: business } = await supabase
+          .from("businesses")
+          .select("business_name, contact_email, is_verified, owner_id")
           .eq("id", params.marinaId)
           .single();
         
-        marinaData = marina;
-        isMarinaSubscriber = marina?.is_claimed === true;
+        businessData = business;
+        isBusinessSubscriber = business?.is_verified === true;
       }
 
-      if (isMarinaSubscriber && marinaData) {
-        // Marina is a subscriber - create notification for dockmaster
-        const { data: marinaRow } = await supabase
-          .from("marinas")
-          .select("manager_id")
-          .eq("id", params.marinaId)
-          .single();
-
-        if (marinaRow?.manager_id) {
+      if (isBusinessSubscriber && businessData) {
+        // Business is a subscriber - create notification for owner/manager
+        if (businessData.owner_id) {
           await supabase.from("notifications").insert({
-            user_id: marinaRow.manager_id,
+            user_id: businessData.owner_id,
             type: "reservation_request",
             title: "New Reservation Request",
             message: `A ${params.vesselSpecs?.loa || "?"}ft vessel has requested a ${params.stayType} stay arriving ${params.requestedArrival}`,
@@ -192,16 +186,16 @@ export function useMarinaReservations(role: "owner" | "marina" = "owner") {
 
         toast({
           title: "Reservation Submitted",
-          description: `Your request has been sent to ${marinaData.marina_name}`,
+          description: `Your request has been sent to ${businessData.business_name}`,
         });
-      } else if (marinaData?.contact_email) {
-        // Marina is NOT a subscriber - send lead email
+      } else if (businessData?.contact_email) {
+        // Business is NOT a subscriber - send lead email
         try {
           await supabase.functions.invoke("send-marina-lead", {
             body: {
               reservationId: reservation.id,
-              marinaName: marinaData.marina_name,
-              marinaEmail: marinaData.contact_email,
+              marinaName: businessData.business_name,
+              marinaEmail: businessData.contact_email,
               vesselSpecs: params.vesselSpecs || {
                 loa: null,
                 beam: null,
