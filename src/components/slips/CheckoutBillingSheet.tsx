@@ -109,12 +109,16 @@ export function CheckoutBillingSheet({
 
     const utilities = [];
 
+    // Use business global utility rates with fallback to meter rates
+    const powerRatePerUnit = business?.power_rate_per_kwh ?? powerMeter?.rate_per_unit ?? 0;
+    const waterRatePerUnit = business?.water_rate_per_gallon ?? waterMeter?.rate_per_unit ?? 0;
+
     // Power calculation
     if (powerMeter) {
       const powerStart = powerMeter.current_reading || 0;
       const powerEnd = parseFloat(powerEndReading) || powerStart;
       utilities.push(
-        calculateUtilityCharge("power", powerStart, powerEnd, powerMeter.rate_per_unit)
+        calculateUtilityCharge("power", powerStart, powerEnd, powerRatePerUnit)
       );
     }
 
@@ -123,7 +127,7 @@ export function CheckoutBillingSheet({
       const waterStart = waterMeter.current_reading || 0;
       const waterEnd = parseFloat(waterEndReading) || waterStart;
       utilities.push(
-        calculateUtilityCharge("water", waterStart, waterEnd, waterMeter.rate_per_unit)
+        calculateUtilityCharge("water", waterStart, waterEnd, waterRatePerUnit)
       );
     }
 
