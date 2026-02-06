@@ -32,6 +32,7 @@ interface EngineEntry {
   id: string;
   brand: string;
   model: string;
+  serial_number: string;
   hours: number | "";
   position_label: string;
 }
@@ -52,7 +53,7 @@ export function EquipmentSection({ form, onEquipmentMatch, onEnginesChange }: Eq
 
   // Multiple engines state
   const [engines, setEngines] = useState<EngineEntry[]>([
-    { id: crypto.randomUUID(), brand: "", model: "", hours: "", position_label: "Port" }
+    { id: crypto.randomUUID(), brand: "", model: "", serial_number: "", hours: "", position_label: "Port" }
   ]);
 
   const [generatorMatch, setGeneratorMatch] = useState<boolean | null>(null);
@@ -119,6 +120,7 @@ export function EquipmentSection({ form, onEquipmentMatch, onEnginesChange }: Eq
       id: crypto.randomUUID(),
       brand: "",
       model: "",
+      serial_number: "",
       hours: "",
       position_label: newPosition
     }]);
@@ -275,14 +277,24 @@ export function EquipmentSection({ form, onEquipmentMatch, onEnginesChange }: Eq
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium">Current Hours</label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 450"
-                  value={engine.hours}
-                  onChange={(e) => handleEngineChange(engine.id, "hours", e.target.value ? Number(e.target.value) : "")}
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">Serial Number</label>
+                  <Input
+                    placeholder="e.g. YAM-2024-12345"
+                    value={engine.serial_number}
+                    onChange={(e) => handleEngineChange(engine.id, "serial_number", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">Current Hours</label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 450"
+                    value={engine.hours}
+                    onChange={(e) => handleEngineChange(engine.id, "hours", e.target.value ? Number(e.target.value) : "")}
+                  />
+                </div>
               </div>
             </div>
           );
@@ -358,25 +370,44 @@ export function EquipmentSection({ form, onEquipmentMatch, onEnginesChange }: Eq
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="generator_hours"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-xs">Current Hours</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="e.g. 200"
-                  {...field}
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            control={form.control}
+            name="generator_serial"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Serial Number</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g. GEN-2024-12345"
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="generator_hours"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Current Hours</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 200"
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </div>
 
       {/* Seakeeper */}
@@ -417,6 +448,25 @@ export function EquipmentSection({ form, onEquipmentMatch, onEnginesChange }: Eq
             )}
           />
 
+          <FormField
+            control={form.control}
+            name="seakeeper_serial"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Serial Number</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g. SK-2024-12345"
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-3">
           <FormField
             control={form.control}
             name="seakeeper_hours"
