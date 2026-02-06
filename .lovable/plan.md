@@ -1,143 +1,147 @@
 
-# Add Custom Rate Toggle for Utility Meters
+# Fix Checkout Billing: Display Correct Utility Rates and Add Subtotal
 
-## Current State
-The meter edit form has a simple rate input field where leaving it empty uses the global rate. This is functional but lacks the clear visual toggle that slips have for custom rates.
+## Problems Identified
 
-## Goal
-Match the slip rate override UX pattern:
-- Add a **"Custom Rate"** toggle switch (like slips have)
-- When OFF: Display global rate info, rate field is hidden
-- When ON: Show rate input field for custom override
-- Clear visual distinction between inherited and custom rates
+### 1. Utility Rate Display Shows Raw Meter Rate
+In the checkout billing sheet, the displayed rate under each meter shows:
+```typescript
+Rate: {formatCurrency(powerMeter.rate_per_unit)}/kWh  // Shows raw meter rate
+```
 
-## Solution: Create MeterEditSheet Component
+But the calculation uses the correct inherited rate:
+```typescript
+const powerRatePerUnit = business?.power_rate_per_kwh ?? powerMeter?.rate_per_unit ?? 0;
+```
 
-Similar to `SlipEditSheet`, create a dedicated `MeterEditSheet` component with:
-1. **Custom Rate toggle** with Switch component
-2. **Global rate preview** when toggle is off
-3. **Rate input field** when toggle is on
-4. Visual feedback showing current effective rate
+This disconnect causes confusion - the display shows `$0.00/kWh` (or old stored rate) while the actual calculation uses the global rate.
 
-## Files to Create/Modify
+### 2. Missing Utilities Subtotal
+The billing breakdown shows:
+- Stay Subtotal: $X.XX
+- Individual meter charges
+- Grand Total: $X.XX
 
-| File | Change |
-|------|--------|
-| `src/components/slips/MeterEditSheet.tsx` | **NEW** - Dedicated meter edit sheet with custom rate toggle |
-| `src/components/slips/SlipSettings.tsx` | Replace inline meter form with MeterEditSheet component |
+But lacks a clear "Utilities Subtotal" line before the grand total.
 
-## Component Design: MeterEditSheet
+## Solution
+
+### File to Modify
+`src/components/slips/CheckoutBillingSheet.tsx`
+
+### Changes
+
+#### 1. Display Effective Rate with Inheritance
+Calculate effective rates in a useMemo and display those instead of raw meter rates:
+
+```typescript
+// Calculate effective rates with inheritance logic
+const effectivePowerRate = useMemo(() => {
+  if (!powerMeter) return 0;
+  return powerMeter.rate_per_unit > 0 
+    ? powerMeter.rate_per_unit 
+    : (business?.power_rate_per_kwh ?? 0);
+}, [powerMeter, business]);
+
+const effectiveWaterRate = useMemo(() => {
+  if (!waterMeter) return 0;
+  return waterMeter.rate_per_unit > 0 
+    ? waterMeter.rate_per_unit 
+    : (business?.water_rate_per_gallon ?? 0);
+}, [waterMeter, business]);
+```
+
+Then update the display:
+```typescript
+// Before:
+<p className="text-xs text-muted-foreground">
+  Rate: {formatCurrency(powerMeter.rate_per_unit)}/kWh
+</p>
+
+// After:
+<p className="text-xs text-muted-foreground">
+  Rate: {formatCurrency(effectivePowerRate)}/kWh
+  {powerMeter.rate_per_unit > 0 && <span className="ml-1">(Custom)</span>}
+</p>
+```
+
+#### 2. Add Utilities Subtotal Section
+After the utility meters section and before Grand Total, add:
+
+```typescript
+{/* Utilities Subtotal */}
+{billing && billing.utilities.length > 0 && (
+  <div className="p-4 rounded-lg border bg-muted/30">
+    <div className="flex justify-between font-semibold">
+      <span>Utilities Subtotal</span>
+      <span>{formatCurrency(
+        billing.utilities.reduce((sum, u) => sum + u.total, 0)
+      )}</span>
+    </div>
+  </div>
+)}
+```
+
+### UI After Changes
 
 ```text
-+------------------------------------------+
-| Edit Meter                               |
-+------------------------------------------+
-| Meter Name: [D20 Power       ]           |
-| Type: [Power ▼]  Meter #: [12345   ]     |
-| Assign to Slip: [D20 ▼]                  |
-+------------------------------------------+
-| [Separator]                              |
-+------------------------------------------+
-|                                          |
-| Custom Rate                    [Toggle]  |
-| Override global rate for this meter      |
-|                                          |
-| +--------------------------------------+ |
-| | If OFF:                              | |
-| | This meter uses the global rate:     | |
-| | $0.15/kWh (Power)                    | |
-| +--------------------------------------+ |
-|                                          |
-| +--------------------------------------+ |
-| | If ON:                               | |
-| | Rate per kWh                         | |
-| | [$0.20              ]                | |
-| | Global: $0.15/kWh                    | |
-| +--------------------------------------+ |
-|                                          |
-+------------------------------------------+
-| Current Reading                          |
-| [1234.56                      ]          |
-+------------------------------------------+
-| [Cancel]              [Save Changes]     |
-+------------------------------------------+
++----------------------------------------+
+| UTILITY READINGS                       |
++----------------------------------------+
+| [Power Icon] D20 Power                 |
+| Rate: $0.15/kWh                   <-- Fixed: shows effective rate
+|                                        |
+| Start Reading: [100]                   |
+| End Reading:   [150]                   |
+| Usage: 50.00 kWh           $7.50       |
++----------------------------------------+
+| [Water Icon] D20 Water                 |
+| Rate: $0.05/gal                   <-- Fixed: shows effective rate
+|                                        |
+| Start Reading: [200]                   |
+| End Reading:   [250]                   |
+| Usage: 50.00 gal           $2.50       |
++----------------------------------------+
+|                                        |
+| Utilities Subtotal            $10.00   | <-- NEW
+|                                        |
++----------------------------------------+
+| [Grand Total Box]             $XXX.XX  |
++----------------------------------------+
 ```
 
-## Implementation Details
+### Calculation Logic Update
+Also need to fix the billing calculation to properly apply inheritance:
 
-### MeterEditSheet Props
 ```typescript
-interface MeterEditSheetProps {
-  meter: UtilityMeter | null;
-  assets: YardAsset[];
-  meters: UtilityMeter[];
-  globalRates: {
-    power: number | null;
-    water: number | null;
-  };
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUpdate: (id: string, updates: Partial<UtilityMeter>) => Promise<boolean>;
-  onCreate: (meter: Partial<UtilityMeter>) => Promise<any>;
-}
+// Current (correct for calculation, but need to also use in billing object):
+const powerRatePerUnit = powerMeter?.rate_per_unit > 0 
+  ? powerMeter.rate_per_unit 
+  : (business?.power_rate_per_kwh ?? 0);
+
+const waterRatePerUnit = waterMeter?.rate_per_unit > 0 
+  ? waterMeter.rate_per_unit 
+  : (business?.water_rate_per_gallon ?? 0);
 ```
 
-### Toggle Logic
+The current logic at lines 113-114 prefers business rate over meter rate:
 ```typescript
-const [useCustomRate, setUseCustomRate] = useState(false);
-
-// Initialize based on existing meter
-useEffect(() => {
-  if (meter) {
-    setUseCustomRate(meter.rate_per_unit > 0);
-  }
-}, [meter]);
-
-// On save
-const handleSave = async () => {
-  const updates = {
-    ...formData,
-    rate_per_unit: useCustomRate 
-      ? parseFloat(form.rate_per_unit) 
-      : 0  // 0 signals "inherit global"
-  };
-  await onUpdate(meter.id, updates);
-};
+const powerRatePerUnit = business?.power_rate_per_kwh ?? powerMeter?.rate_per_unit ?? 0;
 ```
 
-### SlipSettings Integration
-Replace the inline Sheet with MeterEditSheet:
+This should be changed to respect the custom override pattern (meter rate > 0 means custom):
 ```typescript
-<MeterEditSheet
-  meter={editingMeter}
-  assets={assets}
-  meters={meters}
-  globalRates={{
-    power: business?.power_rate_per_kwh ?? null,
-    water: business?.water_rate_per_gallon ?? null,
-  }}
-  open={showMeterForm}
-  onOpenChange={(open) => !open && closeForm()}
-  onUpdate={updateMeter}
-  onCreate={createMeter}
-/>
+const powerRatePerUnit = powerMeter?.rate_per_unit && powerMeter.rate_per_unit > 0 
+  ? powerMeter.rate_per_unit 
+  : (business?.power_rate_per_kwh ?? 0);
 ```
 
-## UI Behavior
+## Summary of Changes
 
-### Toggle OFF (Inherit Global)
-- Rate input field hidden
-- Display: "This meter uses the global power rate: **$0.15/kWh**"
-- Save sets `rate_per_unit = 0`
-
-### Toggle ON (Custom Rate)
-- Rate input field visible with placeholder showing global rate
-- Helper text: "Global rate: $0.15/kWh"
-- Save sets `rate_per_unit = parseFloat(input)`
-
-### Visual Indicators
-- Meter cards in list show "Custom" badge when `rate_per_unit > 0`
-- Effective rate always displayed (already implemented)
-
-## Database Impact
-No schema changes required. The `rate_per_unit = 0` convention already signals inheritance.
+| Location | Change |
+|----------|--------|
+| Lines 68-80 | Add `effectivePowerRate` and `effectiveWaterRate` useMemo hooks |
+| Lines 113-114 | Update rate calculation to use inheritance pattern (meter > 0 ? meter : global) |
+| Line 302-303 | Display `effectivePowerRate` with optional "(Custom)" label |
+| Line 352-353 | Display `effectiveWaterRate` with optional "(Custom)" label |
+| After line 394 | Add "Utilities Subtotal" section with calculated total |
