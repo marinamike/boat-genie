@@ -1,101 +1,143 @@
 
-# Display Correct Utility Rates with Inheritance
+# Add Custom Rate Toggle for Utility Meters
 
-## Problem
-The Meters tab and Settings > Utility Meters section both display the individual meter's `rate_per_unit` value instead of showing the effective rate after applying the global business defaults. When you update global utility pricing, these displays don't reflect the change because they're reading directly from the meter record.
+## Current State
+The meter edit form has a simple rate input field where leaving it empty uses the global rate. This is functional but lacks the clear visual toggle that slips have for custom rates.
 
-## Current Behavior
-- **Meters tab**: Shows `$0.01/kWh` (meter's stored rate)
-- **Settings > Utility Meters**: Shows `$0.15/kWh` (meter's stored rate)  
-- **Checkout**: Correctly uses global rate ($0.15/kWh) with meter fallback
+## Goal
+Match the slip rate override UX pattern:
+- Add a **"Custom Rate"** toggle switch (like slips have)
+- When OFF: Display global rate info, rate field is hidden
+- When ON: Show rate input field for custom override
+- Clear visual distinction between inherited and custom rates
 
-The disconnect: checkout calculates correctly, but the meter displays don't match.
+## Solution: Create MeterEditSheet Component
 
-## Desired Behavior (Allow Overrides)
-Apply the same inheritance pattern used for slip rates:
-1. Global business rate is the default
-2. Individual meters can have optional custom overrides
-3. UI displays the **effective rate** (global or custom) with clear indication
+Similar to `SlipEditSheet`, create a dedicated `MeterEditSheet` component with:
+1. **Custom Rate toggle** with Switch component
+2. **Global rate preview** when toggle is off
+3. **Rate input field** when toggle is on
+4. Visual feedback showing current effective rate
 
-## Solution
-
-### 1. Update MeterReadings.tsx (Meters Tab)
-- Import `useBusiness` hook
-- Calculate effective rate: `business?.power_rate_per_kwh ?? meter.rate_per_unit`
-- Display effective rate instead of raw meter rate
-- Optionally show "(Custom)" badge if meter has a non-null override
-
-### 2. Update SlipSettings.tsx (Settings Tab > Utility Meters)
-- Already imports `useBusiness`
-- Update the meter card display to show effective rate
-- When editing a meter, clarify that leaving rate empty uses global default
-
-### 3. Update Meter Form Logic
-- Allow clearing the rate field to "inherit" global rate
-- Show helper text: "Leave empty to use global rate"
-
-## Files to Modify
+## Files to Create/Modify
 
 | File | Change |
 |------|--------|
-| `src/components/slips/MeterReadings.tsx` | Import useBusiness, display effective rate with inheritance |
-| `src/components/slips/SlipSettings.tsx` | Display effective rate in meter cards with inheritance |
+| `src/components/slips/MeterEditSheet.tsx` | **NEW** - Dedicated meter edit sheet with custom rate toggle |
+| `src/components/slips/SlipSettings.tsx` | Replace inline meter form with MeterEditSheet component |
 
-## UI Changes
+## Component Design: MeterEditSheet
 
-### Meter Card (Meters Tab)
-```text
-Before:                          After:
-+------------------------+       +------------------------+
-| D20                    |       | D20                    |
-| Rate: $0.01/kWh        |       | Rate: $0.15/kWh        | <- Uses global
-+------------------------+       +------------------------+
-
-                                 OR if meter has custom:
-                                 +------------------------+
-                                 | D20            [Custom]|
-                                 | Rate: $0.20/kWh        | <- Custom override
-                                 +------------------------+
-```
-
-### Recording Sheet
 ```text
 +------------------------------------------+
-| Previous Reading: 100 kWh                |
-| Rate: $0.15/kWh (Global)    <- NEW label |
+| Edit Meter                               |
++------------------------------------------+
+| Meter Name: [D20 Power       ]           |
+| Type: [Power ▼]  Meter #: [12345   ]     |
+| Assign to Slip: [D20 ▼]                  |
++------------------------------------------+
+| [Separator]                              |
++------------------------------------------+
+|                                          |
+| Custom Rate                    [Toggle]  |
+| Override global rate for this meter      |
+|                                          |
+| +--------------------------------------+ |
+| | If OFF:                              | |
+| | This meter uses the global rate:     | |
+| | $0.15/kWh (Power)                    | |
+| +--------------------------------------+ |
+|                                          |
+| +--------------------------------------+ |
+| | If ON:                               | |
+| | Rate per kWh                         | |
+| | [$0.20              ]                | |
+| | Global: $0.15/kWh                    | |
+| +--------------------------------------+ |
+|                                          |
++------------------------------------------+
+| Current Reading                          |
+| [1234.56                      ]          |
++------------------------------------------+
+| [Cancel]              [Save Changes]     |
 +------------------------------------------+
 ```
 
 ## Implementation Details
 
-### Rate Inheritance Logic
+### MeterEditSheet Props
 ```typescript
-// For power meters:
-const getEffectiveRate = (meter: UtilityMeter, business: Business | null) => {
-  if (meter.meter_type === "power") {
-    return meter.rate_per_unit !== null 
-      ? meter.rate_per_unit 
-      : (business?.power_rate_per_kwh ?? 0);
-  } else {
-    return meter.rate_per_unit !== null 
-      ? meter.rate_per_unit 
-      : (business?.water_rate_per_gallon ?? 0);
+interface MeterEditSheetProps {
+  meter: UtilityMeter | null;
+  assets: YardAsset[];
+  meters: UtilityMeter[];
+  globalRates: {
+    power: number | null;
+    water: number | null;
+  };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdate: (id: string, updates: Partial<UtilityMeter>) => Promise<boolean>;
+  onCreate: (meter: Partial<UtilityMeter>) => Promise<any>;
+}
+```
+
+### Toggle Logic
+```typescript
+const [useCustomRate, setUseCustomRate] = useState(false);
+
+// Initialize based on existing meter
+useEffect(() => {
+  if (meter) {
+    setUseCustomRate(meter.rate_per_unit > 0);
   }
-};
+}, [meter]);
 
-const isCustomRate = (meter: UtilityMeter) => {
-  return meter.rate_per_unit !== null && meter.rate_per_unit > 0;
+// On save
+const handleSave = async () => {
+  const updates = {
+    ...formData,
+    rate_per_unit: useCustomRate 
+      ? parseFloat(form.rate_per_unit) 
+      : 0  // 0 signals "inherit global"
+  };
+  await onUpdate(meter.id, updates);
 };
 ```
 
-### Key Consideration
-Since meters currently store `rate_per_unit` as a non-nullable field, we need to decide on the inheritance signal:
-- Option A: Treat `rate_per_unit = 0` as "use global" (simpler, no schema change)
-- Option B: Make `rate_per_unit` nullable and treat `null` as "use global" (cleaner but requires migration)
-
-**Recommended: Option A** - Use 0 as the "inherit global" signal to avoid schema changes. Display logic:
+### SlipSettings Integration
+Replace the inline Sheet with MeterEditSheet:
 ```typescript
-const effectiveRate = meter.rate_per_unit > 0 
-  ? meter.rate_per_unit  // Custom rate
-  : (business?.power_rate_per_kwh ?? 0);  // Global rate
+<MeterEditSheet
+  meter={editingMeter}
+  assets={assets}
+  meters={meters}
+  globalRates={{
+    power: business?.power_rate_per_kwh ?? null,
+    water: business?.water_rate_per_gallon ?? null,
+  }}
+  open={showMeterForm}
+  onOpenChange={(open) => !open && closeForm()}
+  onUpdate={updateMeter}
+  onCreate={createMeter}
+/>
 ```
+
+## UI Behavior
+
+### Toggle OFF (Inherit Global)
+- Rate input field hidden
+- Display: "This meter uses the global power rate: **$0.15/kWh**"
+- Save sets `rate_per_unit = 0`
+
+### Toggle ON (Custom Rate)
+- Rate input field visible with placeholder showing global rate
+- Helper text: "Global rate: $0.15/kWh"
+- Save sets `rate_per_unit = parseFloat(input)`
+
+### Visual Indicators
+- Meter cards in list show "Custom" badge when `rate_per_unit > 0`
+- Effective rate always displayed (already implemented)
+
+## Database Impact
+No schema changes required. The `rate_per_unit = 0` convention already signals inheritance.
