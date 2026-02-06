@@ -793,6 +793,65 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_invoices: {
+        Row: {
+          amount: number
+          business_id: string
+          created_at: string
+          customer_id: string
+          due_date: string | null
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          paid_at: string | null
+          source_id: string
+          source_reference: string | null
+          source_type: Database["public"]["Enums"]["invoice_source"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          business_id: string
+          created_at?: string
+          customer_id: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          source_id: string
+          source_reference?: string | null
+          source_type: Database["public"]["Enums"]["invoice_source"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          source_id?: string
+          source_reference?: string | null
+          source_type?: Database["public"]["Enums"]["invoice_source"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dock_status: {
         Row: {
           boat_id: string
@@ -4039,6 +4098,7 @@ export type Database = {
           grand_total: number
           id: string
           notes: string | null
+          owner_id: string | null
           power_end_reading: number | null
           power_rate: number | null
           power_start_reading: number | null
@@ -4070,6 +4130,7 @@ export type Database = {
           grand_total?: number
           id?: string
           notes?: string | null
+          owner_id?: string | null
           power_end_reading?: number | null
           power_rate?: number | null
           power_start_reading?: number | null
@@ -4101,6 +4162,7 @@ export type Database = {
           grand_total?: number
           id?: string
           notes?: string | null
+          owner_id?: string | null
           power_end_reading?: number | null
           power_rate?: number | null
           power_start_reading?: number | null
@@ -5290,6 +5352,12 @@ export type Database = {
         | "pending_release"
         | "released"
         | "disputed"
+      invoice_source:
+        | "service"
+        | "slip_transient"
+        | "slip_lease"
+        | "fuel"
+        | "store"
       launch_mode: "live_queue" | "scheduled_windows"
       launch_status:
         | "queued"
@@ -5480,6 +5548,13 @@ export const Constants = {
         "pending_release",
         "released",
         "disputed",
+      ],
+      invoice_source: [
+        "service",
+        "slip_transient",
+        "slip_lease",
+        "fuel",
+        "store",
       ],
       launch_mode: ["live_queue", "scheduled_windows"],
       launch_status: [
