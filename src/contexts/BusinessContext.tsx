@@ -21,6 +21,13 @@ interface Business {
   address?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
+  power_rate_per_kwh?: number | null;
+  water_rate_per_gallon?: number | null;
+  default_daily_rate_per_ft?: number | null;
+  default_weekly_rate_per_ft?: number | null;
+  default_monthly_rate_per_ft?: number | null;
+  default_seasonal_rate_per_ft?: number | null;
+  default_annual_rate_per_ft?: number | null;
 }
 
 interface BusinessContextType {

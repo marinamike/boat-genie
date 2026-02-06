@@ -618,6 +618,11 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          default_annual_rate_per_ft: number | null
+          default_daily_rate_per_ft: number | null
+          default_monthly_rate_per_ft: number | null
+          default_seasonal_rate_per_ft: number | null
+          default_weekly_rate_per_ft: number | null
           description: string | null
           diagnostic_fee: number | null
           ein: string | null
@@ -674,6 +679,11 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          default_annual_rate_per_ft?: number | null
+          default_daily_rate_per_ft?: number | null
+          default_monthly_rate_per_ft?: number | null
+          default_seasonal_rate_per_ft?: number | null
+          default_weekly_rate_per_ft?: number | null
           description?: string | null
           diagnostic_fee?: number | null
           ein?: string | null
@@ -730,6 +740,11 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          default_annual_rate_per_ft?: number | null
+          default_daily_rate_per_ft?: number | null
+          default_monthly_rate_per_ft?: number | null
+          default_seasonal_rate_per_ft?: number | null
+          default_weekly_rate_per_ft?: number | null
           description?: string | null
           diagnostic_fee?: number | null
           ein?: string | null
