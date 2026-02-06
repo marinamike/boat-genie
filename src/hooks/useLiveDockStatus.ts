@@ -133,7 +133,8 @@ export function useLiveDockStatus() {
     boatId: string,
     slipNumber: string,
     stayType: string,
-    reservationId?: string
+    reservationId?: string,
+    meterAdjustments?: { powerMeterId?: string; powerReading?: number; waterMeterId?: string; waterReading?: number }
   ) => {
     try {
       // Insert dock status record
@@ -168,6 +169,27 @@ export function useLiveDockStatus() {
             actual_arrival: new Date().toISOString(),
           })
           .eq("id", reservationId);
+      }
+
+      // Update meter readings if adjusted at check-in
+      const now = new Date().toISOString();
+      if (meterAdjustments?.powerMeterId && meterAdjustments.powerReading !== undefined) {
+        await supabase
+          .from("utility_meters")
+          .update({
+            current_reading: meterAdjustments.powerReading,
+            last_reading_date: now,
+          })
+          .eq("id", meterAdjustments.powerMeterId);
+      }
+      if (meterAdjustments?.waterMeterId && meterAdjustments.waterReading !== undefined) {
+        await supabase
+          .from("utility_meters")
+          .update({
+            current_reading: meterAdjustments.waterReading,
+            last_reading_date: now,
+          })
+          .eq("id", meterAdjustments.waterMeterId);
       }
 
       toast({
