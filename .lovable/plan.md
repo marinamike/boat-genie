@@ -1,81 +1,90 @@
 
-## Smart Slip Billing & Utility Meter System
+# Automatic Meter Reading Sync Plan
 
-### Completed Features
+## Overview
+This plan implements automatic meter reading synchronization:
+1. When a meter reading is recorded during checkout, the value updates the meter's `current_reading` in `utility_meters`
+2. When checking in a vessel, the starting meter readings are pre-populated based on the last recorded values from `utility_meters`
 
-#### 1. Database Schema
-Tables created:
-- `stay_meter_readings` - Track meter readings tied to check-in/check-out
-- `stay_invoices` - Invoice records with stay and utility billing
-- `recurring_invoices` - Monthly/Seasonal/Annual recurring billing for long-term tenants
-- `mid_stay_meter_readings` - Mid-month meter readings for long-term contracts
+## Current State Analysis
+- **Checkout Flow**: `CheckoutBillingSheet.tsx` collects meter end readings and creates an invoice via `useStayBilling.createInvoice()`, but does NOT update `utility_meters.current_reading`
+- **Check-in Flow**: `useLiveDockStatus.checkInBoat()` creates a `dock_status` record but does NOT interact with meters
+- **Meter Data**: `utility_meters` table has `current_reading` and `last_reading_date` columns that should track the latest values
+- **Existing Pattern**: `useYardAssets.recordMeterReading()` already updates `utility_meters.current_reading` after recording - we can follow this pattern
 
-#### 2. Rate Calculator (`src/lib/stayBilling.ts`)
-Cascading "Best Rate" logic:
-- **30+ days**: Monthly rate (divided by 30 for daily equivalent)
-- **7-29 days**: Weekly rate (divided by 7 for daily equivalent)
-- **1-6 days**: Daily rate
+## Implementation Steps
 
-Rate calculation: `Rate Per Day × Duration Days × Vessel Length`
+### Step 1: Update Checkout to Sync Meter Readings
+Modify `useStayBilling.ts` to update `utility_meters.current_reading` after creating an invoice.
 
-#### 3. Transient Billing Hook (`src/hooks/useStayBilling.ts`)
-Functions:
-- `recordMeterReading()` - Save meter readings
-- `getMeterReadings()` - Fetch readings for a dock status
-- `createInvoice()` - Generate finalized invoice
-- `getInvoices()` - List all business invoices
+**File**: `src/hooks/useStayBilling.ts`
+- In the `createInvoice` function, after inserting the invoice, update the relevant meters' `current_reading` values with the checkout end readings
+- Also update `last_reading_date` to track when the reading was taken
 
-#### 4. Recurring Billing Hook (`src/hooks/useRecurringBilling.ts`)
-Functions:
-- `generateMonthlyInvoice()` - Create monthly invoice for lease
-- `recordMidStayReading()` - Record mid-month meter readings
-- `getLeaseInvoices()` - Get invoices for a specific lease
-- `getBusinessInvoices()` - Get all recurring invoices
-- `getMidStayReadings()` - Get mid-stay readings for lease
-- `updateInvoiceStatus()` - Mark invoice as paid/sent/void
+### Step 2: Pre-populate Starting Readings in Checkout UI  
+Modify `CheckoutBillingSheet.tsx` to use the meter's `current_reading` as the starting value (already doing this - verify it works correctly).
 
-#### 5. Checkout Billing Sheet (`src/components/slips/CheckoutBillingSheet.tsx`)
-"Finalize Billing" modal includes:
-- Vessel info and slip assignment
-- Stay duration with calculated rate tier
-- Meter reading inputs (start locked, end editable)
-- Real-time utility usage calculations
-- Grand total with breakdown
+**File**: `src/components/slips/CheckoutBillingSheet.tsx`
+- The component already uses `powerMeter.current_reading` and `waterMeter.current_reading` as the start values (lines 111, 120)
+- These values will now always reflect the previous checkout's end reading
 
-#### 6. Mid-Month Meter Reading Sheet (`src/components/slips/MidMonthMeterReadingSheet.tsx`)
-For long-term tenants:
-- Record mid-stay power and water readings
-- Auto-calculates usage based on previous reading
-- Readings linked to billing period and added to next invoice
+### Step 3: Add Starting Meter Confirmation at Check-In
+Create a check-in confirmation dialog that shows the expected starting meter readings (based on `utility_meters.current_reading`) and allows staff to confirm or adjust them.
 
-#### 7. Recurring Invoice Manager (`src/components/slips/RecurringInvoiceManager.tsx`)
-For annual/seasonal contracts:
-- Generate monthly invoices on demand
-- View invoice history with status badges
-- Mark invoices as paid/sent/void
-- Displays base rent + utility charges
+**File**: `src/components/marina/ReservationManager.tsx`
+- Update the check-in dialog to display current meter readings for the assigned slip
+- Allow optional adjustment if the physical meter differs from system value
+- If adjusted, update `utility_meters.current_reading` before completing check-in
 
-### Integration Points
-- `LiveDockList.tsx` - Check Out button opens billing sheet
-- `ReservationManager.tsx` - Check Out action opens billing sheet
-- `LeaseManager.tsx` - "Meter Read" and "Invoices" buttons for each lease
+### Step 4: Update Check-In Flow to Record Starting Readings
+Modify `useLiveDockStatus.ts` to optionally accept meter reading values and update them during check-in.
 
-### Files Created
-1. `src/lib/stayBilling.ts`
-2. `src/hooks/useStayBilling.ts`
-3. `src/hooks/useRecurringBilling.ts`
-4. `src/components/slips/CheckoutBillingSheet.tsx`
-5. `src/components/slips/MidMonthMeterReadingSheet.tsx`
-6. `src/components/slips/RecurringInvoiceManager.tsx`
+**File**: `src/hooks/useLiveDockStatus.ts`
+- Extend `checkInBoat()` to accept optional meter reading params
+- If provided (and different from current), update `utility_meters.current_reading`
 
-### Files Modified
-1. `src/components/marina/LiveDockList.tsx`
-2. `src/components/marina/ReservationManager.tsx`
-3. `src/components/slips/LeaseManager.tsx`
-4. `src/pages/SlipsDashboard.tsx`
+## Data Flow Summary
 
-### Future Enhancements
-- Automated recurring invoice generation (cron job on 1st of month)
-- Invoice email/PDF export
-- Payment integration with Stripe
-- Overdue invoice alerts
+```text
++------------------+     +-----------------+     +------------------+
+|    CHECK-OUT     |     | utility_meters  |     |    CHECK-IN      |
+|                  |     |                 |     |                  |
+| Enter end reading|---->| current_reading |---->| Show as "start"  |
+| (e.g., 150 kWh)  |     | = 150           |     | Confirm or adjust|
++------------------+     +-----------------+     +------------------+
+```
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/hooks/useStayBilling.ts` | Add meter update after invoice creation |
+| `src/components/marina/ReservationManager.tsx` | Show meter readings in check-in dialog with confirmation |
+| `src/hooks/useLiveDockStatus.ts` | Accept optional meter adjustments during check-in |
+
+## Technical Details
+
+### Meter Update Logic (Checkout)
+```typescript
+// After creating invoice, update meters
+if (powerMeter && powerEndReading > 0) {
+  await supabase
+    .from("utility_meters")
+    .update({
+      current_reading: powerEndReading,
+      last_reading_date: new Date().toISOString(),
+    })
+    .eq("id", powerMeter.id);
+}
+```
+
+### Check-In Meter Display
+- Fetch meters for the assigned slip via `yard_asset_id`
+- Display: "Power Meter: 150 kWh (last read: Feb 6, 2026)"
+- Staff confirms values match physical meters before completing check-in
+
+## Edge Cases Handled
+1. **No meters assigned to slip**: Skip meter logic entirely (already handled)
+2. **Meter reading lower than current**: Allow (rollover or reset scenarios)
+3. **Walk-in without reservation**: Still shows meter confirmation based on slip assignment
+4. **Multiple vessels using same slip**: Each checkout updates the reading, so next check-in gets correct starting value
