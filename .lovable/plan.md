@@ -1,82 +1,75 @@
 
 
-## Fix: Marina Reservations Not Showing for Business Owners
+## Add Reservation Requests Tab to Slips Dashboard
 
-### Problem Summary
-When you log in as the marina owner and go to the marina dashboard, reservation requests don't appear. This is happening for two reasons:
+### Problem
+You're logged in as the marina/business owner and you don't see the reservation request that was submitted. You want to view and manage reservation requests within the Slips module at `/business/slips`.
 
-1. **Database permissions issue**: The system is checking an old database table (`marinas`) to see if you're a marina manager, but your business is registered in the new `businesses` table.
+Currently, the SlipsDashboard only has four tabs:
+1. Dock Grid - visual slip/space management
+2. Leases - long-term lease agreements
+3. Meters - utility meter readings
+4. Settings - slip configuration
 
-2. **Query logic issue**: The reservations are linked to your business, but the dashboard isn't filtering reservations by your specific business.
+There is no tab showing incoming reservation requests, even though the data exists in the database and the RLS policies are now correct.
+
+### Solution
+Add a new "Reservations" tab to the SlipsDashboard that displays the ReservationManager component. This will allow business owners to see pending, approved, and checked-in reservations directly within the Slips module.
 
 ---
 
-### Solution
+### Changes
 
-#### Step 1: Update Database Security Policy
-Add a new permission rule that allows business owners to see reservations for their business.
+**File: `src/pages/SlipsDashboard.tsx`**
 
-**Database Change:**
-```sql
--- Allow business owners to manage reservations for their business
-CREATE POLICY "Business owners can manage their reservations"
-  ON public.marina_reservations
-  FOR ALL
-  TO authenticated
-  USING (
-    business_id IN (
-      SELECT id FROM public.businesses 
-      WHERE owner_id = auth.uid()
-    )
-  )
-  WITH CHECK (
-    business_id IN (
-      SELECT id FROM public.businesses 
-      WHERE owner_id = auth.uid()
-    )
-  );
+Add a fifth tab called "Reservations" that shows the existing ReservationManager component:
+
+1. Import the ReservationManager component
+2. Add a new tab trigger with a Calendar icon labeled "Reservations"
+3. Add the ReservationManager as tab content
+4. Include a badge showing pending count for visibility
+
+```text
+Tabs Structure (After):
++----------+--------+--------+----------+---------------+
+| Dock Grid| Leases | Meters | Settings | Reservations  |
++----------+--------+--------+----------+---------------+
+                                         (pending badge)
 ```
-
-#### Step 2: Update Reservation Fetching Logic
-Modify the reservation hook to filter reservations by the current business.
-
-**File: `src/hooks/useMarinaReservations.ts`**
-- Add `businessId` parameter for marina role
-- Filter query by `business_id` when fetching for a marina
-- Update the interface to accept business context
-
-#### Step 3: Update Dashboard Components
-Wire up the BusinessContext so the marina dashboard uses the correct business ID.
-
-**File: `src/components/marina/dashboard/PendingReservationsCard.tsx`**
-- Import and use `useBusiness()` hook to get the business ID
-- Pass `businessId` to the reservations hook
-
-**File: `src/components/marina/ReservationManager.tsx`**
-- Same updates to use `useBusiness()` for filtering
-
-**File: `src/pages/MarinaDashboard.tsx`**
-- Remove the old `marinas` table query
-- Use `useBusiness()` to get business name and ID
 
 ---
 
 ### Technical Details
 
-**Current Data in Database:**
-- Your reservation exists: `3121a5a7-dc21-491c-b8fc-97c763553e06`
-- It's linked to business: `c005a02d-6e76-4dca-9b6c-93732d9ef81c` (Marina Mike's)
-- Business owner is: `625d51fb-ffce-4a1d-9efa-44a2de812140`
+**Import to add:**
+```typescript
+import { ReservationManager } from "@/components/marina/ReservationManager";
+import { Calendar } from "lucide-react";
+```
 
-**Files to Modify:**
-1. Database migration (new RLS policy)
-2. `src/hooks/useMarinaReservations.ts` - Add business filtering
-3. `src/components/marina/dashboard/PendingReservationsCard.tsx` - Use business context
-4. `src/components/marina/ReservationManager.tsx` - Use business context
-5. `src/pages/MarinaDashboard.tsx` - Switch from marinas to businesses table
+**Tab trigger to add:**
+```tsx
+<TabsTrigger value="reservations" className="flex items-center gap-2">
+  <Calendar className="w-4 h-4" />
+  <span className="hidden sm:inline">Reservations</span>
+</TabsTrigger>
+```
+
+**Tab content to add:**
+```tsx
+<TabsContent value="reservations" className="mt-4">
+  <ReservationManager />
+</TabsContent>
+```
+
+The ReservationManager component already:
+- Uses the `useBusiness()` hook to get the current business ID
+- Fetches reservations filtered by `business_id`
+- Provides approve/reject/check-in functionality
+- Shows pending, approved, and checked-in reservations
 
 ---
 
 ### Expected Result
-After these changes, when you log in as the marina owner and visit the marina dashboard, you'll see the pending reservation request from the boat owner, and you'll be able to approve or reject it.
+After this change, when you navigate to `/business/slips`, you'll see a fifth tab called "Reservations". Clicking it will show your pending reservation request from the boat owner, and you'll be able to approve or reject it directly from this view.
 
