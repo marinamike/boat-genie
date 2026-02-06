@@ -54,7 +54,7 @@ export default function SlipsDashboard() {
         </TabsContent>
 
         <TabsContent value="leases" className="mt-4">
-          <LeaseManager {...yardAssets} />
+          <LeaseManager {...yardAssets} meters={yardAssets.meters} />
         </TabsContent>
 
         <TabsContent value="meters" className="mt-4">

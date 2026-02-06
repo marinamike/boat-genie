@@ -78,6 +78,10 @@ export default {
           emergency: "hsl(var(--status-emergency))",
           pending: "hsl(var(--status-pending))",
         },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -284,8 +284,8 @@ export function CheckoutBillingSheet({
                 {powerMeter && (
                   <div className="p-4 rounded-lg border space-y-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                        <Zap className="w-4 h-4 text-yellow-600" />
+                      <div className="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center">
+                        <Zap className="w-4 h-4 text-warning" />
                       </div>
                       <div>
                         <p className="font-medium">{powerMeter.meter_name}</p>
@@ -335,8 +335,8 @@ export function CheckoutBillingSheet({
                 {waterMeter && (
                   <div className="p-4 rounded-lg border space-y-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                        <Droplets className="w-4 h-4 text-blue-600" />
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                        <Droplets className="w-4 h-4 text-primary" />
                       </div>
                       <div>
                         <p className="font-medium">{waterMeter.meter_name}</p>
