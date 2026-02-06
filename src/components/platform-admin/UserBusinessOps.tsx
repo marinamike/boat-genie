@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,68 @@ export function UserBusinessOps() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Load all users on initial mount
+  useEffect(() => {
+    const loadAllUsers = async () => {
+      try {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone, is_banned")
+          .order("full_name", { ascending: true })
+          .limit(50);
+
+        const userResults: SearchResult[] = (profiles || []).map(p => ({
+          type: "user" as const,
+          id: p.id,
+          name: p.full_name || "Unknown User",
+          email: p.email,
+          phone: p.phone,
+          is_banned: p.is_banned,
+        }));
+
+        setResults(userResults);
+      } catch (error) {
+        console.error("Failed to load users:", error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadAllUsers();
+  }, []);
+
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      // If search is empty, reload all users
+      setSearching(true);
+      try {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone, is_banned")
+          .order("full_name", { ascending: true })
+          .limit(50);
+
+        const userResults: SearchResult[] = (profiles || []).map(p => ({
+          type: "user" as const,
+          id: p.id,
+          name: p.full_name || "Unknown User",
+          email: p.email,
+          phone: p.phone,
+          is_banned: p.is_banned,
+        }));
+
+        setResults(userResults);
+      } catch (error) {
+        console.error("Failed to load users:", error);
+      } finally {
+        setSearching(false);
+      }
+      return;
+    }
 
     setSearching(true);
     setResults([]);
@@ -320,10 +377,17 @@ export function UserBusinessOps() {
             </Card>
           ))}
 
-          {results.length === 0 && searchQuery && !searching && (
+          {initialLoading && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
+              <p>Loading users...</p>
+            </div>
+          )}
+
+          {results.length === 0 && !initialLoading && !searching && (
             <div className="text-center py-8 text-muted-foreground">
               <Search className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No results found for "{searchQuery}"</p>
+              <p>{searchQuery ? `No results found for "${searchQuery}"` : "No users found"}</p>
             </div>
           )}
         </div>
