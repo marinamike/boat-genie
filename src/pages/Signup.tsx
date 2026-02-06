@@ -45,19 +45,30 @@ const Signup = () => {
       return;
     }
 
+    // Save the selected role to user_roles table
+    if (data.user) {
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({ user_id: data.user.id, role: selectedRole });
+
+      if (roleError) {
+        console.error("Failed to save role:", roleError);
+      }
+    }
+
     // If marina manager selected, redirect to registration
     if (selectedRole === "admin") {
       toast({
         title: "Welcome aboard!",
         description: "Let's set up your marina.",
       });
-      navigate("/register-marina");
+      navigate("/register-marina", { replace: true });
     } else {
       toast({
         title: "Welcome aboard!",
         description: "Your account has been created successfully.",
       });
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
     setLoading(false);
   };
