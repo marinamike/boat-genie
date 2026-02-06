@@ -656,6 +656,9 @@ export type Database = {
           total_slips: number | null
           transient_rate_per_ft: number | null
           updated_at: string
+          verification_status:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
           verified_at: string | null
           w9_doc_url: string | null
           water_rate_per_gallon: number | null
@@ -709,6 +712,9 @@ export type Database = {
           total_slips?: number | null
           transient_rate_per_ft?: number | null
           updated_at?: string
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
           verified_at?: string | null
           w9_doc_url?: string | null
           water_rate_per_gallon?: number | null
@@ -762,6 +768,9 @@ export type Database = {
           total_slips?: number | null
           transient_rate_per_ft?: number | null
           updated_at?: string
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
           verified_at?: string | null
           w9_doc_url?: string | null
           water_rate_per_gallon?: number | null
@@ -2557,6 +2566,65 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_reviews: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean | null
+          is_reported: boolean | null
+          rating: number
+          report_reason: string | null
+          reported_at: string | null
+          reported_by: string | null
+          review_text: string | null
+          reviewer_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_reported?: boolean | null
+          rating: number
+          report_reason?: string | null
+          reported_at?: string | null
+          reported_by?: string | null
+          review_text?: string | null
+          reviewer_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_reported?: boolean | null
+          rating?: number
+          report_reason?: string | null
+          reported_at?: string | null
+          reported_by?: string | null
+          review_text?: string | null
+          reviewer_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       power_alerts: {
         Row: {
           alert_message: string | null
@@ -2625,6 +2693,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_banned: boolean | null
           membership_tier: Database["public"]["Enums"]["membership_tier"]
           phone: string | null
           updated_at: string
@@ -2635,6 +2704,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_banned?: boolean | null
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           phone?: string | null
           updated_at?: string
@@ -2645,6 +2715,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_banned?: boolean | null
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           phone?: string | null
           updated_at?: string
@@ -4859,6 +4930,7 @@ export type Database = {
       service_type: "genie_service" | "pro_service"
       store_item_category: "parts" | "retail" | "consumables"
       utility_meter_type: "power" | "water"
+      verification_status: "pending" | "verified" | "rejected" | "suspended"
       wish_form_status:
         | "submitted"
         | "reviewed"
@@ -5051,6 +5123,7 @@ export const Constants = {
       service_type: ["genie_service", "pro_service"],
       store_item_category: ["parts", "retail", "consumables"],
       utility_meter_type: ["power", "water"],
+      verification_status: ["pending", "verified", "rejected", "suspended"],
       wish_form_status: [
         "submitted",
         "reviewed",
