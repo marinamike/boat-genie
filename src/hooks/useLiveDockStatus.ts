@@ -136,6 +136,7 @@ export function useLiveDockStatus() {
     reservationId?: string
   ) => {
     try {
+      // Insert dock status record
       const { error } = await supabase.from("dock_status").insert({
         boat_id: boatId,
         slip_number: slipNumber,
@@ -145,6 +146,29 @@ export function useLiveDockStatus() {
       });
 
       if (error) throw error;
+
+      // Update yard_asset to mark slip as occupied
+      if (slipNumber) {
+        await supabase
+          .from("yard_assets")
+          .update({
+            is_available: false,
+            current_boat_id: boatId,
+            current_reservation_id: reservationId || null,
+          })
+          .eq("asset_name", slipNumber);
+      }
+
+      // Update reservation status to checked_in
+      if (reservationId) {
+        await supabase
+          .from("marina_reservations")
+          .update({
+            status: "checked_in",
+            actual_arrival: new Date().toISOString(),
+          })
+          .eq("id", reservationId);
+      }
 
       toast({
         title: "Checked In",
@@ -165,6 +189,13 @@ export function useLiveDockStatus() {
 
   const checkOutBoat = async (dockStatusId: string) => {
     try {
+      // Get the dock status record first to find slip and reservation
+      const { data: dockRecord } = await supabase
+        .from("dock_status")
+        .select("slip_number, reservation_id")
+        .eq("id", dockStatusId)
+        .single();
+
       const { error } = await supabase
         .from("dock_status")
         .update({
@@ -174,6 +205,29 @@ export function useLiveDockStatus() {
         .eq("id", dockStatusId);
 
       if (error) throw error;
+
+      // Release the yard asset (mark slip as available)
+      if (dockRecord?.slip_number) {
+        await supabase
+          .from("yard_assets")
+          .update({
+            is_available: true,
+            current_boat_id: null,
+            current_reservation_id: null,
+          })
+          .eq("asset_name", dockRecord.slip_number);
+      }
+
+      // Update reservation status to checked_out
+      if (dockRecord?.reservation_id) {
+        await supabase
+          .from("marina_reservations")
+          .update({
+            status: "checked_out",
+            actual_departure: new Date().toISOString(),
+          })
+          .eq("id", dockRecord.reservation_id);
+      }
 
       toast({
         title: "Checked Out",
