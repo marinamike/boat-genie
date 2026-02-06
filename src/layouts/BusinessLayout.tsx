@@ -24,7 +24,7 @@ interface NavItem {
 const moduleNavItems: NavItem[] = [
   { href: "/business", icon: LayoutDashboard, label: "Command" },
   { href: "/business/slips", icon: Ship, label: "Slips", module: "slips" },
-  { href: "/business/jobs", icon: Wrench, label: "Jobs", module: "service" },
+  { href: "/business/jobs", icon: Wrench, label: "Service", module: "service" },
   { href: "/business/fuel", icon: Fuel, label: "Fuel", module: "fuel" },
   { href: "/business/store", icon: Store, label: "Store", module: "store" },
 ];
