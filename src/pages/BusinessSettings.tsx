@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { ModuleManager } from "@/components/business/ModuleManager";
 import { StaffManager } from "@/components/business/StaffManager";
 import { BusinessSetupForm } from "@/components/business/BusinessSetupForm";
+import { RatesBillingSettings } from "@/components/business/RatesBillingSettings";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Users, Puzzle, User, LogOut, Shield } from "lucide-react";
+import { Users, Puzzle, User, LogOut, Shield, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -67,23 +68,31 @@ export default function BusinessSettings() {
       </div>
 
       <Tabs defaultValue="modules" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <Puzzle className="w-4 h-4" />
-            Modules
+            <span className="hidden sm:inline">Modules</span>
+          </TabsTrigger>
+          <TabsTrigger value="rates" className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            <span className="hidden sm:inline">Rates</span>
           </TabsTrigger>
           <TabsTrigger value="staff" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
-            Staff
+            <span className="hidden sm:inline">Staff</span>
           </TabsTrigger>
           <TabsTrigger value="account" className="flex items-center gap-2">
             <User className="w-4 h-4" />
-            Account
+            <span className="hidden sm:inline">Account</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="modules" className="mt-4">
           <ModuleManager />
+        </TabsContent>
+
+        <TabsContent value="rates" className="mt-4">
+          <RatesBillingSettings />
         </TabsContent>
 
         <TabsContent value="staff" className="mt-4">
