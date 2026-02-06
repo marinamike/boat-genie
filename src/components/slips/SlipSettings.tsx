@@ -6,14 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -24,13 +16,11 @@ import {
 } from "@/components/ui/table";
 import { Settings, Zap, Droplets, Plus, Pencil, DollarSign, Save, Loader2 } from "lucide-react";
 import { UtilityMeter, YardAsset } from "@/hooks/useYardAssets";
-import { Database } from "@/integrations/supabase/types";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SlipEditSheet } from "@/components/slips/SlipEditSheet";
-
-type MeterType = Database["public"]["Enums"]["utility_meter_type"];
+import { MeterEditSheet } from "@/components/slips/MeterEditSheet";
 
 interface SlipSettingsProps {
   assets: YardAsset[];
@@ -54,15 +44,6 @@ export function SlipSettings({
   const [showMeterForm, setShowMeterForm] = useState(false);
   const [editingMeter, setEditingMeter] = useState<UtilityMeter | null>(null);
   const [editingSlip, setEditingSlip] = useState<YardAsset | null>(null);
-  const [meterForm, setMeterForm] = useState({
-    meter_name: "",
-    meter_type: "power" as MeterType,
-    meter_number: "",
-    yard_asset_id: "",
-    rate_per_unit: "",
-    current_reading: "0",
-  });
-  const [submitting, setSubmitting] = useState(false);
   const [savingSlipRates, setSavingSlipRates] = useState(false);
   const [savingUtilityRates, setSavingUtilityRates] = useState(false);
   
@@ -170,86 +151,14 @@ export function SlipSettings({
     }
   };
 
-  const resetForm = () => {
-    setMeterForm({
-      meter_name: "",
-      meter_type: "power",
-      meter_number: "",
-      yard_asset_id: "",
-      rate_per_unit: "",
-      current_reading: "0",
-    });
-  };
-
-  const closeForm = () => {
-    setShowMeterForm(false);
-    setEditingMeter(null);
-    resetForm();
-  };
-
   const openEditForm = (meter: UtilityMeter) => {
-    setMeterForm({
-      meter_name: meter.meter_name,
-      meter_type: meter.meter_type,
-      meter_number: meter.meter_number || "",
-      yard_asset_id: meter.yard_asset_id || "",
-      rate_per_unit: meter.rate_per_unit.toString(),
-      current_reading: meter.current_reading.toString(),
-    });
     setEditingMeter(meter);
     setShowMeterForm(true);
   };
 
   const openCreateForm = () => {
-    resetForm();
     setEditingMeter(null);
     setShowMeterForm(true);
-  };
-
-  const handleCreateMeter = async () => {
-    if (!meterForm.meter_name) return;
-    setSubmitting(true);
-
-    try {
-      await createMeter({
-        meter_name: meterForm.meter_name,
-        meter_type: meterForm.meter_type,
-        meter_number: meterForm.meter_number || null,
-        yard_asset_id: meterForm.yard_asset_id || null,
-        rate_per_unit: meterForm.rate_per_unit ? parseFloat(meterForm.rate_per_unit) : 0, // 0 = inherit global
-        current_reading: parseFloat(meterForm.current_reading) || 0,
-      });
-      closeForm();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleUpdateMeter = async () => {
-    if (!editingMeter || !meterForm.meter_name) return;
-    setSubmitting(true);
-
-    try {
-      await updateMeter(editingMeter.id, {
-        meter_name: meterForm.meter_name,
-        meter_type: meterForm.meter_type,
-        meter_number: meterForm.meter_number || null,
-        yard_asset_id: meterForm.yard_asset_id || null,
-        rate_per_unit: meterForm.rate_per_unit ? parseFloat(meterForm.rate_per_unit) : 0, // 0 = inherit global
-        current_reading: parseFloat(meterForm.current_reading) || 0,
-      });
-      closeForm();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSubmit = () => {
-    if (editingMeter) {
-      handleUpdateMeter();
-    } else {
-      handleCreateMeter();
-    }
   };
 
   const toggleMeterActive = async (meter: UtilityMeter) => {
@@ -666,159 +575,25 @@ export function SlipSettings({
         />
       )}
 
-      {/* Add Meter Sheet */}
-      <Sheet open={showMeterForm} onOpenChange={(open) => !open && closeForm()}>
-        <SheetContent className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{editingMeter ? "Edit Meter" : "Add Utility Meter"}</SheetTitle>
-          </SheetHeader>
-
-          <div className="space-y-4 mt-6">
-            <div className="space-y-2">
-              <Label>Meter Name *</Label>
-              <Input
-                placeholder="e.g., Slip A-12 Power"
-                value={meterForm.meter_name}
-                onChange={(e) =>
-                  setMeterForm({ ...meterForm, meter_name: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Type *</Label>
-                <Select
-                  value={meterForm.meter_type}
-                  onValueChange={(value: MeterType) =>
-                    setMeterForm({ ...meterForm, meter_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="power">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-yellow-600" />
-                        Power
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="water">
-                      <div className="flex items-center gap-2">
-                        <Droplets className="w-4 h-4 text-blue-600" />
-                        Water
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Meter Number</Label>
-                <Input
-                  placeholder="Optional"
-                  value={meterForm.meter_number}
-                  onChange={(e) =>
-                    setMeterForm({ ...meterForm, meter_number: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Assign to Slip (Optional)</Label>
-              <Select
-                value={meterForm.yard_asset_id || "none"}
-                onValueChange={(value) =>
-                  setMeterForm({ ...meterForm, yard_asset_id: value === "none" ? "" : value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a slip" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {assets.map((asset) => {
-                    const hasExistingMeter = meters.some(
-                      (m) => m.yard_asset_id === asset.id && m.meter_type === meterForm.meter_type
-                    );
-                    return (
-                      <SelectItem key={asset.id} value={asset.id}>
-                        <span className="flex items-center gap-2">
-                          {asset.asset_name}
-                          {asset.dock_section && (
-                            <span className="text-muted-foreground">• {asset.dock_section}</span>
-                          )}
-                          {hasExistingMeter && (
-                            <Badge variant="secondary" className="text-xs py-0 px-1.5">
-                              Has {meterForm.meter_type === "power" ? "Power" : "Water"}
-                            </Badge>
-                          )}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>
-                  Rate per {meterForm.meter_type === "power" ? "kWh" : "Gallon"}
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Leave empty for global rate"
-                  value={meterForm.rate_per_unit}
-                  onChange={(e) =>
-                    setMeterForm({ ...meterForm, rate_per_unit: e.target.value })
-                  }
-                />
-                <span className="text-xs text-muted-foreground">
-                  Global: ${meterForm.meter_type === "power" 
-                    ? (business?.power_rate_per_kwh ?? 0).toFixed(2) 
-                    : (business?.water_rate_per_gallon ?? 0).toFixed(2)
-                  }/{meterForm.meter_type === "power" ? "kWh" : "gal"}
-                </span>
-              </div>
-              <div className="space-y-2">
-                <Label>Starting Reading</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0"
-                  value={meterForm.current_reading}
-                  onChange={(e) =>
-                    setMeterForm({ ...meterForm, current_reading: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={closeForm}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!meterForm.meter_name || submitting}
-                className="flex-1"
-              >
-                {submitting
-                  ? editingMeter ? "Saving..." : "Creating..."
-                  : editingMeter ? "Save Changes" : "Create Meter"}
-              </Button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Meter Edit Sheet */}
+      <MeterEditSheet
+        meter={editingMeter}
+        assets={assets}
+        meters={meters}
+        globalRates={{
+          power: business?.power_rate_per_kwh ?? null,
+          water: business?.water_rate_per_gallon ?? null,
+        }}
+        open={showMeterForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowMeterForm(false);
+            setEditingMeter(null);
+          }
+        }}
+        onUpdate={updateMeter}
+        onCreate={createMeter}
+      />
     </div>
   );
 }
