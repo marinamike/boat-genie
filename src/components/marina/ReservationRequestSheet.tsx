@@ -116,35 +116,58 @@ export function ReservationRequestSheet({
   // Use prop marina, selected marina, or fetched marina
   const marina = marinaProp || selectedMarina || fetchedMarina;
 
-  // Fetch marina if preselectedMarinaId provided
+  // Fetch marina if preselectedMarinaId provided (from unified businesses table)
   useEffect(() => {
     const fetchMarina = async () => {
       if (preselectedMarinaId && !marinaProp && open) {
         const { data } = await supabase
-          .from("marinas")
-          .select("id, marina_name, address, accepts_transient, accepts_longterm, power_options, max_length_ft, transient_rate_per_ft")
+          .from("businesses")
+          .select("id, business_name, address, accepts_transient, accepts_longterm, power_options, max_length_ft, transient_rate_per_ft")
           .eq("id", preselectedMarinaId)
+          .contains("enabled_modules", ["slips"])
           .single();
         if (data) {
-          setFetchedMarina(data as Marina);
+          // Map business_name to marina_name for component compatibility
+          setFetchedMarina({
+            id: data.id,
+            marina_name: data.business_name,
+            address: data.address,
+            accepts_transient: data.accepts_transient,
+            accepts_longterm: data.accepts_longterm,
+            power_options: data.power_options,
+            max_length_ft: data.max_length_ft,
+            transient_rate_per_ft: data.transient_rate_per_ft,
+          });
         }
       }
     };
     fetchMarina();
   }, [preselectedMarinaId, marinaProp, open]);
 
-  // Fetch available marinas for search
+  // Fetch available marinas for search (from unified businesses table)
   useEffect(() => {
     const fetchMarinas = async () => {
       if (open && step === "select-marina") {
         setLoadingMarinas(true);
+        // Fetch businesses with slips module that accept reservations
         const { data } = await supabase
-          .from("marinas")
-          .select("id, marina_name, address, accepts_transient, accepts_longterm, power_options, max_length_ft, transient_rate_per_ft")
+          .from("businesses")
+          .select("id, business_name, address, accepts_transient, accepts_longterm, power_options, max_length_ft, transient_rate_per_ft")
+          .contains("enabled_modules", ["slips"])
           .or("accepts_transient.eq.true,accepts_longterm.eq.true")
-          .order("marina_name");
+          .order("business_name");
         if (data) {
-          setAvailableMarinas(data as Marina[]);
+          // Map business_name to marina_name for component compatibility
+          setAvailableMarinas(data.map(b => ({
+            id: b.id,
+            marina_name: b.business_name,
+            address: b.address,
+            accepts_transient: b.accepts_transient,
+            accepts_longterm: b.accepts_longterm,
+            power_options: b.power_options,
+            max_length_ft: b.max_length_ft,
+            transient_rate_per_ft: b.transient_rate_per_ft,
+          })));
         }
         setLoadingMarinas(false);
       }
