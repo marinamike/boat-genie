@@ -24,15 +24,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Calendar, RefreshCw, XCircle, Search, Pencil } from "lucide-react";
-import { YardAsset, LeaseAgreement } from "@/hooks/useYardAssets";
+import { FileText, Plus, Calendar, RefreshCw, XCircle, Search, Pencil, Gauge, Receipt } from "lucide-react";
+import { YardAsset, LeaseAgreement, UtilityMeter } from "@/hooks/useYardAssets";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addMonths } from "date-fns";
+import { MidMonthMeterReadingSheet } from "./MidMonthMeterReadingSheet";
+import { RecurringInvoiceManager } from "./RecurringInvoiceManager";
 
 interface LeaseManagerProps {
   assets: YardAsset[];
   leases: LeaseAgreement[];
+  meters: UtilityMeter[];
   loading: boolean;
   createLease: (lease: Partial<LeaseAgreement>) => Promise<any>;
   updateLease: (id: string, updates: Partial<LeaseAgreement>) => Promise<boolean>;
@@ -42,6 +45,7 @@ interface LeaseManagerProps {
 export function LeaseManager({
   assets,
   leases,
+  meters,
   loading,
   createLease,
   updateLease,
@@ -49,6 +53,8 @@ export function LeaseManager({
 }: LeaseManagerProps) {
   const [showNewLease, setShowNewLease] = useState(false);
   const [editingLease, setEditingLease] = useState<LeaseAgreement | null>(null);
+  const [meterReadingLease, setMeterReadingLease] = useState<LeaseAgreement | null>(null);
+  const [invoiceLease, setInvoiceLease] = useState<LeaseAgreement | null>(null);
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [boatSearch, setBoatSearch] = useState("");
   const [boatResults, setBoatResults] = useState<any[]>([]);
@@ -169,7 +175,7 @@ export function LeaseManager({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-500">Active</Badge>;
+        return <Badge variant="default">Active</Badge>;
       case "pending":
         return <Badge variant="secondary">Pending</Badge>;
       case "expired":
@@ -229,7 +235,7 @@ export function LeaseManager({
         </Card>
         <Card>
           <CardContent className="py-4">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-primary">
               ${activeLeases.reduce((sum, l) => sum + l.monthly_rate, 0).toLocaleString()}
             </div>
             <p className="text-sm text-muted-foreground">Monthly Revenue</p>
@@ -292,7 +298,23 @@ export function LeaseManager({
                       {lease.water_included && <Badge variant="secondary">Water Included</Badge>}
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMeterReadingLease(lease)}
+                      >
+                        <Gauge className="w-4 h-4 mr-1" />
+                        Meter Read
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInvoiceLease(lease)}
+                      >
+                        <Receipt className="w-4 h-4 mr-1" />
+                        Invoices
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => openEditLease(lease)}>
                         <Pencil className="w-4 h-4 mr-1" />
                         Edit
@@ -712,6 +734,28 @@ export function LeaseManager({
                   {submitting ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Mid-Month Meter Reading Sheet */}
+      <MidMonthMeterReadingSheet
+        open={!!meterReadingLease}
+        onOpenChange={(open) => !open && setMeterReadingLease(null)}
+        lease={meterReadingLease}
+        meters={meters}
+      />
+
+      {/* Recurring Invoices Sheet */}
+      <Sheet open={!!invoiceLease} onOpenChange={(open) => !open && setInvoiceLease(null)}>
+        <SheetContent className="sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Recurring Invoices</SheetTitle>
+          </SheetHeader>
+          {invoiceLease && (
+            <div className="mt-6">
+              <RecurringInvoiceManager lease={invoiceLease} />
             </div>
           )}
         </SheetContent>

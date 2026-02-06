@@ -2351,6 +2351,87 @@ export type Database = {
           },
         ]
       }
+      mid_stay_meter_readings: {
+        Row: {
+          added_to_invoice_id: string | null
+          billing_period: string | null
+          business_id: string
+          created_at: string
+          id: string
+          lease_id: string | null
+          meter_id: string
+          notes: string | null
+          reading_date: string
+          reading_value: number
+          recorded_by: string | null
+          yard_asset_id: string
+        }
+        Insert: {
+          added_to_invoice_id?: string | null
+          billing_period?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          lease_id?: string | null
+          meter_id: string
+          notes?: string | null
+          reading_date?: string
+          reading_value: number
+          recorded_by?: string | null
+          yard_asset_id: string
+        }
+        Update: {
+          added_to_invoice_id?: string | null
+          billing_period?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          lease_id?: string | null
+          meter_id?: string
+          notes?: string | null
+          reading_date?: string
+          reading_value?: number
+          recorded_by?: string | null
+          yard_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mid_stay_meter_readings_added_to_invoice_id_fkey"
+            columns: ["added_to_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mid_stay_meter_readings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mid_stay_meter_readings_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mid_stay_meter_readings_meter_id_fkey"
+            columns: ["meter_id"]
+            isOneToOne: false
+            referencedRelation: "utility_meters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mid_stay_meter_readings_yard_asset_id_fkey"
+            columns: ["yard_asset_id"]
+            isOneToOne: false
+            referencedRelation: "yard_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -3358,6 +3439,128 @@ export type Database = {
             columns: ["launch_queue_id"]
             isOneToOne: false
             referencedRelation: "launch_queue_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_invoices: {
+        Row: {
+          additional_charges: Json | null
+          base_rent: number
+          billing_period_end: string
+          billing_period_start: string
+          boat_id: string | null
+          business_id: string
+          created_at: string
+          due_date: string | null
+          grand_total: number
+          id: string
+          invoice_type: string
+          lease_id: string | null
+          notes: string | null
+          owner_id: string
+          paid_at: string | null
+          power_end_reading: number | null
+          power_rate: number | null
+          power_start_reading: number | null
+          power_total: number | null
+          power_usage: number | null
+          status: string
+          updated_at: string
+          water_end_reading: number | null
+          water_rate: number | null
+          water_start_reading: number | null
+          water_total: number | null
+          water_usage: number | null
+          yard_asset_id: string | null
+        }
+        Insert: {
+          additional_charges?: Json | null
+          base_rent?: number
+          billing_period_end: string
+          billing_period_start: string
+          boat_id?: string | null
+          business_id: string
+          created_at?: string
+          due_date?: string | null
+          grand_total?: number
+          id?: string
+          invoice_type?: string
+          lease_id?: string | null
+          notes?: string | null
+          owner_id: string
+          paid_at?: string | null
+          power_end_reading?: number | null
+          power_rate?: number | null
+          power_start_reading?: number | null
+          power_total?: number | null
+          power_usage?: number | null
+          status?: string
+          updated_at?: string
+          water_end_reading?: number | null
+          water_rate?: number | null
+          water_start_reading?: number | null
+          water_total?: number | null
+          water_usage?: number | null
+          yard_asset_id?: string | null
+        }
+        Update: {
+          additional_charges?: Json | null
+          base_rent?: number
+          billing_period_end?: string
+          billing_period_start?: string
+          boat_id?: string | null
+          business_id?: string
+          created_at?: string
+          due_date?: string | null
+          grand_total?: number
+          id?: string
+          invoice_type?: string
+          lease_id?: string | null
+          notes?: string | null
+          owner_id?: string
+          paid_at?: string | null
+          power_end_reading?: number | null
+          power_rate?: number | null
+          power_start_reading?: number | null
+          power_total?: number | null
+          power_usage?: number | null
+          status?: string
+          updated_at?: string
+          water_end_reading?: number | null
+          water_rate?: number | null
+          water_start_reading?: number | null
+          water_total?: number | null
+          water_usage?: number | null
+          yard_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_invoices_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_invoices_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_invoices_yard_asset_id_fkey"
+            columns: ["yard_asset_id"]
+            isOneToOne: false
+            referencedRelation: "yard_assets"
             referencedColumns: ["id"]
           },
         ]
