@@ -131,12 +131,13 @@ export function BusinessSetupForm() {
               {MODULE_OPTIONS.map((module) => {
                 const Icon = module.icon;
                 const isSelected = selectedModules.includes(module.id);
+                const checkboxId = `module-${module.id}`;
 
                 return (
-                  <div
+                  <label
                     key={module.id}
-                    onClick={() => toggleModule(module.id)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    htmlFor={checkboxId}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors block select-none ${
                       isSelected
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-muted-foreground/50"
@@ -144,8 +145,10 @@ export function BusinessSetupForm() {
                   >
                     <div className="flex items-start gap-3">
                       <Checkbox
+                        id={checkboxId}
                         checked={isSelected}
-                        className="mt-1 pointer-events-none"
+                        onCheckedChange={() => toggleModule(module.id)}
+                        className="mt-1"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -157,7 +160,7 @@ export function BusinessSetupForm() {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </label>
                 );
               })}
             </div>
