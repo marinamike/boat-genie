@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Grid3X3, FileText, Zap, Settings } from "lucide-react";
+import { Grid3X3, FileText, Zap, Settings, Calendar } from "lucide-react";
+import { ReservationManager } from "@/components/marina/ReservationManager";
 import { DockGrid } from "@/components/slips/DockGrid";
 import { LeaseManager } from "@/components/slips/LeaseManager";
 import { MeterReadings } from "@/components/slips/MeterReadings";
@@ -21,7 +22,7 @@ export default function SlipsDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="grid" className="flex items-center gap-2">
             <Grid3X3 className="w-4 h-4" />
             <span className="hidden sm:inline">Dock Grid</span>
@@ -37,6 +38,10 @@ export default function SlipsDashboard() {
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">Settings</span>
+          </TabsTrigger>
+          <TabsTrigger value="reservations" className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            <span className="hidden sm:inline">Reservations</span>
           </TabsTrigger>
         </TabsList>
 
@@ -54,6 +59,10 @@ export default function SlipsDashboard() {
 
         <TabsContent value="settings" className="mt-4">
           <SlipSettings {...yardAssets} />
+        </TabsContent>
+
+        <TabsContent value="reservations" className="mt-4">
+          <ReservationManager />
         </TabsContent>
       </Tabs>
     </div>
