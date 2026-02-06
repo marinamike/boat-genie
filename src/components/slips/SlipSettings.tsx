@@ -14,13 +14,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Settings, Zap, Droplets, Plus, Pencil, DollarSign, Save, Loader2 } from "lucide-react";
+import { Settings, Zap, Droplets, Plus, Pencil, DollarSign, Save, Loader2, Receipt, CalendarDays } from "lucide-react";
 import { UtilityMeter, YardAsset } from "@/hooks/useYardAssets";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SlipEditSheet } from "@/components/slips/SlipEditSheet";
 import { MeterEditSheet } from "@/components/slips/MeterEditSheet";
+import { RunMonthlyBillingDialog } from "@/components/slips/RunMonthlyBillingDialog";
+import { useRecurringBilling } from "@/hooks/useRecurringBilling";
+
+interface LeaseAgreement {
+  id: string;
+  lease_status: string;
+  monthly_rate: number;
+  boat?: { name: string } | null;
+  asset?: { asset_name: string } | null;
+}
 
 interface SlipSettingsProps {
   assets: YardAsset[];
@@ -42,12 +52,15 @@ export function SlipSettings({
   updateAsset,
 }: SlipSettingsProps) {
   const { business, refreshBusiness } = useBusiness();
+  const { runMonthlyBillingBatch, loading: billingLoading } = useRecurringBilling();
   
   const [showMeterForm, setShowMeterForm] = useState(false);
   const [editingMeter, setEditingMeter] = useState<UtilityMeter | null>(null);
   const [editingSlip, setEditingSlip] = useState<YardAsset | null>(null);
   const [savingSlipRates, setSavingSlipRates] = useState(false);
   const [savingUtilityRates, setSavingUtilityRates] = useState(false);
+  const [showBillingDialog, setShowBillingDialog] = useState(false);
+  const [activeLeases, setActiveLeases] = useState<LeaseAgreement[]>([]);
   
   const [slipRates, setSlipRates] = useState({
     daily: "",
@@ -78,6 +91,23 @@ export function SlipSettings({
       });
     }
   }, [business]);
+
+  // Fetch active leases count
+  useEffect(() => {
+    const fetchActiveLeases = async () => {
+      if (!business?.id) return;
+      
+      const { data } = await supabase
+        .from("lease_agreements")
+        .select("id, lease_status, monthly_rate, boat:boats(name), asset:yard_assets(asset_name)")
+        .eq("business_id", business.id)
+        .eq("lease_status", "active");
+      
+      setActiveLeases(data || []);
+    };
+    
+    fetchActiveLeases();
+  }, [business?.id]);
 
   const handleSaveSlipRates = async () => {
     if (!business?.id) return;
@@ -368,7 +398,47 @@ export function SlipSettings({
 
       <Separator />
 
-      {/* Section 3: Slip Inventory Manager */}
+      {/* Section 3: Recurring Billing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5" />
+            Recurring Billing
+          </CardTitle>
+          <CardDescription>
+            Generate monthly invoices for all active long-term leases (Annual/Seasonal contracts).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+            <div>
+              <div className="font-medium">Monthly Invoice Generation</div>
+              <div className="text-sm text-muted-foreground">
+                {activeLeases.length} active lease{activeLeases.length !== 1 ? "s" : ""} ready for billing
+              </div>
+            </div>
+            <Button onClick={() => setShowBillingDialog(true)} disabled={activeLeases.length === 0}>
+              <Receipt className="w-4 h-4 mr-2" />
+              Generate Monthly Invoices
+            </Button>
+          </div>
+          
+          {activeLeases.length > 0 && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p>Clicking this will:</p>
+              <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
+                <li>Calculate base rent from each lease agreement</li>
+                <li>Include any unbilled meter readings from the current month</li>
+                <li>Create draft invoices for each active tenant</li>
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Section 4: Slip Inventory Manager */}
       <Card>
         <CardHeader>
           <CardTitle>Slip Inventory</CardTitle>
@@ -443,7 +513,7 @@ export function SlipSettings({
 
       <Separator />
 
-      {/* Section 4: Utility Meters */}
+      {/* Section 5: Utility Meters */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Utility Meters</CardTitle>
@@ -596,6 +666,14 @@ export function SlipSettings({
         onUpdate={updateMeter}
         onCreate={createMeter}
         onDelete={deleteMeter}
+      />
+
+      {/* Monthly Billing Dialog */}
+      <RunMonthlyBillingDialog
+        open={showBillingDialog}
+        onOpenChange={setShowBillingDialog}
+        onRunBilling={runMonthlyBillingBatch}
+        activeLeaseCount={activeLeases.length}
       />
     </div>
   );

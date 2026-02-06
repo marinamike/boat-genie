@@ -324,6 +324,180 @@ export function useRecurringBilling() {
     }
   };
 
+  /**
+   * Generate monthly invoices for all active leases (batch billing)
+   */
+  const runMonthlyBillingBatch = async (): Promise<{
+    leaseId: string;
+    boatName: string;
+    assetName: string;
+    baseRent: number;
+    powerTotal: number;
+    waterTotal: number;
+    grandTotal: number;
+  }[]> => {
+    if (!user || !business?.id) {
+      toast.error("Business context required");
+      return [];
+    }
+
+    setLoading(true);
+    try {
+      // Fetch all active leases for this business
+      const { data: leases, error: leaseError } = await supabase
+        .from("lease_agreements")
+        .select(`
+          id,
+          yard_asset_id,
+          boat_id,
+          owner_id,
+          monthly_rate,
+          boat:boats(id, name, make, model),
+          asset:yard_assets(id, asset_name)
+        `)
+        .eq("business_id", business.id)
+        .eq("lease_status", "active");
+
+      if (leaseError) throw leaseError;
+      if (!leases || leases.length === 0) {
+        toast.info("No active leases found");
+        return [];
+      }
+
+      const results: {
+        leaseId: string;
+        boatName: string;
+        assetName: string;
+        baseRent: number;
+        powerTotal: number;
+        waterTotal: number;
+        grandTotal: number;
+      }[] = [];
+
+      const billingMonth = new Date();
+      const periodStart = startOfMonth(billingMonth);
+      const periodEnd = endOfMonth(billingMonth);
+      const dueDate = addMonths(periodStart, 1);
+
+      // Get global rates for inheritance
+      const powerGlobalRate = business?.power_rate_per_kwh ?? 0;
+      const waterGlobalRate = business?.water_rate_per_gallon ?? 0;
+
+      for (const lease of leases) {
+        try {
+          // Get any mid-stay meter readings for this period that haven't been invoiced
+          const { data: meterReadings } = await supabase
+            .from("mid_stay_meter_readings")
+            .select("*")
+            .eq("lease_id", lease.id)
+            .gte("reading_date", format(periodStart, "yyyy-MM-dd"))
+            .lte("reading_date", format(periodEnd, "yyyy-MM-dd"))
+            .is("added_to_invoice_id", null);
+
+          let powerTotal = 0;
+          let waterTotal = 0;
+          let powerUsage = 0;
+          let waterUsage = 0;
+
+          if (meterReadings && meterReadings.length > 0) {
+            const meterIds = [...new Set(meterReadings.map(r => r.meter_id))];
+            const { data: meters } = await supabase
+              .from("utility_meters")
+              .select("*")
+              .in("id", meterIds);
+
+            if (meters) {
+              for (const reading of meterReadings) {
+                const meter = meters.find(m => m.id === reading.meter_id);
+                if (meter) {
+                  const usage = reading.reading_value;
+                  // Apply rate inheritance
+                  const effectiveRate = meter.rate_per_unit > 0
+                    ? meter.rate_per_unit
+                    : (meter.meter_type === "power" ? powerGlobalRate : waterGlobalRate);
+                  const total = usage * effectiveRate;
+                  if (meter.meter_type === "power") {
+                    powerUsage += usage;
+                    powerTotal += total;
+                  } else if (meter.meter_type === "water") {
+                    waterUsage += usage;
+                    waterTotal += total;
+                  }
+                }
+              }
+            }
+          }
+
+          const grandTotal = lease.monthly_rate + powerTotal + waterTotal;
+
+          // Create the invoice
+          const { data: invoice, error: invoiceError } = await supabase
+            .from("recurring_invoices")
+            .insert({
+              business_id: business.id,
+              lease_id: lease.id,
+              yard_asset_id: lease.yard_asset_id,
+              boat_id: lease.boat_id,
+              owner_id: lease.owner_id,
+              invoice_type: "monthly",
+              billing_period_start: format(periodStart, "yyyy-MM-dd"),
+              billing_period_end: format(periodEnd, "yyyy-MM-dd"),
+              base_rent: lease.monthly_rate,
+              power_usage: powerUsage,
+              power_total: powerTotal,
+              water_usage: waterUsage,
+              water_total: waterTotal,
+              grand_total: grandTotal,
+              status: "draft",
+              due_date: format(dueDate, "yyyy-MM-dd"),
+            })
+            .select()
+            .single();
+
+          if (invoiceError) {
+            console.error(`Error creating invoice for lease ${lease.id}:`, invoiceError);
+            continue;
+          }
+
+          // Link meter readings to this invoice
+          if (meterReadings && meterReadings.length > 0) {
+            await supabase
+              .from("mid_stay_meter_readings")
+              .update({ added_to_invoice_id: invoice.id })
+              .in("id", meterReadings.map(r => r.id));
+          }
+
+          const boatData = lease.boat as { id: string; name: string; make?: string; model?: string } | null;
+          const assetData = lease.asset as { id: string; asset_name: string } | null;
+
+          results.push({
+            leaseId: lease.id,
+            boatName: boatData?.name || "Unknown Vessel",
+            assetName: assetData?.asset_name || "Unknown Slip",
+            baseRent: lease.monthly_rate,
+            powerTotal,
+            waterTotal,
+            grandTotal,
+          });
+        } catch (err) {
+          console.error(`Error processing lease ${lease.id}:`, err);
+        }
+      }
+
+      if (results.length > 0) {
+        toast.success(`Generated ${results.length} monthly invoice${results.length !== 1 ? "s" : ""}`);
+      }
+
+      return results;
+    } catch (error: any) {
+      console.error("Error running batch billing:", error);
+      toast.error("Failed to run monthly billing");
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     generateMonthlyInvoice,
@@ -332,5 +506,6 @@ export function useRecurringBilling() {
     getBusinessInvoices,
     getMidStayReadings,
     updateInvoiceStatus,
+    runMonthlyBillingBatch,
   };
 }
