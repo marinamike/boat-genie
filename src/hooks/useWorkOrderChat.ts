@@ -13,7 +13,6 @@ export interface ChatMessage {
   is_read: boolean;
   read_at: string | null;
   created_at: string;
-  // Anonymized sender info
   sender_display_name: string;
   is_own_message: boolean;
 }
@@ -40,7 +39,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
   const { toast } = useToast();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Fetch work order participants with anonymized names
   const fetchParticipants = useCallback(async () => {
     if (!workOrderId) return;
 
@@ -50,10 +48,8 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
 
       setCurrentUserId(session.user.id);
 
-      // Check if user is admin
-      const { data: isAdmin } = await supabase.rpc("is_admin");
+      const { data: isAdmin } = await supabase.rpc("is_platform_admin");
 
-      // Get work order with boat and provider info
       const { data: workOrder, error } = await supabase
         .from("work_orders")
         .select(`
@@ -75,17 +71,14 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
       const isOwner = boat.owner_id === session.user.id;
       const isProvider = workOrder.provider_id === session.user.id;
 
-      // Set current user's participant info
       if (isAdmin) {
         setParticipant({
           id: session.user.id,
           display_name: "Boat Genie Admin",
           role: "admin",
         });
-        // Admin can message either party - default to provider
         setRecipientId(workOrder.provider_id || boat.owner_id);
       } else if (isOwner) {
-        // Get owner's first name only
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
@@ -100,16 +93,16 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
         });
         setRecipientId(workOrder.provider_id);
       } else if (isProvider) {
-        // Get provider's business name
-        const { data: providerProfile } = await supabase
-          .from("provider_profiles")
+        // Get provider's business name from businesses table (unified schema)
+        const { data: businessProfile } = await supabase
+          .from("businesses")
           .select("business_name")
-          .eq("user_id", session.user.id)
+          .eq("owner_id", session.user.id)
           .single();
         
         setParticipant({
           id: session.user.id,
-          display_name: providerProfile?.business_name || "Service Provider",
+          display_name: businessProfile?.business_name || "Service Provider",
           role: "provider",
         });
         setRecipientId(boat.owner_id);
@@ -119,15 +112,13 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     }
   }, [workOrderId]);
 
-  // Fetch messages with anonymized sender names
   const fetchMessages = useCallback(async () => {
     if (!workOrderId || !currentUserId) return;
 
     setLoading(true);
     try {
-      const { data: isAdmin } = await supabase.rpc("is_admin");
+      const { data: isAdmin } = await supabase.rpc("is_platform_admin");
 
-      // Get work order to determine anonymization
       const { data: workOrder } = await supabase
         .from("work_orders")
         .select(`
@@ -142,7 +133,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
 
       const boat = workOrder?.boats as { name: string; owner_id: string } | null;
       
-      // Fetch messages
       const { data: messagesData, error } = await supabase
         .from("messages")
         .select("*")
@@ -151,22 +141,19 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
 
       if (error) throw error;
 
-      // Get unique sender IDs for display name resolution
       const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
       
-      // Fetch profiles for owners
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name")
         .in("id", senderIds);
 
-      // Fetch provider profiles
-      const { data: providerProfiles } = await supabase
-        .from("provider_profiles")
-        .select("user_id, business_name")
-        .in("user_id", senderIds);
+      // Get business names from businesses table (unified schema)
+      const { data: businessProfiles } = await supabase
+        .from("businesses")
+        .select("owner_id, business_name")
+        .in("owner_id", senderIds);
 
-      // Map messages with anonymized names
       const mappedMessages: ChatMessage[] = (messagesData || []).map(msg => {
         let senderDisplayName = "Unknown";
         const isOwnMessage = msg.sender_id === currentUserId;
@@ -174,18 +161,15 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
         if (msg.message_type === "system") {
           senderDisplayName = "Boat Genie";
         } else if (isAdmin) {
-          // Admin sees full info
           const profile = profiles?.find(p => p.id === msg.sender_id);
-          const providerProfile = providerProfiles?.find(p => p.user_id === msg.sender_id);
-          senderDisplayName = providerProfile?.business_name || profile?.full_name || "User";
+          const businessProfile = businessProfiles?.find(p => p.owner_id === msg.sender_id);
+          senderDisplayName = businessProfile?.business_name || profile?.full_name || "User";
         } else if (msg.sender_id === currentUserId) {
           senderDisplayName = "You";
         } else if (msg.sender_id === workOrder?.provider_id) {
-          // Show provider's business name to owners
-          const providerProfile = providerProfiles?.find(p => p.user_id === msg.sender_id);
-          senderDisplayName = providerProfile?.business_name || "Service Provider";
+          const businessProfile = businessProfiles?.find(p => p.owner_id === msg.sender_id);
+          senderDisplayName = businessProfile?.business_name || "Service Provider";
         } else if (msg.sender_id === boat?.owner_id) {
-          // Show owner's first name to providers
           const profile = profiles?.find(p => p.id === msg.sender_id);
           const firstName = profile?.full_name?.split(" ")[0] || "Boat Owner";
           senderDisplayName = firstName;
@@ -201,7 +185,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
 
       setMessages(mappedMessages);
 
-      // Count unread messages
       const unread = mappedMessages.filter(
         m => !m.is_read && m.recipient_id === currentUserId
       ).length;
@@ -214,7 +197,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     }
   }, [workOrderId, currentUserId]);
 
-  // Mark messages as read
   const markAsRead = useCallback(async () => {
     if (!workOrderId || !currentUserId) return;
 
@@ -232,7 +214,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     }
   }, [workOrderId, currentUserId]);
 
-  // Send a message
   const sendMessage = async (content: string, imageUrl?: string) => {
     if (!workOrderId || !currentUserId || !recipientId) return false;
     if (!content.trim() && !imageUrl) return false;
@@ -254,12 +235,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
 
       if (error) throw error;
 
-      // Trigger browser notification for recipient
-      if ("Notification" in window && Notification.permission === "granted") {
-        // This would typically be handled by a push notification service
-        // For now, we're just preparing the infrastructure
-      }
-
       return true;
     } catch (error: any) {
       console.error("Error sending message:", error);
@@ -274,7 +249,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     }
   };
 
-  // Upload image and send as message
   const sendImage = async (file: File) => {
     if (!currentUserId) return false;
 
@@ -282,7 +256,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
       const fileExt = file.name.split(".").pop()?.toLowerCase();
       const fileName = `${currentUserId}/${workOrderId}_${Date.now()}.${fileExt}`;
 
-      // Determine content type
       const contentTypeMap: Record<string, string> = {
         jpg: "image/jpeg",
         jpeg: "image/jpeg",
@@ -301,7 +274,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
 
       if (uploadError) throw uploadError;
 
-      // Store the path for signed URL generation
       return await sendMessage("", fileName);
     } catch (error: any) {
       console.error("Error uploading image:", error);
@@ -314,12 +286,10 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     }
   };
 
-  // Create system message (for status updates)
   const createSystemMessage = async (content: string, recipientIdOverride?: string) => {
     if (!workOrderId || !currentUserId) return false;
 
     try {
-      // Get the other participant
       const { data: workOrder } = await supabase
         .from("work_orders")
         .select(`
@@ -353,7 +323,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     }
   };
 
-  // Subscribe to realtime updates
   useEffect(() => {
     if (!workOrderId || !isOpen) return;
 
@@ -382,7 +351,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     };
   }, [workOrderId, isOpen, fetchMessages]);
 
-  // Initial load
   useEffect(() => {
     fetchParticipants();
   }, [fetchParticipants]);
@@ -393,7 +361,6 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
     }
   }, [currentUserId, fetchMessages]);
 
-  // Mark as read when chat is opened
   useEffect(() => {
     if (isOpen && unreadCount > 0) {
       markAsRead();

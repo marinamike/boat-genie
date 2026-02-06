@@ -71,14 +71,12 @@ function normalizeServiceName(name: string): string {
 function matchesProviderService(wishServiceType: string, providerServices: string[]): boolean {
   const normalizedWish = normalizeServiceName(wishServiceType);
   
-  // "Other" or empty shows to providers with at least one service
   if (normalizedWish === "other" || !normalizedWish) {
     return providerServices.length > 0;
   }
   
   return providerServices.some(service => {
     const normalizedService = normalizeServiceName(service);
-    // Exact match or partial match (e.g., "Full Detail" matches wish "Detail")
     return normalizedService === normalizedWish ||
            normalizedService.includes(normalizedWish) ||
            normalizedWish.includes(normalizedService);
@@ -102,23 +100,23 @@ export function useJobBoard() {
         return;
       }
 
-      // Fetch provider's profile for categories
-      const { data: providerProfile } = await supabase
-        .from("provider_profiles")
-        .select("id, service_categories")
-        .eq("user_id", session.user.id)
+      // Fetch business profile for service categories (from unified businesses table)
+      const { data: businessProfile } = await supabase
+        .from("businesses")
+        .select("id, service_categories, hourly_rate, rate_per_foot, diagnostic_fee")
+        .eq("owner_id", session.user.id)
         .maybeSingle();
 
-      const categories = providerProfile?.service_categories || [];
+      const categories = businessProfile?.service_categories || [];
       setProviderCategories(categories);
 
       // Fetch provider's actual Service Menu items
       let serviceNames: string[] = [];
-      if (providerProfile?.id) {
+      if (businessProfile?.id) {
         const { data: providerServices } = await supabase
           .from("provider_services")
           .select("service_name")
-          .eq("provider_id", providerProfile.id)
+          .eq("provider_id", businessProfile.id)
           .eq("is_active", true);
         
         serviceNames = (providerServices || []).map(s => s.service_name);
@@ -154,10 +152,9 @@ export function useJobBoard() {
 
       if (wishError) throw wishError;
 
-      // Filter wishes by provider's Service Menu (actual services offered)
+      // Filter wishes by provider's Service Menu
       const filteredWishes = (wishes || [])
         .map((wish) => {
-          // Flatten boat_profiles from array to single object
           const boat = wish.boat;
           const boatProfile = Array.isArray(boat?.boat_profiles) 
             ? boat.boat_profiles[0] 
@@ -170,10 +167,7 @@ export function useJobBoard() {
           };
         })
         .filter((wish) => {
-          // If provider has no services in their menu, show nothing
           if (serviceNames.length === 0) return false;
-          
-          // Match wish service_type against provider's actual Service Menu
           return matchesProviderService(wish.service_type, serviceNames);
         });
 
@@ -202,7 +196,6 @@ export function useJobBoard() {
 
       if (woError) throw woError;
 
-      // Transform work orders to expected shape (quotes is array)
       const workOrders: WorkOrderItem[] = (workOrdersRaw || []).map((wo: any) => ({
         ...wo,
         quotes: Array.isArray(wo.quotes) ? wo.quotes : wo.quotes ? [wo.quotes] : [],
@@ -227,7 +220,6 @@ export function useJobBoard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
 
-      // Get the wish details
       const { data: wish, error: wishError } = await supabase
         .from("wish_forms")
         .select("*, boat:boats(id, name)")
@@ -236,22 +228,20 @@ export function useJobBoard() {
 
       if (wishError) throw wishError;
 
-      // Get provider's current rates for snapshot
-      const { data: providerProfile, error: profileError } = await supabase
-        .from("provider_profiles")
+      // Get provider's current rates from businesses table
+      const { data: businessProfile, error: profileError } = await supabase
+        .from("businesses")
         .select("hourly_rate, rate_per_foot, diagnostic_fee")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .single();
 
       if (profileError) throw profileError;
 
-      // Calculate pricing
       const basePrice = quoteData.laborCost + quoteData.materialsCost;
-      const serviceFee = basePrice * 0.10; // 10% platform fee
+      const serviceFee = basePrice * 0.10;
       const totalOwnerPrice = basePrice + serviceFee;
-      const totalProviderReceives = basePrice - (basePrice * 0.03); // 3% lead fee
+      const totalProviderReceives = basePrice - (basePrice * 0.03);
 
-      // Create work order with rate snapshot
       const { data: workOrder, error: woError } = await supabase
         .from("work_orders")
         .insert({
@@ -267,17 +257,15 @@ export function useJobBoard() {
           wholesale_price: basePrice,
           retail_price: totalOwnerPrice,
           escrow_status: "pending_quote",
-          // Snapshot provider rates at time of quote
-          provider_hourly_rate: providerProfile.hourly_rate,
-          provider_rate_per_foot: providerProfile.rate_per_foot,
-          provider_diagnostic_fee: providerProfile.diagnostic_fee,
+          provider_hourly_rate: businessProfile.hourly_rate,
+          provider_rate_per_foot: businessProfile.rate_per_foot,
+          provider_diagnostic_fee: businessProfile.diagnostic_fee,
         })
         .select()
         .single();
 
       if (woError) throw woError;
 
-      // Create quote with rate snapshot and materials deposit
       const { error: quoteError } = await supabase
         .from("quotes")
         .insert({
@@ -292,15 +280,13 @@ export function useJobBoard() {
           notes: quoteData.notes || null,
           status: "pending",
           is_emergency: wish.urgency === "urgent",
-          // Snapshot provider rates at time of quote
-          provider_hourly_rate: providerProfile.hourly_rate,
-          provider_rate_per_foot: providerProfile.rate_per_foot,
-          provider_diagnostic_fee: providerProfile.diagnostic_fee,
+          provider_hourly_rate: businessProfile.hourly_rate,
+          provider_rate_per_foot: businessProfile.rate_per_foot,
+          provider_diagnostic_fee: businessProfile.diagnostic_fee,
         });
 
       if (quoteError) throw quoteError;
 
-      // Update wish status to indicate quote is pending
       const { error: updateError } = await supabase
         .from("wish_forms")
         .update({ status: "reviewed" })

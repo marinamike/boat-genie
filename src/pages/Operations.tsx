@@ -20,7 +20,7 @@ import type { QCQueueItem } from "@/hooks/useQCQueue";
 
 export default function Operations() {
   const navigate = useNavigate();
-  const { isAdmin, isMarinaStaff, loading: roleLoading, marina } = useUserRole();
+  const { isAdmin, isMarinaStaff, loading: roleLoading, business } = useUserRole();
   const { qcQueue, activeJobs, upcomingJobs, loading: queueLoading, refetch } = useQCQueue();
   const [selectedItem, setSelectedItem] = useState<QCQueueItem | null>(null);
 
@@ -64,8 +64,8 @@ export default function Operations() {
             <h1 className="text-2xl font-bold">Operations</h1>
           </div>
           <p className="text-primary-foreground/80">
-            {isMarinaStaff && marina 
-              ? `${marina.marina_name} - Runner Dashboard`
+            {isMarinaStaff && business 
+              ? `${business.business_name} - Runner Dashboard`
               : "Platform-wide operations management"
             }
           </p>
@@ -79,7 +79,7 @@ export default function Operations() {
           <span className="text-primary">
             {isAdmin 
               ? "Admin access - All regions visible" 
-              : `Marina Staff access - ${marina?.marina_name || "Pending marina assignment"}`
+              : `Marina Staff access - ${business?.business_name || "Pending marina assignment"}`
             }
           </span>
         </div>
