@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, Loader2, MapPin } from "lucide-react";
-import { useWishForm, SERVICE_CATEGORIES, ServiceCategory, ServiceRate } from "@/hooks/useWishForm";
+import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, Loader2, MapPin, Zap, Scissors, Anchor, Settings } from "lucide-react";
+import { useWishForm, SERVICE_CATEGORIES, ServiceCategory, type ServiceRate } from "@/hooks/useWishForm";
 import { ProviderService } from "@/hooks/useProviderServices";
 import { useServiceProviders, useProviderServicesByBusiness, ServiceProvider } from "@/hooks/useServiceProviders";
 import { ProviderSearchResults } from "./ProviderSearchResults";
@@ -40,15 +40,12 @@ type Step = "select-boat" | "select-category" | "select-provider" | "form" | "fi
 const categoryIcons: Record<string, typeof Sparkles> = {
   wash_detail: Sparkles,
   mechanical: Wrench,
-  visual_cosmetic: Paintbrush,
+  electrical: Zap,
+  hull_bottom: Paintbrush,
+  canvas_upholstery: Scissors,
+  rigging: Anchor,
+  general: Settings,
   find_marina: MapPin,
-};
-
-// Map categories to provider service categories
-const CATEGORY_TO_SERVICE_CATEGORY: Record<ServiceCategory, string> = {
-  wash_detail: "Wash & Detail",
-  mechanical: "Mechanical",
-  visual_cosmetic: "Fiberglass & Gelcoat",
 };
 
 export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier = "standard", preselectedBoatId, prefilledDescription, onSuccess }: WishFormSheetProps) {
@@ -245,9 +242,9 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   const handleSubmit = async () => {
     if (!selectedBoat || !selectedCategory || !description.trim()) return;
 
-    // Validate visual/cosmetic requires photos
-    if (selectedCategory === "visual_cosmetic" && photos.length === 0) {
-      alert("Please upload at least one photo for visual/cosmetic services");
+    // Validate hull_bottom requires photos
+    if (selectedCategory === "hull_bottom" && photos.length === 0) {
+      alert("Please upload at least one photo for hull & bottom services");
       return;
     }
 
@@ -327,12 +324,8 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
                 )}
                 onClick={() => {
                   setSelectedCategory(key);
-                  // For wash_detail, go to provider selection first
-                  if (key === "wash_detail") {
-                    setStep("select-provider");
-                  } else {
-                    setStep("form");
-                  }
+                  // All categories go through provider selection
+                  setStep("select-provider");
                 }}
               >
                 <CardContent className="p-4 flex items-start gap-3">
@@ -373,12 +366,12 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
     const category = SERVICE_CATEGORIES[selectedCategory];
     const priceBreakdown = getPriceBreakdown();
 
-    // Use provider services for wash_detail category when provider is selected
-    const useProviderServicesDropdown = selectedCategory === "wash_detail" && selectedProvider && providerServices.length > 0;
+    // Use provider services when provider is selected
+    const useProviderServicesDropdown = selectedProvider && providerServices.length > 0;
 
     // Determine back button behavior
     const handleBackFromForm = () => {
-      if (selectedCategory === "wash_detail" && selectedProvider) {
+      if (selectedProvider) {
         setStep("select-provider");
       } else {
         setStep("select-category");
@@ -391,8 +384,8 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
           <ChevronLeft className="w-4 h-4 mr-1" /> Back
         </Button>
 
-        {/* Header with provider context for wash_detail */}
-        {selectedCategory === "wash_detail" && selectedProvider ? (
+        {/* Header with provider context */}
+        {selectedProvider ? (
           <div className="space-y-2 pb-2 border-b">
             <h3 className="font-semibold text-lg">
               Requesting {category.label} from {selectedProvider.business_name}
@@ -408,72 +401,40 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
           </div>
         )}
 
-        {/* Service Selection - Provider Services for Wash & Detail */}
-        {selectedCategory === "wash_detail" && (
-          <div className="space-y-2">
-            <Label>Select Service</Label>
-            {loadingServices ? (
-              <div className="flex items-center gap-2 p-3 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Loading available services...</span>
-              </div>
-            ) : useProviderServicesDropdown ? (
-              <Select value={selectedProviderService?.id || ""} onValueChange={handleProviderServiceSelect}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a service..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {providerServices.map((service) => (
-                    <SelectItem key={service.id} value={service.id}>
-                      <div className="flex items-center justify-between w-full gap-4">
-                        <span>{service.service_name}</span>
-                        <span className="text-muted-foreground">
-                          ${service.price.toFixed(2)}
-                          {service.pricing_model === "per_foot" ? "/ft" : ""}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Select value={selectedService} onValueChange={setSelectedService}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a service..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {category.services.map((service) => (
-                    <SelectItem key={service} value={service}>
-                      {service}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        )}
-
-        {/* Service Selection for other categories */}
-        {selectedCategory !== "wash_detail" && category.services.length > 1 && (
-          <div className="space-y-2">
-            <Label>Select Service</Label>
-            <Select value={selectedService} onValueChange={setSelectedService}>
+        {/* Service Selection - Provider Services */}
+        <div className="space-y-2">
+          <Label>Select Service</Label>
+          {loadingServices ? (
+            <div className="flex items-center gap-2 p-3 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Loading available services...</span>
+            </div>
+          ) : useProviderServicesDropdown ? (
+            <Select value={selectedProviderService?.id || ""} onValueChange={handleProviderServiceSelect}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a service..." />
               </SelectTrigger>
               <SelectContent>
-                {category.services.map((service) => (
-                  <SelectItem key={service} value={service}>
-                    {service}
+                {providerServices.map((service) => (
+                  <SelectItem key={service.id} value={service.id}>
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <span>{service.service_name}</span>
+                      <span className="text-muted-foreground">
+                        ${service.price.toFixed(2)}
+                        {service.pricing_model === "per_foot" ? "/ft" : ""}
+                      </span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        )}
+          ) : (
+            <p className="text-sm text-muted-foreground">No services available for this provider in this category.</p>
+          )}
+        </div>
 
-        {/* Instant Price Display for Wash & Detail */}
-        {selectedCategory === "wash_detail" && priceBreakdown && (selectedProviderService || getMatchingServiceRate()) && (
+        {/* Instant Price Display */}
+        {priceBreakdown && (selectedProviderService || getMatchingServiceRate()) && (
           <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
@@ -529,8 +490,8 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
           </Card>
         )}
 
-        {/* Photo Upload for Visual/Cosmetic */}
-        {selectedCategory === "visual_cosmetic" && (
+        {/* Photo Upload for Hull & Bottom */}
+        {selectedCategory === "hull_bottom" && (
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               Photos <span className="text-destructive">*</span>
@@ -617,7 +578,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
         {/* Submit Button */}
         <Button
           onClick={handleSubmit}
-          disabled={loading || !description.trim() || (selectedCategory === "visual_cosmetic" && photos.length === 0)}
+          disabled={loading || !description.trim() || (selectedCategory === "hull_bottom" && photos.length === 0)}
           className="w-full h-12 text-lg bg-gradient-gold hover:opacity-90"
         >
           {loading ? "Submitting..." : "Submit Wish ✨"}
