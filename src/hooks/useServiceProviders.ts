@@ -28,60 +28,59 @@ export function useServiceProviders(category?: ServiceCategory) {
     try {
       const serviceCategory = SERVICE_CATEGORIES[category].label;
 
-      // Fetch provider profiles that have matching active services
-      const { data: services, error } = await supabase
-        .from("provider_services")
+      // Query business_service_menu joined with businesses
+      const { data: menuItems, error } = await supabase
+        .from("business_service_menu")
         .select(`
           id,
-          provider_id,
-          service_name,
+          business_id,
+          name,
           pricing_model,
-          price,
+          default_price,
           category,
-          provider:provider_profiles(
+          business:businesses(
             id,
             business_name,
             logo_url,
-            is_available
+            is_verified
           )
         `)
         .eq("is_active", true)
-        .or(`category.eq.${serviceCategory},pricing_model.eq.per_foot`);
+        .eq("category", serviceCategory);
 
       if (error) throw error;
 
-      // Group by provider and find min price
+      // Group by business and find min price
       const providerMap = new Map<string, ServiceProvider>();
       
-      for (const service of services || []) {
-        const provider = Array.isArray(service.provider) 
-          ? service.provider[0] 
-          : service.provider;
+      for (const item of menuItems || []) {
+        const business = Array.isArray(item.business) 
+          ? item.business[0] 
+          : item.business;
         
-        if (!provider || !provider.business_name) continue;
+        if (!business || !business.business_name) continue;
         
-        const existing = providerMap.get(provider.id);
+        const existing = providerMap.get(business.id);
         
         if (existing) {
-          // Update if this price is lower
-          if (service.price < (existing.base_price || Infinity)) {
-            existing.base_price = service.price;
-            existing.pricing_model = service.pricing_model as ServiceProvider["pricing_model"];
+          if (item.default_price < (existing.base_price || Infinity)) {
+            existing.base_price = item.default_price;
+            existing.pricing_model = item.pricing_model as ServiceProvider["pricing_model"];
           }
           existing.service_count++;
-          if (!existing.categories.includes(service.category)) {
-            existing.categories.push(service.category);
+          if (!existing.categories.includes(item.category)) {
+            existing.categories.push(item.category);
           }
         } else {
-          providerMap.set(provider.id, {
-            id: provider.id,
-            business_name: provider.business_name,
-            rating: null, // Will be populated from reviews if available
-            base_price: service.price,
-            pricing_model: service.pricing_model as ServiceProvider["pricing_model"],
+          providerMap.set(business.id, {
+            id: business.id,
+            business_name: business.business_name,
+            rating: null,
+            base_price: item.default_price,
+            pricing_model: item.pricing_model as ServiceProvider["pricing_model"],
             service_count: 1,
-            logo_url: provider.logo_url,
-            categories: [service.category],
+            logo_url: business.logo_url,
+            categories: [item.category],
           });
         }
       }
@@ -101,8 +100,8 @@ export function useServiceProviders(category?: ServiceCategory) {
   return { providers, loading, refetch: fetchProviders };
 }
 
-// Fetch services for a specific provider
-export function useProviderServicesByBusiness(providerId?: string, category?: ServiceCategory) {
+// Fetch services for a specific business
+export function useProviderServicesByBusiness(businessId?: string, category?: ServiceCategory) {
   const [services, setServices] = useState<Array<{
     id: string;
     service_name: string;
@@ -115,7 +114,7 @@ export function useProviderServicesByBusiness(providerId?: string, category?: Se
 
   useEffect(() => {
     const fetchServices = async () => {
-      if (!providerId) {
+      if (!businessId) {
         setServices([]);
         setLoading(false);
         return;
@@ -124,22 +123,27 @@ export function useProviderServicesByBusiness(providerId?: string, category?: Se
       setLoading(true);
       try {
         let query = supabase
-          .from("provider_services")
-          .select("id, service_name, pricing_model, price, description, category")
-          .eq("provider_id", providerId)
+          .from("business_service_menu")
+          .select("id, name, pricing_model, default_price, description, category")
+          .eq("business_id", businessId)
           .eq("is_active", true);
         
         if (category) {
           query = query.eq("category", SERVICE_CATEGORIES[category].label);
         }
 
-        const { data, error } = await query.order("price");
+        const { data, error } = await query.order("default_price");
 
         if (error) throw error;
         
+        // Map field names to match the expected interface
         setServices((data || []).map(s => ({
-          ...s,
-          pricing_model: s.pricing_model as "per_foot" | "flat_rate" | "per_hour"
+          id: s.id,
+          service_name: s.name,
+          pricing_model: s.pricing_model as "per_foot" | "flat_rate" | "per_hour",
+          price: s.default_price,
+          description: s.description,
+          category: s.category,
         })));
       } catch (error) {
         console.error("Error fetching provider services:", error);
@@ -149,7 +153,7 @@ export function useProviderServicesByBusiness(providerId?: string, category?: Se
     };
 
     fetchServices();
-  }, [providerId, category]);
+  }, [businessId, category]);
 
   return { services, loading };
 }
