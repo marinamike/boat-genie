@@ -1,88 +1,79 @@
 
 
-# Unify Service Categories Across Customer Wishes and Business Service Menu
+# Fix: Connect Business Service Menu to Customer Wish Flow
 
 ## Problem
 
-Two separate category systems exist that don't talk to each other:
+You created services in the Business Settings Service Menu, which saves to the `business_service_menu` table. But when a customer makes a wish, the provider search queries the old `provider_services` table (joined with `provider_profiles`). These are two completely separate tables, so your services never show up.
 
-| System | Categories |
-|--------|-----------|
-| **Wish Form** (customer) | Wash & Detail, Mechanical, Fiberglass & Gelcoat |
-| **Service Menu** (business) | Mechanical, Electrical, Cosmetic, Hull, Rigging, General |
+## Solution
 
-A customer requesting "Wash & Detail" can never match a business that categorizes their wash services under "Cosmetic" or "General". The categories must be unified so provider discovery works.
+Update `useServiceProviders.ts` to query `business_service_menu` joined with `businesses` instead of `provider_services` joined with `provider_profiles`.
 
-## Solution: Single Shared Category List
+## Changes
 
-Define one canonical set of categories used everywhere:
+### `src/hooks/useServiceProviders.ts`
 
-- **Wash & Detail** -- wash, wax, interior/exterior detailing
-- **Mechanical** -- engine, drive train, systems repair
-- **Electrical** -- wiring, electronics, navigation equipment
-- **Hull & Bottom** -- bottom painting, fiberglass, gelcoat, blister repair
-- **Canvas & Upholstery** -- covers, enclosures, cushions
-- **Rigging** -- standing/running rigging, sails
-- **General** -- catch-all for anything else
+**`useServiceProviders` hook** (provider discovery):
+- Query `business_service_menu` instead of `provider_services`
+- Join with `businesses` (using `business_id`) to get business name and logo
+- Filter by `is_active = true` and matching category label
+- Group results by business to show one card per business with the lowest price
 
-This replaces both the old Wish `SERVICE_CATEGORIES` and the old Service Menu `SERVICE_CATEGORIES`.
+**`useProviderServicesByBusiness` hook** (service dropdown after selecting a provider):
+- Query `business_service_menu` instead of `provider_services`
+- Filter by `business_id` (instead of `provider_id`) and active status
+- Map fields: `name` becomes `service_name`, `default_price` becomes `price`, `pricing_model` maps appropriately
 
-## Files Changed
+### `src/components/wish/WishFormSheet.tsx`
 
-| File | Change |
-|------|--------|
-| `src/hooks/useWishForm.ts` | Replace `SERVICE_CATEGORIES` with the unified list; update `ServiceCategory` type |
-| `src/hooks/useServiceMenu.ts` | Replace `SERVICE_CATEGORIES` array with the same unified list |
-| `src/hooks/useServiceProviders.ts` | Remove hardcoded `categoryMap` -- categories now match directly (no mapping needed) |
-| `src/components/wish/WishFormSheet.tsx` | Update category rendering and icon map to handle new categories; route all categories through provider selection step (not just wash_detail) |
-| `src/components/business/ServiceMenuManager.tsx` | No changes needed (already imports from `useServiceMenu`) |
+- Minor mapping update: the service dropdown field names change slightly (`name` vs `service_name`, `default_price` vs `price`)
+- The `handleProviderServiceSelect` function needs to map the new field names from `business_service_menu`
 
 ## Technical Details
 
-### Shared category constant (in useWishForm.ts, exported)
+### New query for provider discovery
 
 ```text
-SERVICE_CATEGORIES = {
-  wash_detail:        { label: "Wash & Detail",        icon: Sparkles,    description: "Wash, wax, and detailing services" }
-  mechanical:         { label: "Mechanical",            icon: Wrench,      description: "Engine and drive train repair" }
-  electrical:         { label: "Electrical",            icon: Zap,         description: "Wiring, electronics, navigation" }
-  hull_bottom:        { label: "Hull & Bottom",         icon: Paintbrush,  description: "Bottom paint, fiberglass, gelcoat" }
-  canvas_upholstery:  { label: "Canvas & Upholstery",  icon: Scissors,    description: "Covers, enclosures, cushions" }
-  rigging:            { label: "Rigging",               icon: Anchor,      description: "Standing and running rigging" }
-  general:            { label: "General",               icon: Settings,    description: "Other marine services" }
-}
+supabase
+  .from("business_service_menu")
+  .select("id, name, pricing_model, default_price, category, business_id, business:businesses(id, business_name, logo_url, is_verified)")
+  .eq("is_active", true)
+  .eq("category", categoryLabel)
 ```
 
-### useServiceMenu.ts update
+This replaces the old query against `provider_services` + `provider_profiles`.
 
-Replace the old array with labels derived from the shared constant:
+### New query for provider service list
 
 ```text
-SERVICE_CATEGORIES = Object.values(WISH_SERVICE_CATEGORIES).map(c => c.label)
-// Results in: ["Wash & Detail", "Mechanical", "Electrical", "Hull & Bottom", ...]
+supabase
+  .from("business_service_menu")
+  .select("id, name, pricing_model, default_price, description, category")
+  .eq("business_id", businessId)
+  .eq("is_active", true)
+  .eq("category", categoryLabel)
+  .order("default_price")
 ```
 
-This ensures the dropdown in the Service Menu editor shows the exact same labels customers see.
+### Field mapping
 
-### useServiceProviders.ts update
+| Old (provider_services) | New (business_service_menu) |
+|------------------------|---------------------------|
+| service_name | name |
+| price | default_price |
+| provider_id | business_id |
+| provider_profiles | businesses |
 
-Remove the hardcoded `categoryMap` translation. Since business service menus now use the same label strings (e.g., "Wash & Detail"), the provider search query can match directly:
+### RLS
 
-```text
-// Before (broken mapping):
-categoryMap = { wash_detail: "Wash & Detail", mechanical: "Mechanical", ... }
+The `business_service_menu` table already has a SELECT policy for authenticated users who are business members. However, customers making wishes also need to read these rows. A new RLS policy will be added:
 
-// After (direct label lookup):
-const categoryLabel = SERVICE_CATEGORIES[category].label;
-query.eq("category", categoryLabel);
+```sql
+CREATE POLICY "Authenticated users can browse active service menu items"
+ON public.business_service_menu FOR SELECT TO authenticated
+USING (is_active = true);
 ```
 
-### WishFormSheet.tsx update
+This allows any logged-in customer to see active service offerings during the wish flow.
 
-- Update the icon map and category rendering to include the new categories
-- Extend the provider selection step to all categories (not just wash_detail), so customers always pick a provider before filling the form
-- Update back-navigation logic accordingly
-
-### Data compatibility
-
-Existing `business_service_menu` rows with old categories like "Cosmetic" or "Hull" will still display but won't match wishes until the business owner edits them to use the new labels. No migration is needed since the column is free-text. The UI will guide businesses to the correct categories going forward.
