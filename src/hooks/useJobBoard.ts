@@ -110,16 +110,16 @@ export function useJobBoard() {
       const categories = businessProfile?.service_categories || [];
       setProviderCategories(categories);
 
-      // Fetch provider's actual Service Menu items
+      // Fetch provider's actual Service Menu items from business_service_menu
       let serviceNames: string[] = [];
       if (businessProfile?.id) {
-        const { data: providerServices } = await supabase
-          .from("provider_services")
-          .select("service_name")
-          .eq("provider_id", businessProfile.id)
+        const { data: menuItems } = await supabase
+          .from("business_service_menu")
+          .select("name")
+          .eq("business_id", businessProfile.id)
           .eq("is_active", true);
         
-        serviceNames = (providerServices || []).map(s => s.service_name);
+        serviceNames = (menuItems || []).map(s => s.name);
       }
       setProviderServiceNames(serviceNames);
 
