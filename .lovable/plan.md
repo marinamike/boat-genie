@@ -1,231 +1,131 @@
 
-
-# Enhanced Unified Customer Billing Portal
+# Service Menu and Work Order Creation
 
 ## Overview
 
-This plan updates the existing billing portal with a proper simulated payment flow including a card entry modal, transaction record tracking, and payment confirmation.
+Add a **Service Menu** management tab to the Business Settings, and a **"New Work Order"** creation dialog to the Service Dashboard. The service menu defines reusable service items (e.g., "Bottom Job", "Oil Change") with flexible pricing models. Work order creation pulls from this menu to auto-fill pricing and descriptions.
 
-## Current State Analysis
+## 1. Database: `business_service_menu` Table
 
-The existing implementation includes:
-- `customer_invoices` table with proper RLS policies
-- `useCustomerInvoices` hook for fetching and managing invoices
-- `CustomerBillingTab` component displaying pending/paid invoices
-- `InvoiceDetailSheet` with source-specific line item display
-- Database trigger `notify_new_invoice()` for automatic notifications
-- Real-time subscriptions for invoice updates
+A new table to store the business's catalog of service offerings, separate from the provider-level `provider_services` table.
 
-**What's Missing:**
-1. Payment modal with simulated card entry (currently just marks as paid directly)
-2. Transaction record storage for payment history
-3. "Payment Successful" confirmation dialog
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID (PK) | Auto-generated |
+| business_id | UUID (FK) | References businesses |
+| name | TEXT | Service name |
+| category | TEXT | Mechanical, Electrical, Cosmetic, Hull, Rigging, General |
+| pricing_model | TEXT | "fixed", "hourly", "per_foot" |
+| default_price | NUMERIC | Default rate |
+| description | TEXT | Optional description |
+| is_active | BOOLEAN | Default true |
+| created_at | TIMESTAMPTZ | Auto |
+| updated_at | TIMESTAMPTZ | Auto |
 
-## Implementation Plan
+RLS policies will restrict access to authenticated business members.
 
-### 1. Database: Payment Transactions Table
+## 2. Service Menu Tab (Business Settings)
 
-Create a new table to store payment transaction records:
+Add a fourth tab **"Service Menu"** to `BusinessSettings.tsx` with a wrench icon.
 
-```text
-+---------------------------+
-|   payment_transactions    |
-+---------------------------+
-| id (PK)                   |
-| customer_invoice_id (FK)  |
-| customer_id              |
-| amount                    |
-| payment_method           |
-| card_last_four           |
-| status                    |
-| processed_at             |
-| created_at               |
-+---------------------------+
-```
+**New component: `src/components/business/ServiceMenuManager.tsx`**
 
-- Links to `customer_invoices` via foreign key
-- Stores simulated card details (last 4 digits only)
-- Tracks payment status and timestamp
+Features:
+- "Create Service Item" button opens an inline form
+- Fields: Name, Category (dropdown), Pricing Logic (dropdown), Default Price, Description
+- Lists all active services grouped by category
+- Each item is editable inline (name, price, category)
+- Toggle active/inactive for soft-delete
 
-### 2. New Component: PaymentModal
+## 3. New Work Order Dialog
 
-Create `src/components/billing/PaymentModal.tsx`:
+**New component: `src/components/service/CreateServiceWorkOrderDialog.tsx`**
 
-**Features:**
-- Step 1: Review invoice amount
-- Step 2: Simulated card entry form (card number, expiry, CVV)
-- Step 3: Processing state with spinner
-- Step 4: Success confirmation
+A multi-step dialog triggered by a "New Work Order" button added to the `ServiceWorkOrders` component header.
 
-**Card Input Fields:**
-- Card Number (16 digits, auto-format with spaces)
-- Expiry (MM/YY format)
-- CVV (3-4 digits)
-- Name on Card
+### Step 1 - Client
+- **Search Customer**: Query `boats` table joined with owner profiles to find customers
+- **Select Boat**: Dropdown filtered to selected customer's boats
+- Shows boat name, make/model, length
 
-**Validation:**
-- Card number: 16 digits (simulated Luhn check optional)
-- Expiry: Valid MM/YY format, not expired
-- CVV: 3-4 digits
+### Step 2 - The Job
+- **"Add Service Line Item"** button
+- Dropdown pulls from `business_service_menu` (active items only)
+- Selecting a service auto-fills description and default price
+- Price is editable (override allowed)
+- Support adding multiple line items
+- Running total displayed
 
-### 3. Update: useCustomerInvoices Hook
+### Step 3 - Schedule
+- **Start Date** picker (optional)
+- **Assigned Technician** dropdown from `service_staff` (optional)
 
-Add new function `processPayment()`:
+### Submit
+- Creates a `work_orders` record with status "pending"
+- Stores line items as JSON in the description or a related structure
+- Links to business_id, boat_id
 
-```text
-processPayment(invoiceId, cardDetails) → Promise<boolean>
-  1. Validate card details (basic format validation)
-  2. Create payment_transaction record with status 'processing'
-  3. Simulate processing delay (1-2 seconds)
-  4. Update payment_transaction to 'completed'
-  5. Update customer_invoice status to 'paid'
-  6. Update source invoice (stay_invoices, recurring_invoices, etc.)
-  7. Return success/failure
-```
+## 4. Hook Updates
 
-### 4. Update: CustomerBillingTab
+**New hook: `src/hooks/useServiceMenu.ts`**
+- CRUD operations for `business_service_menu`
+- Fetches menu items filtered by business_id
 
-- Replace direct `markAsPaid` call with `PaymentModal` open
-- Add state for selected invoice and modal visibility
-- Pass payment handler to modal
-
-### 5. Update: InvoiceDetailSheet
-
-- Replace direct payment action with opening `PaymentModal`
-- Add success callback to close detail sheet after payment
-
-### 6. New Component: PaymentSuccessDialog
-
-Create `src/components/billing/PaymentSuccessDialog.tsx`:
-
-Displays after successful payment:
-- Green checkmark animation
-- "Payment Successful" title
-- Amount paid
-- Transaction reference
-- "View Receipt" and "Done" buttons
+**Update: `src/hooks/useServiceManagement.ts`**
+- Add `createWorkOrder` function to insert into `work_orders` table with business_id, boat_id, title, description, status, scheduled_date
 
 ## File Changes Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `supabase/migrations/...` | Create | Add payment_transactions table with RLS |
-| `src/components/billing/PaymentModal.tsx` | Create | Card entry form with validation |
-| `src/components/billing/PaymentSuccessDialog.tsx` | Create | Success confirmation dialog |
-| `src/hooks/useCustomerInvoices.ts` | Update | Add processPayment function |
-| `src/components/billing/CustomerBillingTab.tsx` | Update | Integrate PaymentModal |
-| `src/components/billing/InvoiceDetailSheet.tsx` | Update | Integrate PaymentModal |
+| Migration SQL | Create | `business_service_menu` table with RLS |
+| `src/hooks/useServiceMenu.ts` | Create | CRUD hook for service menu items |
+| `src/components/business/ServiceMenuManager.tsx` | Create | Service menu management UI |
+| `src/components/service/CreateServiceWorkOrderDialog.tsx` | Create | Multi-step work order creation dialog |
+| `src/pages/BusinessSettings.tsx` | Update | Add "Service Menu" tab (4th tab) |
+| `src/components/service/ServiceWorkOrders.tsx` | Update | Add "New Work Order" button to header |
+| `src/hooks/useServiceManagement.ts` | Update | Add createWorkOrder function |
 
 ## Technical Details
 
-### Database Migration
+### Service Menu RLS Policies
 
 ```sql
-CREATE TABLE public.payment_transactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_invoice_id UUID NOT NULL REFERENCES public.customer_invoices(id),
-  customer_id UUID NOT NULL,
-  amount NUMERIC NOT NULL,
-  payment_method TEXT NOT NULL DEFAULT 'card',
-  card_last_four TEXT,
-  card_brand TEXT,
-  status TEXT NOT NULL DEFAULT 'pending',
-  processed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- Business members can read their menu
+CREATE POLICY "Business members can view service menu"
+ON public.business_service_menu FOR SELECT TO authenticated
+USING (business_id IN (
+  SELECT id FROM businesses WHERE owner_id = auth.uid()
+  UNION
+  SELECT business_id FROM business_staff WHERE user_id = auth.uid()
+));
 
--- RLS: Customers can view their own transactions
-CREATE POLICY "Customers can view own transactions"
-ON public.payment_transactions
-FOR SELECT TO authenticated
-USING (customer_id = auth.uid());
-
--- Customers can insert transactions for their invoices
-CREATE POLICY "Customers can create transactions"
-ON public.payment_transactions
-FOR INSERT TO authenticated
-WITH CHECK (customer_id = auth.uid());
+-- Business owners can manage menu
+CREATE POLICY "Business owners can manage service menu"
+ON public.business_service_menu FOR ALL TO authenticated
+USING (business_id IN (SELECT id FROM businesses WHERE owner_id = auth.uid()));
 ```
 
-### PaymentModal Component Structure
+### Work Order Creation Flow
 
 ```text
-PaymentModal
-├── Header: "Complete Payment"
-├── Invoice Summary
-│   ├── Business Name
-│   ├── Description
-│   └── Total Amount (highlighted)
-├── Card Form
-│   ├── Card Number Input (with format mask)
-│   ├── Expiry / CVV Row
-│   └── Name on Card
-├── Submit Button
-└── Cancel Link
+User clicks "New Work Order"
+    |
+Step 1: Search/select customer -> Select boat
+    |
+Step 2: Add line items from Service Menu
+    |  -> Auto-fills name, description, price
+    |  -> Multiple items supported
+    |
+Step 3: Set start date, assign tech (optional)
+    |
+Submit -> INSERT into work_orders
+    |  -> status = 'pending'
+    |  -> business_id from context
+    |
+Refresh work order list
 ```
 
-### Card Number Formatting
+### Customer Search Query
 
-- Display: `1234 5678 9012 3456`
-- Store: Last 4 digits only (`3456`)
-- Brand detection: First digit (4=Visa, 5=MC, 3=Amex)
-
-### Payment Flow Sequence
-
-```text
-User clicks "Pay Now"
-    ↓
-PaymentModal opens
-    ↓
-User enters card details
-    ↓
-User clicks "Pay $X.XX"
-    ↓
-[Processing State - 1.5s delay]
-    ↓
-Insert payment_transaction
-    ↓
-Update customer_invoice.status = 'paid'
-    ↓
-Update source table status
-    ↓
-PaymentSuccessDialog shows
-    ↓
-User clicks "Done"
-    ↓
-Return to invoice list (refreshed)
-```
-
-### Notification System (Already Implemented)
-
-The existing `notify_new_invoice()` trigger already creates notifications when invoices are inserted:
-
-```text
-Notification format:
-- Title: "New Invoice Available"
-- Message: "You have a new invoice for [source_reference] totaling $[amount]"
-- Type: "invoice"
-- Related ID: invoice UUID
-```
-
-No changes needed - notifications are automatically triggered.
-
-## UI/UX Considerations
-
-1. **Card Form Accessibility**: Proper labels, tab order, input patterns
-2. **Error States**: Clear validation messages for invalid card details
-3. **Loading States**: Disable form during processing, show spinner
-4. **Mobile-Friendly**: Full-width inputs, large touch targets
-5. **Security Messaging**: "Secure payment" text reassures users
-
-## Testing Scenarios
-
-1. Open payment modal from invoice list "Pay Now" button
-2. Open payment modal from invoice detail sheet
-3. Submit with valid card details → Success
-4. Submit with invalid card format → Validation error
-5. Verify transaction record created in database
-6. Verify invoice status updates to "paid"
-7. Verify invoice moves from "Pending" to "Payment History" section
-8. Verify success dialog appears with correct amount
-
+The dialog will search the `boats` table and join with profile data to let the business find customers by boat name or owner. Since boats have `owner_id`, the dialog groups boats by owner for selection.
