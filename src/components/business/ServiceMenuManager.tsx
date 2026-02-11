@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, X, Check } from "lucide-react";
-import { useServiceMenu, SERVICE_CATEGORIES, PRICING_MODELS } from "@/hooks/useServiceMenu";
+import { useServiceMenu, SERVICE_MENU_CATEGORIES, PRICING_MODELS } from "@/hooks/useServiceMenu";
 
 export function ServiceMenuManager() {
   const { menuItems, loading, createMenuItem, updateMenuItem, toggleActive } = useServiceMenu();
@@ -116,7 +116,7 @@ export function ServiceMenuManager() {
                   <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {SERVICE_CATEGORIES.map((cat) => (
+                      {SERVICE_MENU_CATEGORIES.map((cat) => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
                     </SelectContent>

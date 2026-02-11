@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { toast } from "sonner";
+import { SERVICE_CATEGORIES } from "@/hooks/useWishForm";
 
 export interface ServiceMenuItem {
   id: string;
@@ -16,14 +17,7 @@ export interface ServiceMenuItem {
   updated_at: string;
 }
 
-export const SERVICE_CATEGORIES = [
-  "Mechanical",
-  "Electrical",
-  "Cosmetic",
-  "Hull",
-  "Rigging",
-  "General",
-] as const;
+export const SERVICE_MENU_CATEGORIES = Object.values(SERVICE_CATEGORIES).map(c => c.label);
 
 export const PRICING_MODELS = [
   { value: "fixed", label: "Fixed Price" },

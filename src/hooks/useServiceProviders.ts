@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SERVICE_CATEGORIES, type ServiceCategory } from "@/hooks/useWishForm";
 
 export interface ServiceProvider {
   id: string;
@@ -13,7 +14,7 @@ export interface ServiceProvider {
 }
 
 // Fetch verified businesses that have services matching the category
-export function useServiceProviders(category?: string) {
+export function useServiceProviders(category?: ServiceCategory) {
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,14 +26,7 @@ export function useServiceProviders(category?: string) {
 
     setLoading(true);
     try {
-      // Map category to provider service category
-      const categoryMap: Record<string, string> = {
-        "wash_detail": "Wash & Detail",
-        "mechanical": "Mechanical",
-        "visual_cosmetic": "Fiberglass & Gelcoat",
-      };
-      
-      const serviceCategory = categoryMap[category] || category;
+      const serviceCategory = SERVICE_CATEGORIES[category].label;
 
       // Fetch provider profiles that have matching active services
       const { data: services, error } = await supabase
@@ -108,7 +102,7 @@ export function useServiceProviders(category?: string) {
 }
 
 // Fetch services for a specific provider
-export function useProviderServicesByBusiness(providerId?: string, category?: string) {
+export function useProviderServicesByBusiness(providerId?: string, category?: ServiceCategory) {
   const [services, setServices] = useState<Array<{
     id: string;
     service_name: string;
@@ -136,12 +130,7 @@ export function useProviderServicesByBusiness(providerId?: string, category?: st
           .eq("is_active", true);
         
         if (category) {
-          const categoryMap: Record<string, string> = {
-            "wash_detail": "Wash & Detail",
-            "mechanical": "Mechanical",
-            "visual_cosmetic": "Fiberglass & Gelcoat",
-          };
-          query = query.eq("category", categoryMap[category] || category);
+          query = query.eq("category", SERVICE_CATEGORIES[category].label);
         }
 
         const { data, error } = await query.order("price");

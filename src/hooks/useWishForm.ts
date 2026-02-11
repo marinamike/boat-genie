@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type MembershipTier = Database["public"]["Enums"]["membership_tier"];
 
-export type ServiceCategory = "wash_detail" | "mechanical" | "visual_cosmetic";
+export type ServiceCategory = "wash_detail" | "mechanical" | "electrical" | "hull_bottom" | "canvas_upholstery" | "rigging" | "general";
 
 export interface WishFormData {
   boatId: string;
@@ -201,20 +201,37 @@ export function useWishForm() {
 export const SERVICE_CATEGORIES = {
   wash_detail: {
     label: "Wash & Detail",
-    description: "Fixed rate based on boat length",
+    description: "Wash, wax, and detailing services",
     icon: "Sparkles",
-    services: ["Wash & Wax", "Hull Cleaning", "Interior Detailing"],
   },
   mechanical: {
-    label: "Mechanical / Repair",
-    description: "Custom quotes from providers",
+    label: "Mechanical",
+    description: "Engine and drive train repair",
     icon: "Wrench",
-    services: ["Engine Service"],
   },
-  visual_cosmetic: {
-    label: "Visual / Cosmetic",
-    description: "Fiberglass, canvas & more",
+  electrical: {
+    label: "Electrical",
+    description: "Wiring, electronics, navigation",
+    icon: "Zap",
+  },
+  hull_bottom: {
+    label: "Hull & Bottom",
+    description: "Bottom paint, fiberglass, gelcoat",
     icon: "Paintbrush",
-    services: ["Bottom Painting"],
+  },
+  canvas_upholstery: {
+    label: "Canvas & Upholstery",
+    description: "Covers, enclosures, cushions",
+    icon: "Scissors",
+  },
+  rigging: {
+    label: "Rigging",
+    description: "Standing and running rigging",
+    icon: "Anchor",
+  },
+  general: {
+    label: "General",
+    description: "Other marine services",
+    icon: "Settings",
   },
 } as const;
