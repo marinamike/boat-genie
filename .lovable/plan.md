@@ -1,131 +1,88 @@
 
-# Service Menu and Work Order Creation
 
-## Overview
+# Unify Service Categories Across Customer Wishes and Business Service Menu
 
-Add a **Service Menu** management tab to the Business Settings, and a **"New Work Order"** creation dialog to the Service Dashboard. The service menu defines reusable service items (e.g., "Bottom Job", "Oil Change") with flexible pricing models. Work order creation pulls from this menu to auto-fill pricing and descriptions.
+## Problem
 
-## 1. Database: `business_service_menu` Table
+Two separate category systems exist that don't talk to each other:
 
-A new table to store the business's catalog of service offerings, separate from the provider-level `provider_services` table.
+| System | Categories |
+|--------|-----------|
+| **Wish Form** (customer) | Wash & Detail, Mechanical, Fiberglass & Gelcoat |
+| **Service Menu** (business) | Mechanical, Electrical, Cosmetic, Hull, Rigging, General |
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID (PK) | Auto-generated |
-| business_id | UUID (FK) | References businesses |
-| name | TEXT | Service name |
-| category | TEXT | Mechanical, Electrical, Cosmetic, Hull, Rigging, General |
-| pricing_model | TEXT | "fixed", "hourly", "per_foot" |
-| default_price | NUMERIC | Default rate |
-| description | TEXT | Optional description |
-| is_active | BOOLEAN | Default true |
-| created_at | TIMESTAMPTZ | Auto |
-| updated_at | TIMESTAMPTZ | Auto |
+A customer requesting "Wash & Detail" can never match a business that categorizes their wash services under "Cosmetic" or "General". The categories must be unified so provider discovery works.
 
-RLS policies will restrict access to authenticated business members.
+## Solution: Single Shared Category List
 
-## 2. Service Menu Tab (Business Settings)
+Define one canonical set of categories used everywhere:
 
-Add a fourth tab **"Service Menu"** to `BusinessSettings.tsx` with a wrench icon.
+- **Wash & Detail** -- wash, wax, interior/exterior detailing
+- **Mechanical** -- engine, drive train, systems repair
+- **Electrical** -- wiring, electronics, navigation equipment
+- **Hull & Bottom** -- bottom painting, fiberglass, gelcoat, blister repair
+- **Canvas & Upholstery** -- covers, enclosures, cushions
+- **Rigging** -- standing/running rigging, sails
+- **General** -- catch-all for anything else
 
-**New component: `src/components/business/ServiceMenuManager.tsx`**
+This replaces both the old Wish `SERVICE_CATEGORIES` and the old Service Menu `SERVICE_CATEGORIES`.
 
-Features:
-- "Create Service Item" button opens an inline form
-- Fields: Name, Category (dropdown), Pricing Logic (dropdown), Default Price, Description
-- Lists all active services grouped by category
-- Each item is editable inline (name, price, category)
-- Toggle active/inactive for soft-delete
+## Files Changed
 
-## 3. New Work Order Dialog
-
-**New component: `src/components/service/CreateServiceWorkOrderDialog.tsx`**
-
-A multi-step dialog triggered by a "New Work Order" button added to the `ServiceWorkOrders` component header.
-
-### Step 1 - Client
-- **Search Customer**: Query `boats` table joined with owner profiles to find customers
-- **Select Boat**: Dropdown filtered to selected customer's boats
-- Shows boat name, make/model, length
-
-### Step 2 - The Job
-- **"Add Service Line Item"** button
-- Dropdown pulls from `business_service_menu` (active items only)
-- Selecting a service auto-fills description and default price
-- Price is editable (override allowed)
-- Support adding multiple line items
-- Running total displayed
-
-### Step 3 - Schedule
-- **Start Date** picker (optional)
-- **Assigned Technician** dropdown from `service_staff` (optional)
-
-### Submit
-- Creates a `work_orders` record with status "pending"
-- Stores line items as JSON in the description or a related structure
-- Links to business_id, boat_id
-
-## 4. Hook Updates
-
-**New hook: `src/hooks/useServiceMenu.ts`**
-- CRUD operations for `business_service_menu`
-- Fetches menu items filtered by business_id
-
-**Update: `src/hooks/useServiceManagement.ts`**
-- Add `createWorkOrder` function to insert into `work_orders` table with business_id, boat_id, title, description, status, scheduled_date
-
-## File Changes Summary
-
-| File | Action | Description |
-|------|--------|-------------|
-| Migration SQL | Create | `business_service_menu` table with RLS |
-| `src/hooks/useServiceMenu.ts` | Create | CRUD hook for service menu items |
-| `src/components/business/ServiceMenuManager.tsx` | Create | Service menu management UI |
-| `src/components/service/CreateServiceWorkOrderDialog.tsx` | Create | Multi-step work order creation dialog |
-| `src/pages/BusinessSettings.tsx` | Update | Add "Service Menu" tab (4th tab) |
-| `src/components/service/ServiceWorkOrders.tsx` | Update | Add "New Work Order" button to header |
-| `src/hooks/useServiceManagement.ts` | Update | Add createWorkOrder function |
+| File | Change |
+|------|--------|
+| `src/hooks/useWishForm.ts` | Replace `SERVICE_CATEGORIES` with the unified list; update `ServiceCategory` type |
+| `src/hooks/useServiceMenu.ts` | Replace `SERVICE_CATEGORIES` array with the same unified list |
+| `src/hooks/useServiceProviders.ts` | Remove hardcoded `categoryMap` -- categories now match directly (no mapping needed) |
+| `src/components/wish/WishFormSheet.tsx` | Update category rendering and icon map to handle new categories; route all categories through provider selection step (not just wash_detail) |
+| `src/components/business/ServiceMenuManager.tsx` | No changes needed (already imports from `useServiceMenu`) |
 
 ## Technical Details
 
-### Service Menu RLS Policies
-
-```sql
--- Business members can read their menu
-CREATE POLICY "Business members can view service menu"
-ON public.business_service_menu FOR SELECT TO authenticated
-USING (business_id IN (
-  SELECT id FROM businesses WHERE owner_id = auth.uid()
-  UNION
-  SELECT business_id FROM business_staff WHERE user_id = auth.uid()
-));
-
--- Business owners can manage menu
-CREATE POLICY "Business owners can manage service menu"
-ON public.business_service_menu FOR ALL TO authenticated
-USING (business_id IN (SELECT id FROM businesses WHERE owner_id = auth.uid()));
-```
-
-### Work Order Creation Flow
+### Shared category constant (in useWishForm.ts, exported)
 
 ```text
-User clicks "New Work Order"
-    |
-Step 1: Search/select customer -> Select boat
-    |
-Step 2: Add line items from Service Menu
-    |  -> Auto-fills name, description, price
-    |  -> Multiple items supported
-    |
-Step 3: Set start date, assign tech (optional)
-    |
-Submit -> INSERT into work_orders
-    |  -> status = 'pending'
-    |  -> business_id from context
-    |
-Refresh work order list
+SERVICE_CATEGORIES = {
+  wash_detail:        { label: "Wash & Detail",        icon: Sparkles,    description: "Wash, wax, and detailing services" }
+  mechanical:         { label: "Mechanical",            icon: Wrench,      description: "Engine and drive train repair" }
+  electrical:         { label: "Electrical",            icon: Zap,         description: "Wiring, electronics, navigation" }
+  hull_bottom:        { label: "Hull & Bottom",         icon: Paintbrush,  description: "Bottom paint, fiberglass, gelcoat" }
+  canvas_upholstery:  { label: "Canvas & Upholstery",  icon: Scissors,    description: "Covers, enclosures, cushions" }
+  rigging:            { label: "Rigging",               icon: Anchor,      description: "Standing and running rigging" }
+  general:            { label: "General",               icon: Settings,    description: "Other marine services" }
+}
 ```
 
-### Customer Search Query
+### useServiceMenu.ts update
 
-The dialog will search the `boats` table and join with profile data to let the business find customers by boat name or owner. Since boats have `owner_id`, the dialog groups boats by owner for selection.
+Replace the old array with labels derived from the shared constant:
+
+```text
+SERVICE_CATEGORIES = Object.values(WISH_SERVICE_CATEGORIES).map(c => c.label)
+// Results in: ["Wash & Detail", "Mechanical", "Electrical", "Hull & Bottom", ...]
+```
+
+This ensures the dropdown in the Service Menu editor shows the exact same labels customers see.
+
+### useServiceProviders.ts update
+
+Remove the hardcoded `categoryMap` translation. Since business service menus now use the same label strings (e.g., "Wash & Detail"), the provider search query can match directly:
+
+```text
+// Before (broken mapping):
+categoryMap = { wash_detail: "Wash & Detail", mechanical: "Mechanical", ... }
+
+// After (direct label lookup):
+const categoryLabel = SERVICE_CATEGORIES[category].label;
+query.eq("category", categoryLabel);
+```
+
+### WishFormSheet.tsx update
+
+- Update the icon map and category rendering to include the new categories
+- Extend the provider selection step to all categories (not just wash_detail), so customers always pick a provider before filling the form
+- Update back-navigation logic accordingly
+
+### Data compatibility
+
+Existing `business_service_menu` rows with old categories like "Cosmetic" or "Hull" will still display but won't match wishes until the business owner edits them to use the new labels. No migration is needed since the column is free-text. The UI will guide businesses to the correct categories going forward.
