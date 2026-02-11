@@ -1,30 +1,49 @@
 
-# Add "Earliest Availability" Checkbox to Wish Form
 
-## Change
+# Fix: Provider Lead Stream Not Showing Submitted Wishes
 
-In `src/components/wish/WishFormSheet.tsx`, add a checkbox below the date picker labeled **"Earliest availability"**. When checked, the date picker is disabled and the submission sends `"earliest"` as the preferred date.
+## Problem
 
-## File: `src/components/wish/WishFormSheet.tsx`
+The provider's job board (`useJobBoard.ts`) still queries the old `provider_services` table to build its list of service names for filtering incoming wishes. Since you moved all services to `business_service_menu`, the query returns zero services, which causes every wish to be filtered out (line 170: `if (serviceNames.length === 0) return false`).
 
-1. **New state** (near line 60): `const [earliestAvailability, setEarliestAvailability] = useState(false);`
+## Solution
 
-2. **Add checkbox UI** (after the date input, around line 557): Insert a `Checkbox` + `Label` reading "Earliest availability". When checked, disable and clear the date input.
+Update the service name query in `useJobBoard.ts` to read from `business_service_menu` instead of `provider_services`.
 
-3. **Disable date input when checked**: Add `disabled={earliestAvailability}` and reduced opacity class to the date `Input`.
+## File Changed
 
-4. **Submission logic** (line ~269): Set `preferredDate` to `"earliest"` when checkbox is on, otherwise use the date value.
+**`src/hooks/useJobBoard.ts`** -- lines 113-123
 
-5. **Reset logic** (line ~116): Add `setEarliestAvailability(false)` to the reset function.
-
-## Technical Details
-
-New imports needed: `Checkbox` from `@/components/ui/checkbox`.
-
-UI layout after change:
+Replace this block:
 
 ```text
-Preferred Date (Optional)
-[ date input — disabled when checkbox checked ]
-[x] Earliest availability
+// Fetch provider's actual Service Menu items
+let serviceNames: string[] = [];
+if (businessProfile?.id) {
+  const { data: providerServices } = await supabase
+    .from("provider_services")
+    .select("service_name")
+    .eq("provider_id", businessProfile.id)
+    .eq("is_active", true);
+
+  serviceNames = (providerServices || []).map(s => s.service_name);
+}
 ```
+
+With:
+
+```text
+// Fetch provider's actual Service Menu items from business_service_menu
+let serviceNames: string[] = [];
+if (businessProfile?.id) {
+  const { data: menuItems } = await supabase
+    .from("business_service_menu")
+    .select("name")
+    .eq("business_id", businessProfile.id)
+    .eq("is_active", true);
+
+  serviceNames = (menuItems || []).map(s => s.name);
+}
+```
+
+This is a one-to-one swap: `provider_services.service_name` becomes `business_service_menu.name`, and `provider_id` becomes `business_id`. No other files need to change since the rest of the filtering and matching logic works on the resulting string array.
