@@ -37,6 +37,12 @@ import { formatDistanceToNow, format } from "date-fns";
 import { WishFormItem, QuoteFormData } from "@/hooks/useJobBoard";
 import { ProviderService } from "@/hooks/useProviderMetrics";
 import { formatPrice, PRICING_CONSTANTS } from "@/lib/pricing";
+import { SERVICE_CATEGORIES } from "@/hooks/useWishForm";
+
+function displayServiceType(serviceType: string): string {
+  const category = SERVICE_CATEGORIES[serviceType as keyof typeof SERVICE_CATEGORIES];
+  return category ? category.label : serviceType;
+}
 
 // Provider earnings breakdown component for lead cards
 function ProviderEarningsBreakdown({ 
@@ -172,7 +178,7 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <CardTitle className="text-base">{wish.service_type}</CardTitle>
+                      <CardTitle className="text-base">{displayServiceType(wish.service_type)}</CardTitle>
                       {matchedService && (
                         <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
                           <Sparkles className="w-3 h-3 mr-1" />
@@ -225,10 +231,10 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
                   </div>
                 )}
 
-                {/* Location - hidden until job accepted */}
+                {/* Location */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="w-4 h-4" />
-                  <span className="italic">Location revealed after acceptance</span>
+                  <span>{wish.boat_profile?.marina_name || "Location not specified"}</span>
                 </div>
 
                 {/* Timing */}
@@ -367,7 +373,7 @@ function QuickQuoteDialog({
               Accept Job
             </DialogTitle>
             <DialogDescription>
-              {wish?.service_type} • {wish?.boat?.make} {wish?.boat?.model}
+              {wish ? displayServiceType(wish.service_type) : ""} • {wish?.boat?.make} {wish?.boat?.model}
               {wish?.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
             </DialogDescription>
           </DialogHeader>
@@ -480,7 +486,7 @@ function QuickQuoteDialog({
             Submit Quote
           </DialogTitle>
           <DialogDescription>
-            {wish?.service_type} • {wish?.boat?.make} {wish?.boat?.model}
+            {wish ? displayServiceType(wish.service_type) : ""} • {wish?.boat?.make} {wish?.boat?.model}
             {wish?.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
           </DialogDescription>
         </DialogHeader>
