@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +59,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   const [description, setDescription] = useState("");
   const [isEmergency, setIsEmergency] = useState(false);
   const [preferredDate, setPreferredDate] = useState("");
+  const [earliestAvailability, setEarliestAvailability] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [internalBoats, setInternalBoats] = useState<Boat[]>([]);
@@ -114,6 +116,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       setDescription("");
       setIsEmergency(false);
       setPreferredDate("");
+      setEarliestAvailability(false);
       setPhotos([]);
       setPhotoUrls([]);
     } else if (prefilledDescription) {
@@ -266,7 +269,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       description,
       urgency: isEmergency ? "urgent" : "normal",
       isEmergency,
-      preferredDate: preferredDate || undefined,
+      preferredDate: earliestAvailability ? "earliest" : (preferredDate || undefined),
       calculatedPrice: priceBreakdown?.totalPrice,
       photos: uploadedPhotoUrls,
     });
@@ -554,7 +557,22 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
             value={preferredDate}
             onChange={(e) => setPreferredDate(e.target.value)}
             min={new Date().toISOString().split("T")[0]}
+            disabled={earliestAvailability}
+            className={cn(earliestAvailability && "opacity-50")}
           />
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="earliest-availability"
+              checked={earliestAvailability}
+              onCheckedChange={(checked) => {
+                setEarliestAvailability(!!checked);
+                if (checked) setPreferredDate("");
+              }}
+            />
+            <Label htmlFor="earliest-availability" className="text-sm font-normal cursor-pointer">
+              Earliest availability
+            </Label>
+          </div>
         </div>
 
         {/* Emergency Toggle */}
