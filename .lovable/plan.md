@@ -1,79 +1,30 @@
 
+# Add "Earliest Availability" Checkbox to Wish Form
 
-# Fix: Connect Business Service Menu to Customer Wish Flow
+## Change
 
-## Problem
+In `src/components/wish/WishFormSheet.tsx`, add a checkbox below the date picker labeled **"Earliest availability"**. When checked, the date picker is disabled and the submission sends `"earliest"` as the preferred date.
 
-You created services in the Business Settings Service Menu, which saves to the `business_service_menu` table. But when a customer makes a wish, the provider search queries the old `provider_services` table (joined with `provider_profiles`). These are two completely separate tables, so your services never show up.
+## File: `src/components/wish/WishFormSheet.tsx`
 
-## Solution
+1. **New state** (near line 60): `const [earliestAvailability, setEarliestAvailability] = useState(false);`
 
-Update `useServiceProviders.ts` to query `business_service_menu` joined with `businesses` instead of `provider_services` joined with `provider_profiles`.
+2. **Add checkbox UI** (after the date input, around line 557): Insert a `Checkbox` + `Label` reading "Earliest availability". When checked, disable and clear the date input.
 
-## Changes
+3. **Disable date input when checked**: Add `disabled={earliestAvailability}` and reduced opacity class to the date `Input`.
 
-### `src/hooks/useServiceProviders.ts`
+4. **Submission logic** (line ~269): Set `preferredDate` to `"earliest"` when checkbox is on, otherwise use the date value.
 
-**`useServiceProviders` hook** (provider discovery):
-- Query `business_service_menu` instead of `provider_services`
-- Join with `businesses` (using `business_id`) to get business name and logo
-- Filter by `is_active = true` and matching category label
-- Group results by business to show one card per business with the lowest price
-
-**`useProviderServicesByBusiness` hook** (service dropdown after selecting a provider):
-- Query `business_service_menu` instead of `provider_services`
-- Filter by `business_id` (instead of `provider_id`) and active status
-- Map fields: `name` becomes `service_name`, `default_price` becomes `price`, `pricing_model` maps appropriately
-
-### `src/components/wish/WishFormSheet.tsx`
-
-- Minor mapping update: the service dropdown field names change slightly (`name` vs `service_name`, `default_price` vs `price`)
-- The `handleProviderServiceSelect` function needs to map the new field names from `business_service_menu`
+5. **Reset logic** (line ~116): Add `setEarliestAvailability(false)` to the reset function.
 
 ## Technical Details
 
-### New query for provider discovery
+New imports needed: `Checkbox` from `@/components/ui/checkbox`.
+
+UI layout after change:
 
 ```text
-supabase
-  .from("business_service_menu")
-  .select("id, name, pricing_model, default_price, category, business_id, business:businesses(id, business_name, logo_url, is_verified)")
-  .eq("is_active", true)
-  .eq("category", categoryLabel)
+Preferred Date (Optional)
+[ date input — disabled when checkbox checked ]
+[x] Earliest availability
 ```
-
-This replaces the old query against `provider_services` + `provider_profiles`.
-
-### New query for provider service list
-
-```text
-supabase
-  .from("business_service_menu")
-  .select("id, name, pricing_model, default_price, description, category")
-  .eq("business_id", businessId)
-  .eq("is_active", true)
-  .eq("category", categoryLabel)
-  .order("default_price")
-```
-
-### Field mapping
-
-| Old (provider_services) | New (business_service_menu) |
-|------------------------|---------------------------|
-| service_name | name |
-| price | default_price |
-| provider_id | business_id |
-| provider_profiles | businesses |
-
-### RLS
-
-The `business_service_menu` table already has a SELECT policy for authenticated users who are business members. However, customers making wishes also need to read these rows. A new RLS policy will be added:
-
-```sql
-CREATE POLICY "Authenticated users can browse active service menu items"
-ON public.business_service_menu FOR SELECT TO authenticated
-USING (is_active = true);
-```
-
-This allows any logged-in customer to see active service offerings during the wish flow.
-
