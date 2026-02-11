@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Play, Pause, Clock, ChevronRight } from "lucide-react";
+import { Plus, Play, Pause, Clock, ChevronRight, FilePlus } from "lucide-react";
+import { CreateServiceWorkOrderDialog } from "./CreateServiceWorkOrderDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { format, differenceInMinutes } from "date-fns";
@@ -50,6 +51,7 @@ export function ServiceWorkOrders({
     requires_haul_out: false,
   });
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   useEffect(() => {
     fetchWorkOrders();
@@ -139,12 +141,31 @@ export function ServiceWorkOrders({
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setShowCreateDialog(true)}>
+          <FilePlus className="w-4 h-4 mr-2" />
+          New Work Order
+        </Button>
+      </div>
+
+      <CreateServiceWorkOrderDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onCreated={fetchWorkOrders}
+        serviceStaff={serviceStaff.map(s => ({ id: s.id, staff_name: s.staff_name }))}
+      />
+
+      <div className="grid md:grid-cols-2 gap-4">
       {/* Work Orders List */}
       <Card>
         <CardHeader>
-          <CardTitle>Active Work Orders</CardTitle>
-          <CardDescription>Select a job to manage phases and time</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Active Work Orders</CardTitle>
+              <CardDescription>Select a job to manage phases and time</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-2">
           {workOrders.length === 0 ? (
@@ -340,6 +361,7 @@ export function ServiceWorkOrders({
           </Card>
         )}
       </div>
+    </div>
     </div>
   );
 }

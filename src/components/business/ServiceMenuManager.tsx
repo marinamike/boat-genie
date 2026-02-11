@@ -1,0 +1,214 @@
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Pencil, X, Check } from "lucide-react";
+import { useServiceMenu, SERVICE_CATEGORIES, PRICING_MODELS } from "@/hooks/useServiceMenu";
+
+export function ServiceMenuManager() {
+  const { menuItems, loading, createMenuItem, updateMenuItem, toggleActive } = useServiceMenu();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    category: "General",
+    pricing_model: "fixed",
+    default_price: "",
+    description: "",
+  });
+
+  const resetForm = () => {
+    setForm({ name: "", category: "General", pricing_model: "fixed", default_price: "", description: "" });
+    setShowForm(false);
+    setEditingId(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return;
+    const payload = {
+      name: form.name.trim(),
+      category: form.category,
+      pricing_model: form.pricing_model,
+      default_price: parseFloat(form.default_price) || 0,
+      description: form.description.trim() || null,
+    };
+
+    if (editingId) {
+      await updateMenuItem(editingId, payload);
+    } else {
+      await createMenuItem(payload);
+    }
+    resetForm();
+  };
+
+  const startEdit = (item: any) => {
+    setEditingId(item.id);
+    setForm({
+      name: item.name,
+      category: item.category,
+      pricing_model: item.pricing_model,
+      default_price: item.default_price.toString(),
+      description: item.description || "",
+    });
+    setShowForm(true);
+  };
+
+  const getPricingLabel = (model: string) => {
+    return PRICING_MODELS.find((p) => p.value === model)?.label || model;
+  };
+
+  const groupedItems = menuItems.reduce<Record<string, typeof menuItems>>((acc, item) => {
+    if (!acc[item.category]) acc[item.category] = [];
+    acc[item.category].push(item);
+    return acc;
+  }, {});
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Service Menu</CardTitle>
+              <CardDescription>Define your catalog of services with pricing</CardDescription>
+            </div>
+            {!showForm && (
+              <Button onClick={() => setShowForm(true)} size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                Create Service Item
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {showForm && (
+            <div className="border rounded-lg p-4 mb-4 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-sm">{editingId ? "Edit Service Item" : "New Service Item"}</p>
+                <Button variant="ghost" size="icon" onClick={resetForm}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="e.g., Bottom Job"
+                  />
+                </div>
+                <div>
+                  <Label>Category</Label>
+                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SERVICE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Pricing Logic</Label>
+                  <Select value={form.pricing_model} onValueChange={(v) => setForm({ ...form, pricing_model: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PRICING_MODELS.map((pm) => (
+                        <SelectItem key={pm.value} value={pm.value}>{pm.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Default Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.default_price}
+                    onChange={(e) => setForm({ ...form, default_price: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Description (optional)</Label>
+                <Textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Describe the service..."
+                  rows={2}
+                />
+              </div>
+              <Button onClick={handleSubmit} disabled={!form.name.trim()} className="w-full">
+                <Check className="w-4 h-4 mr-1" />
+                {editingId ? "Update Service Item" : "Create Service Item"}
+              </Button>
+            </div>
+          )}
+
+          {menuItems.length === 0 && !showForm ? (
+            <p className="text-center text-muted-foreground py-6">
+              No service items yet. Create your first service to get started.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {Object.entries(groupedItems).map(([category, items]) => (
+                <div key={category}>
+                  <p className="text-sm font-semibold text-muted-foreground mb-2">{category}</p>
+                  <div className="space-y-2">
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between p-3 border rounded-lg ${
+                          !item.is_active ? "opacity-50" : ""
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm truncate">{item.name}</p>
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              {getPricingLabel(item.pricing_model)}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            ${item.default_price.toFixed(2)}
+                            {item.pricing_model === "hourly" && "/hr"}
+                            {item.pricing_model === "per_foot" && "/ft"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Switch
+                            checked={item.is_active}
+                            onCheckedChange={() => toggleActive(item.id, item.is_active)}
+                          />
+                          <Button variant="ghost" size="icon" onClick={() => startEdit(item)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
