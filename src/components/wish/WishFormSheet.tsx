@@ -266,10 +266,10 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       boatId: selectedBoat.id,
       serviceCategory: selectedCategory,
       serviceType: selectedService || selectedCategory,
-      description,
+      description: earliestAvailability ? `[Earliest availability requested] ${description}` : description,
       urgency: isEmergency ? "urgent" : "normal",
       isEmergency,
-      preferredDate: earliestAvailability ? "earliest" : (preferredDate || undefined),
+      preferredDate: earliestAvailability ? undefined : (preferredDate || undefined),
       calculatedPrice: priceBreakdown?.totalPrice,
       photos: uploadedPhotoUrls,
     });
