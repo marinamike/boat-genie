@@ -62,20 +62,42 @@ export interface QuoteFormData {
   notes?: string;
 }
 
+// Category slug → label mapping for matching wishes to service menu categories
+const CATEGORY_LABELS: Record<string, string> = {
+  wash_detail: "wash & detail",
+  mechanical: "mechanical",
+  electrical: "electrical",
+  hull_bottom: "hull & bottom",
+  canvas_upholstery: "canvas & upholstery",
+  rigging: "rigging",
+  general: "general",
+};
+
 // Normalize service name for matching (case-insensitive, partial match)
 function normalizeServiceName(name: string): string {
   return name.toLowerCase().trim();
 }
 
-// Check if a wish service type matches any provider service
-function matchesProviderService(wishServiceType: string, providerServices: string[]): boolean {
+// Check if a wish service type matches any provider service name or category
+function matchesProviderService(
+  wishServiceType: string,
+  providerServiceNames: string[],
+  providerCategories: string[]
+): boolean {
   const normalizedWish = normalizeServiceName(wishServiceType);
   
   if (normalizedWish === "other" || !normalizedWish) {
-    return providerServices.length > 0;
+    return providerServiceNames.length > 0;
+  }
+
+  // Check if the wish category slug maps to a category the provider offers
+  const wishCategoryLabel = CATEGORY_LABELS[normalizedWish];
+  if (wishCategoryLabel && providerCategories.some(c => normalizeServiceName(c) === wishCategoryLabel)) {
+    return true;
   }
   
-  return providerServices.some(service => {
+  // Also match against individual service names (partial/exact)
+  return providerServiceNames.some(service => {
     const normalizedService = normalizeServiceName(service);
     return normalizedService === normalizedWish ||
            normalizedService.includes(normalizedWish) ||
@@ -112,14 +134,16 @@ export function useJobBoard() {
 
       // Fetch provider's actual Service Menu items from business_service_menu
       let serviceNames: string[] = [];
+      let menuCategories: string[] = [];
       if (businessProfile?.id) {
         const { data: menuItems } = await supabase
           .from("business_service_menu")
-          .select("name")
+          .select("name, category")
           .eq("business_id", businessProfile.id)
           .eq("is_active", true);
         
         serviceNames = (menuItems || []).map(s => s.name);
+        menuCategories = [...new Set((menuItems || []).map(s => s.category))];
       }
       setProviderServiceNames(serviceNames);
 
@@ -168,7 +192,7 @@ export function useJobBoard() {
         })
         .filter((wish) => {
           if (serviceNames.length === 0) return false;
-          return matchesProviderService(wish.service_type, serviceNames);
+          return matchesProviderService(wish.service_type, serviceNames, menuCategories);
         });
 
       // Fetch active work orders assigned to this provider
