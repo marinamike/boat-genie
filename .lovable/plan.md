@@ -1,36 +1,41 @@
 
-# Add Lead Stream Tab to Service Dashboard
+# Show Readable Service Names on Lead Cards
 
 ## Problem
 
-The Lead Stream (where submitted customer wishes appear) is only rendered on the legacy Provider Dashboard (`/provider`). Since the business role uses `/business/jobs` (the `ServiceDashboard`), there is no way to see incoming leads from that route.
+Lead cards display the raw `service_type` value (e.g., `wash_detail`) instead of a human-readable label. The `service_type` field can contain either a category slug (like `wash_detail`) or an actual service name (like `Full Detail`).
 
 ## Solution
 
-Add a "Leads" tab to the `ServiceDashboard` page that integrates the existing `LeadStream` component and `useJobBoard` hook.
+Two changes across two files:
 
-## Changes
+### 1. Add a display helper for service type (`src/components/provider/LeadStream.tsx`)
 
-### 1. `src/pages/ServiceDashboard.tsx`
+Import `SERVICE_CATEGORIES` from `useWishForm` and create a helper function that:
+- Checks if the `service_type` matches a category slug key (e.g., `wash_detail`)
+- If yes, returns the human-readable label (e.g., "Wash & Detail")
+- If no, returns the raw value as-is (it's already a readable service name like "Full Detail")
 
-- Import `useJobBoard` hook and `LeadStream` component
-- Import `useProviderMetrics` for the `providerServices` data that `LeadStream` requires
-- Add a new "Leads" tab (with a `Briefcase` icon) to the existing tab bar, making it 7 columns
-- Render the `LeadStream` component inside the new tab content, passing `availableWishes`, `providerServices`, `submitQuote`, and `submittingQuote`
-- Show a lead count badge on the tab trigger when leads are available
+Apply this helper in three places where `wish.service_type` is displayed:
+- Line 175: the `CardTitle` on each lead card
+- Line 370: the `DialogDescription` in the Accept Job dialog
+- Line 530 (approx): the `DialogDescription` in the Submit Quote dialog
 
-### UI Layout After Change
+### 2. Show marina location (`src/components/provider/LeadStream.tsx`)
 
-```text
-Tab bar: [Jobs] [Leads] [Yard] [QC] [On Blocks] [Staff] [Setup]
+Update lines 228-232 to show the actual marina name from `wish.boat_profile?.marina_name` instead of "Location revealed after acceptance". Fall back to "Location not specified" if missing.
+
+## Technical Detail
+
+Helper function:
+
+```typescript
+import { SERVICE_CATEGORIES } from "@/hooks/useWishForm";
+
+function displayServiceType(serviceType: string): string {
+  const category = SERVICE_CATEGORIES[serviceType as keyof typeof SERVICE_CATEGORIES];
+  return category ? category.label : serviceType;
+}
 ```
 
-The Leads tab will show the same lead cards currently visible on the Provider Dashboard -- service type, boat specs, pricing breakdown, and Accept/Quote buttons.
-
-## Technical Details
-
-- `useJobBoard()` provides `availableWishes`, `submittingQuote`, and `submitQuote`
-- `useProviderMetrics()` provides `providerServices` (needed by `LeadStream` for service matching)
-- Both hooks already use the `BusinessContext` internally, so they will work within the `/business` route
-- No database or migration changes required
-- No new components needed -- reusing existing `LeadStream` from `src/components/provider/LeadStream.tsx`
+No database or hook changes needed -- this is purely a display formatting update.
