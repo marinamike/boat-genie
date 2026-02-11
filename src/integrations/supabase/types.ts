@@ -560,6 +560,53 @@ export type Database = {
           },
         ]
       }
+      business_service_menu: {
+        Row: {
+          business_id: string
+          category: string
+          created_at: string
+          default_price: number
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          pricing_model: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          category?: string
+          created_at?: string
+          default_price?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          pricing_model?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          category?: string
+          created_at?: string
+          default_price?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          pricing_model?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_service_menu_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_staff: {
         Row: {
           accepted_at: string | null
