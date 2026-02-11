@@ -1,49 +1,36 @@
 
-
-# Fix: Provider Lead Stream Not Showing Submitted Wishes
+# Add Lead Stream Tab to Service Dashboard
 
 ## Problem
 
-The provider's job board (`useJobBoard.ts`) still queries the old `provider_services` table to build its list of service names for filtering incoming wishes. Since you moved all services to `business_service_menu`, the query returns zero services, which causes every wish to be filtered out (line 170: `if (serviceNames.length === 0) return false`).
+The Lead Stream (where submitted customer wishes appear) is only rendered on the legacy Provider Dashboard (`/provider`). Since the business role uses `/business/jobs` (the `ServiceDashboard`), there is no way to see incoming leads from that route.
 
 ## Solution
 
-Update the service name query in `useJobBoard.ts` to read from `business_service_menu` instead of `provider_services`.
+Add a "Leads" tab to the `ServiceDashboard` page that integrates the existing `LeadStream` component and `useJobBoard` hook.
 
-## File Changed
+## Changes
 
-**`src/hooks/useJobBoard.ts`** -- lines 113-123
+### 1. `src/pages/ServiceDashboard.tsx`
 
-Replace this block:
+- Import `useJobBoard` hook and `LeadStream` component
+- Import `useProviderMetrics` for the `providerServices` data that `LeadStream` requires
+- Add a new "Leads" tab (with a `Briefcase` icon) to the existing tab bar, making it 7 columns
+- Render the `LeadStream` component inside the new tab content, passing `availableWishes`, `providerServices`, `submitQuote`, and `submittingQuote`
+- Show a lead count badge on the tab trigger when leads are available
 
-```text
-// Fetch provider's actual Service Menu items
-let serviceNames: string[] = [];
-if (businessProfile?.id) {
-  const { data: providerServices } = await supabase
-    .from("provider_services")
-    .select("service_name")
-    .eq("provider_id", businessProfile.id)
-    .eq("is_active", true);
-
-  serviceNames = (providerServices || []).map(s => s.service_name);
-}
-```
-
-With:
+### UI Layout After Change
 
 ```text
-// Fetch provider's actual Service Menu items from business_service_menu
-let serviceNames: string[] = [];
-if (businessProfile?.id) {
-  const { data: menuItems } = await supabase
-    .from("business_service_menu")
-    .select("name")
-    .eq("business_id", businessProfile.id)
-    .eq("is_active", true);
-
-  serviceNames = (menuItems || []).map(s => s.name);
-}
+Tab bar: [Jobs] [Leads] [Yard] [QC] [On Blocks] [Staff] [Setup]
 ```
 
-This is a one-to-one swap: `provider_services.service_name` becomes `business_service_menu.name`, and `provider_id` becomes `business_id`. No other files need to change since the rest of the filtering and matching logic works on the resulting string array.
+The Leads tab will show the same lead cards currently visible on the Provider Dashboard -- service type, boat specs, pricing breakdown, and Accept/Quote buttons.
+
+## Technical Details
+
+- `useJobBoard()` provides `availableWishes`, `submittingQuote`, and `submitQuote`
+- `useProviderMetrics()` provides `providerServices` (needed by `LeadStream` for service matching)
+- Both hooks already use the `BusinessContext` internally, so they will work within the `/business` route
+- No database or migration changes required
+- No new components needed -- reusing existing `LeadStream` from `src/components/provider/LeadStream.tsx`
