@@ -426,7 +426,7 @@ const Dashboard = () => {
             <h2 className="text-xl font-bold tracking-tight mb-4">My Wishes</h2>
             <div className="space-y-3">
               {wishes.map((wish) => (
-                <WishStatusCard key={wish.id} wish={wish} />
+                <WishStatusCard key={wish.id} wish={wish} onUpdated={fetchWishes} />
               ))}
             </div>
           </section>

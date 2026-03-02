@@ -15,6 +15,8 @@ interface Reservation {
   requested_departure: string | null;
   assigned_slip: string | null;
   created_at: string;
+  special_requests?: string | null;
+  power_requirements?: string | null;
   marina?: { marina_name: string } | null;
   boat?: { name: string } | null;
 }
@@ -52,7 +54,7 @@ export function ReservationsSection({ userId }: ReservationsSectionProps) {
         .from("marina_reservations")
         .select(`
           id, status, stay_type, requested_arrival, requested_departure,
-          assigned_slip, created_at,
+          assigned_slip, created_at, special_requests, power_requirements,
           marina:marinas(marina_name),
           boat:boats(name)
         `)
@@ -149,6 +151,25 @@ export function ReservationsSection({ userId }: ReservationsSectionProps) {
         reservation={selectedReservation}
         open={!!selectedReservation}
         onOpenChange={(open) => { if (!open) setSelectedReservation(null); }}
+        onUpdated={() => {
+          setSelectedReservation(null);
+          // Re-fetch by triggering the effect
+          setLoading(true);
+          supabase
+            .from("marina_reservations")
+            .select(`
+              id, status, stay_type, requested_arrival, requested_departure,
+              assigned_slip, created_at, special_requests, power_requirements,
+              marina:marinas(marina_name),
+              boat:boats(name)
+            `)
+            .eq("owner_id", userId)
+            .order("created_at", { ascending: false })
+            .then(({ data }) => {
+              setReservations((data as unknown as Reservation[]) || []);
+              setLoading(false);
+            });
+        }}
       />
     </section>
   );
