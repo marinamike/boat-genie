@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -144,6 +144,15 @@ export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting
     setSelectedWish(wish);
     setMatchingService(service);
     setQuoteDialogOpen(true);
+  };
+
+  // Compute initial labor cost for the selected wish
+  const getInitialLaborCost = (wish: WishFormItem | null, service: ProviderService | null) => {
+    if (!wish) return 0;
+    if (wish.calculated_price != null && wish.calculated_price > 0) return wish.calculated_price;
+    if (!service || !wish.boat?.length_ft) return 0;
+    if (service.pricing_model === "per_foot") return service.price * wish.boat.length_ft;
+    return service.price;
   };
 
   const handleSubmitQuote = async (data: QuoteFormData) => {
@@ -308,17 +317,14 @@ function QuickQuoteDialog({
   
   // Auto-fill labor cost based on matching service and boat length
   const calculateAutoFill = () => {
-    // If wish has pre-calculated price, use that
     if (hasPreCalculatedPrice) {
       return wish!.calculated_price!;
     }
-    
     if (!matchingService || !wish?.boat?.length_ft) return 0;
-    
     if (matchingService.pricing_model === "per_foot") {
       return matchingService.price * wish.boat.length_ft;
     }
-    return matchingService.price; // hourly or flat rate
+    return matchingService.price;
   };
 
   const autoFillAmount = calculateAutoFill();
@@ -329,6 +335,19 @@ function QuickQuoteDialog({
   const [estimatedDate, setEstimatedDate] = useState("");
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Sync laborCost when wish changes (critical for pre-calculated prices)
+  useEffect(() => {
+    if (open && wish) {
+      const amount = calculateAutoFill();
+      setLaborCost(amount > 0 ? amount.toString() : "");
+      setMaterialsCost("");
+      setMaterialsDeposit("");
+      setEstimatedDate("");
+      setEstimatedArrivalTime("");
+      setNotes("");
+    }
+  }, [open, wish?.id]);
 
   // Generate arrival time options by hour
   const arrivalTimeOptions = Array.from({ length: 12 }, (_, i) => {
