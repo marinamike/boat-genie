@@ -49,6 +49,7 @@ export interface ProviderService {
   price: number;
   pricing_model: string;
   is_locked: boolean;
+  category?: string;
 }
 
 export function useProviderMetrics() {

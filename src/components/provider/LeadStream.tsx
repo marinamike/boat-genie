@@ -109,16 +109,29 @@ const urgencyColors: Record<string, string> = {
   normal: "bg-muted text-muted-foreground",
 };
 
-// Check if wish matches a specific provider service
+// Check if wish matches a specific provider service (by name or category)
 function getMatchingService(wishServiceType: string, services: ProviderService[]): ProviderService | null {
   const normalizedWish = wishServiceType.toLowerCase().trim();
   
-  return services.find(service => {
+  // First try direct name match
+  const nameMatch = services.find(service => {
     const normalizedService = service.service_name.toLowerCase().trim();
     return normalizedService === normalizedWish ||
            normalizedService.includes(normalizedWish) ||
            normalizedWish.includes(normalizedService);
-  }) || null;
+  });
+  if (nameMatch) return nameMatch;
+
+  // Then try category match: if wishServiceType is a category slug, match provider services in that category
+  const categoryInfo = SERVICE_CATEGORIES[wishServiceType as keyof typeof SERVICE_CATEGORIES];
+  if (categoryInfo) {
+    const categoryMatch = services.find(service => 
+      service.category?.toLowerCase() === wishServiceType.toLowerCase()
+    );
+    if (categoryMatch) return categoryMatch;
+  }
+
+  return null;
 }
 
 export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting }: LeadStreamProps) {
