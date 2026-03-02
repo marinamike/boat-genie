@@ -25,6 +25,7 @@ interface Wish {
 
 interface WishStatusCardProps {
   wish: Wish;
+  onUpdated?: () => void;
 }
 
 const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -47,7 +48,7 @@ function getEffectiveStatus(wish: Wish): string {
   return wish.status;
 }
 
-export function WishStatusCard({ wish }: WishStatusCardProps) {
+export function WishStatusCard({ wish, onUpdated }: WishStatusCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const effectiveStatus = getEffectiveStatus(wish);
   const status = statusConfig[effectiveStatus] || statusConfig.submitted;
@@ -107,7 +108,7 @@ export function WishStatusCard({ wish }: WishStatusCardProps) {
         </CardContent>
       </Card>
 
-      <WishDetailDialog wish={wish} open={detailOpen} onOpenChange={setDetailOpen} />
+      <WishDetailDialog wish={wish} open={detailOpen} onOpenChange={setDetailOpen} onUpdated={onUpdated} />
     </>
   );
 }
