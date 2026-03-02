@@ -27,6 +27,7 @@ export default function ServiceDashboard() {
     price: item.default_price,
     pricing_model: item.pricing_model,
     is_locked: true,
+    category: item.category,
   }));
 
   return (
