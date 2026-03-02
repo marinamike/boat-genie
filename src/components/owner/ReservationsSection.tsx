@@ -5,6 +5,7 @@ import { Anchor, Calendar, MapPin, CheckCircle2, Clock, XCircle } from "lucide-r
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { ReservationDetailDialog } from "./ReservationDetailDialog";
 
 interface Reservation {
   id: string;
@@ -14,12 +15,8 @@ interface Reservation {
   requested_departure: string | null;
   assigned_slip: string | null;
   created_at: string;
-  marina?: {
-    marina_name: string;
-  } | null;
-  boat?: {
-    name: string;
-  } | null;
+  marina?: { marina_name: string } | null;
+  boat?: { name: string } | null;
 }
 
 interface ReservationsSectionProps {
@@ -27,36 +24,12 @@ interface ReservationsSectionProps {
 }
 
 const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: {
-    label: "Pending",
-    icon: Clock,
-    variant: "secondary",
-  },
-  approved: {
-    label: "Confirmed",
-    icon: CheckCircle2,
-    variant: "default",
-  },
-  checked_in: {
-    label: "Checked In",
-    icon: Anchor,
-    variant: "default",
-  },
-  checked_out: {
-    label: "Completed",
-    icon: CheckCircle2,
-    variant: "outline",
-  },
-  rejected: {
-    label: "Declined",
-    icon: XCircle,
-    variant: "destructive",
-  },
-  cancelled: {
-    label: "Cancelled",
-    icon: XCircle,
-    variant: "destructive",
-  },
+  pending: { label: "Pending", icon: Clock, variant: "secondary" },
+  approved: { label: "Confirmed", icon: CheckCircle2, variant: "default" },
+  checked_in: { label: "Checked In", icon: Anchor, variant: "default" },
+  checked_out: { label: "Completed", icon: CheckCircle2, variant: "outline" },
+  rejected: { label: "Declined", icon: XCircle, variant: "destructive" },
+  cancelled: { label: "Cancelled", icon: XCircle, variant: "destructive" },
 };
 
 const stayTypeLabels: Record<string, string> = {
@@ -71,19 +44,15 @@ const stayTypeLabels: Record<string, string> = {
 export function ReservationsSection({ userId }: ReservationsSectionProps) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
 
   useEffect(() => {
     const fetchReservations = async () => {
       const { data, error } = await supabase
         .from("marina_reservations")
         .select(`
-          id,
-          status,
-          stay_type,
-          requested_arrival,
-          requested_departure,
-          assigned_slip,
-          created_at,
+          id, status, stay_type, requested_arrival, requested_departure,
+          assigned_slip, created_at,
           marina:marinas(marina_name),
           boat:boats(name)
         `)
@@ -100,30 +69,18 @@ export function ReservationsSection({ userId }: ReservationsSectionProps) {
 
     fetchReservations();
 
-    // Subscribe to realtime updates
     const channel = supabase
       .channel("owner-reservations")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "marina_reservations",
-          filter: `owner_id=eq.${userId}`,
-        },
-        () => {
-          fetchReservations();
-        }
-      )
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "marina_reservations",
+        filter: `owner_id=eq.${userId}`,
+      }, () => fetchReservations())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
-  if (loading) return null;
-  if (reservations.length === 0) return null;
+  if (loading || reservations.length === 0) return null;
 
   return (
     <section className="mt-8">
@@ -134,9 +91,10 @@ export function ReservationsSection({ userId }: ReservationsSectionProps) {
           const StatusIcon = status.icon;
 
           return (
-            <Card 
-              key={reservation.id} 
-              className="transition-all hover:shadow-md"
+            <Card
+              key={reservation.id}
+              className="transition-all hover:shadow-md cursor-pointer"
+              onClick={() => setSelectedReservation(reservation)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -186,6 +144,12 @@ export function ReservationsSection({ userId }: ReservationsSectionProps) {
           );
         })}
       </div>
+
+      <ReservationDetailDialog
+        reservation={selectedReservation}
+        open={!!selectedReservation}
+        onOpenChange={(open) => { if (!open) setSelectedReservation(null); }}
+      />
     </section>
   );
 }
