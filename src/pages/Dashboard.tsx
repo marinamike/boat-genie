@@ -115,6 +115,7 @@ const Dashboard = () => {
         boat:boats(name)
       `)
       .eq("requester_id", user.id)
+      .not("status", "eq", "rejected")
       .order("created_at", { ascending: false });
 
     if (wishData && wishData.length > 0) {
