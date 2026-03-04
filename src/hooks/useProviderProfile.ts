@@ -18,6 +18,8 @@ export interface ProviderProfile {
   is_verified: boolean;
   is_available: boolean;
   rates_agreed: boolean;
+  cancellation_policy_message: string | null;
+  cancellation_fee_percent: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,8 +81,10 @@ export function useProviderProfile() {
           rate_per_foot: data.rate_per_foot,
           diagnostic_fee: data.diagnostic_fee,
           is_verified: data.is_verified || false,
-          is_available: true, // Business availability is always true when profile exists
-          rates_agreed: true, // Rates are always agreed when profile exists
+          is_available: true,
+          rates_agreed: true,
+          cancellation_policy_message: (data as any).cancellation_policy_message ?? null,
+          cancellation_fee_percent: (data as any).cancellation_fee_percent ?? null,
           created_at: data.created_at,
           updated_at: data.updated_at,
         });
@@ -112,7 +116,9 @@ export function useProviderProfile() {
           hourly_rate: profileData.hourly_rate || null,
           rate_per_foot: profileData.rate_per_foot || null,
           diagnostic_fee: profileData.diagnostic_fee || null,
-        })
+          cancellation_policy_message: profileData.cancellation_policy_message || null,
+          cancellation_fee_percent: profileData.cancellation_fee_percent || null,
+        } as any)
         .select()
         .single();
 
@@ -133,6 +139,8 @@ export function useProviderProfile() {
         is_verified: data.is_verified || false,
         is_available: true,
         rates_agreed: true,
+        cancellation_policy_message: (data as any).cancellation_policy_message ?? null,
+        cancellation_fee_percent: (data as any).cancellation_fee_percent ?? null,
         created_at: data.created_at,
         updated_at: data.updated_at,
       });
@@ -158,6 +166,8 @@ export function useProviderProfile() {
         hourly_rate: updates.hourly_rate,
         rate_per_foot: updates.rate_per_foot,
         diagnostic_fee: updates.diagnostic_fee,
+        cancellation_policy_message: updates.cancellation_policy_message,
+        cancellation_fee_percent: updates.cancellation_fee_percent,
       };
 
       const { data, error } = await supabase
@@ -184,6 +194,8 @@ export function useProviderProfile() {
         is_verified: data.is_verified || false,
         is_available: true,
         rates_agreed: true,
+        cancellation_policy_message: (data as any).cancellation_policy_message ?? null,
+        cancellation_fee_percent: (data as any).cancellation_fee_percent ?? null,
         created_at: data.created_at,
         updated_at: data.updated_at,
       });

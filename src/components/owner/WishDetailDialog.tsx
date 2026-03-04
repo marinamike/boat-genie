@@ -12,9 +12,10 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sparkles, Clock, MessageSquare, Wrench, CheckCircle2, Calendar, Ship,
-  AlertTriangle, Pencil, Trash2, DollarSign, Receipt,
+  AlertTriangle, Pencil, Trash2, DollarSign, Receipt, XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatPrice } from "@/lib/pricing";
@@ -87,6 +88,9 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
   const [editPreferredDate, setEditPreferredDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmCancelAccepted, setConfirmCancelAccepted] = useState(false);
+  const [cancellationPolicy, setCancellationPolicy] = useState<{ message: string | null; fee_percent: number | null } | null>(null);
+  const [cancellationAcknowledged, setCancellationAcknowledged] = useState(false);
 
   useEffect(() => {
     if (!wish || !open) return;
@@ -136,6 +140,62 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
   const StatusIcon = status.icon;
   const isCompleted = effectiveStatus === "completed";
   const isPending = effectiveStatus === "submitted" || effectiveStatus === "reviewed";
+  const isAccepted = effectiveStatus === "approved" || effectiveStatus === "in_progress";
+
+  const handleCancelAccepted = async () => {
+    // Fetch provider's cancellation policy from the work order's provider business
+    const { data: workOrders } = await supabase
+      .from("work_orders")
+      .select("id, provider_id, retail_price")
+      .eq("boat_id", (wish as any).boat_id || "")
+      .in("status", ["assigned", "in_progress"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (workOrders && workOrders.length > 0) {
+      const wo = workOrders[0];
+      // Fetch the provider's business for cancellation policy
+      const { data: business } = await supabase
+        .from("businesses")
+        .select("cancellation_policy_message, cancellation_fee_percent")
+        .eq("owner_id", wo.provider_id)
+        .maybeSingle();
+
+      setCancellationPolicy({
+        message: (business as any)?.cancellation_policy_message ?? null,
+        fee_percent: (business as any)?.cancellation_fee_percent ?? null,
+      });
+    } else {
+      setCancellationPolicy({ message: null, fee_percent: null });
+    }
+    setCancellationAcknowledged(false);
+    setConfirmCancelAccepted(true);
+  };
+
+  const handleConfirmCancelAccepted = async () => {
+    // Cancel work order and wish
+    const { data: workOrders } = await supabase
+      .from("work_orders")
+      .select("id")
+      .eq("boat_id", (wish as any).boat_id || "")
+      .in("status", ["assigned", "in_progress"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (workOrders && workOrders.length > 0) {
+      await supabase.from("work_orders").update({ status: "cancelled" }).eq("id", workOrders[0].id);
+    }
+    await supabase.from("wish_forms").update({ status: "rejected" }).eq("id", wish.id);
+
+    toast({ title: "Service Cancelled", description: "The accepted service has been cancelled." });
+    onUpdated?.();
+    onOpenChange(false);
+    setConfirmCancelAccepted(false);
+  };
+
+  const cancellationFee = cancellationPolicy?.fee_percent && workOrderCharges?.retail_price
+    ? (workOrderCharges.retail_price * cancellationPolicy.fee_percent) / 100
+    : 0;
 
   const handleEdit = () => {
     setEditDescription(wish.description);
@@ -347,7 +407,15 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
               </>
             )}
 
-            {/* Estimated price fallback */}
+          {/* Cancel button for accepted/in-progress wishes */}
+          {isAccepted && !editing && (
+            <DialogFooter className="flex-row gap-2 sm:justify-end">
+              <Button variant="destructive" size="sm" onClick={handleCancelAccepted}>
+                <XCircle className="w-4 h-4 mr-1" />
+                Cancel Service
+              </Button>
+            </DialogFooter>
+          )}
             {!hasCharges && wish.calculated_price != null && (
               <>
                 <Separator />
@@ -402,6 +470,57 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
             <AlertDialogCancel>Keep Wish</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Yes, Cancel Wish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancellation Policy Acknowledgment Dialog */}
+      <AlertDialog open={confirmCancelAccepted} onOpenChange={setConfirmCancelAccepted}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Cancellation Policy
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  {cancellationPolicy?.message || "Cancellations after acceptance may be subject to a fee."}
+                </p>
+                {cancellationFee > 0 && (
+                  <div className="bg-destructive/10 rounded-lg p-3 text-sm">
+                    <span className="font-semibold text-destructive">
+                      Cancellation fee: {formatPrice(cancellationFee)}
+                    </span>
+                    <span className="text-muted-foreground ml-1">
+                      ({cancellationPolicy?.fee_percent}% of {formatPrice(workOrderCharges?.retail_price || 0)})
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-start space-x-3 pt-2">
+                  <Checkbox
+                    id="cancel-acknowledge"
+                    checked={cancellationAcknowledged}
+                    onCheckedChange={(checked) => setCancellationAcknowledged(checked === true)}
+                  />
+                  <label htmlFor="cancel-acknowledge" className="text-sm leading-tight cursor-pointer">
+                    {cancellationFee > 0
+                      ? `I acknowledge and accept the cancellation fee of ${formatPrice(cancellationFee)}`
+                      : "I understand this cancellation cannot be undone"}
+                  </label>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Service</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancelAccepted}
+              disabled={!cancellationAcknowledged}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              Confirm Cancellation
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
