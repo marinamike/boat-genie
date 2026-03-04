@@ -33,6 +33,8 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
     service_categories: [] as string[],
     is_available: true,
     rates_agreed: false,
+    cancellation_policy_message: "",
+    cancellation_fee_percent: "",
   });
   const [saving, setSaving] = useState(false);
   const [phoneError, setPhoneError] = useState("");
@@ -55,6 +57,8 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
         service_categories: profile.service_categories || [],
         is_available: profile.is_available,
         rates_agreed: profile.rates_agreed,
+        cancellation_policy_message: profile.cancellation_policy_message || "",
+        cancellation_fee_percent: profile.cancellation_fee_percent?.toString() || "",
       });
     }
   }, [profile]);
@@ -100,6 +104,8 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
       service_categories: formData.service_categories,
       is_available: formData.is_available,
       rates_agreed: formData.rates_agreed,
+      cancellation_policy_message: formData.cancellation_policy_message || null,
+      cancellation_fee_percent: formData.cancellation_fee_percent ? parseFloat(formData.cancellation_fee_percent) : null,
     };
 
     const success = profile 
@@ -302,6 +308,46 @@ export function ProviderProfileForm({ onComplete }: ProviderProfileFormProps) {
               </AlertDescription>
             </Alert>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            Cancellation Policy
+          </CardTitle>
+          <CardDescription>
+            Define the cancellation terms customers must acknowledge before canceling accepted work.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="cancellation_policy_message">Policy Message</Label>
+            <Textarea
+              id="cancellation_policy_message"
+              placeholder="e.g. Cancellations after acceptance are subject to a fee to cover scheduling and materials costs."
+              value={formData.cancellation_policy_message}
+              onChange={(e) => setFormData(prev => ({ ...prev, cancellation_policy_message: e.target.value }))}
+              rows={3}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cancellation_fee_percent">Cancellation Fee (%)</Label>
+            <Input
+              id="cancellation_fee_percent"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              placeholder="25"
+              value={formData.cancellation_fee_percent}
+              onChange={(e) => setFormData(prev => ({ ...prev, cancellation_fee_percent: e.target.value }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Percentage of the quote total charged when a customer cancels after accepting.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

@@ -662,6 +662,8 @@ export type Database = {
           amenities: string[] | null
           auto_approve_transient: boolean | null
           business_name: string
+          cancellation_fee_percent: number | null
+          cancellation_policy_message: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -723,6 +725,8 @@ export type Database = {
           amenities?: string[] | null
           auto_approve_transient?: boolean | null
           business_name: string
+          cancellation_fee_percent?: number | null
+          cancellation_policy_message?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -784,6 +788,8 @@ export type Database = {
           amenities?: string[] | null
           auto_approve_transient?: boolean | null
           business_name?: string
+          cancellation_fee_percent?: number | null
+          cancellation_policy_message?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
