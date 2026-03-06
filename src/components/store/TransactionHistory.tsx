@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SalesReceipt } from "@/hooks/useStoreInventory";
 import { Receipt, User, CreditCard, Banknote } from "lucide-react";
 import { format } from "date-fns";
+import { ReceiptDetailDialog } from "./ReceiptDetailDialog";
 
 interface TransactionHistoryProps {
   receipts: SalesReceipt[];
