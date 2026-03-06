@@ -23,6 +23,7 @@ interface UserManagementProps {
 
 const ROLE_CONFIG: Record<AppRole, { label: string; color: string }> = {
   boat_owner: { label: "Customer", color: "bg-blue-500" },
+  provider: { label: "Service Provider", color: "bg-green-500" },
   admin: { label: "Business", color: "bg-purple-500" },
   marina_staff: { label: "Staff", color: "bg-orange-500" },
 };

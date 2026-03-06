@@ -128,6 +128,7 @@ const Profile = () => {
     if (success) {
       const roleLabels: Record<AppRole, string> = {
         boat_owner: "Customer",
+        provider: "Service Provider",
         admin: "Business",
         marina_staff: "Staff",
       };

@@ -20,6 +20,7 @@ interface ViewAsUserPanelProps {
 
 const ROLE_LABELS: Record<AppRole, string> = {
   boat_owner: "Customer",
+  provider: "Service Provider",
   admin: "Business",
   marina_staff: "Staff",
 };
