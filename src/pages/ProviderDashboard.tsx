@@ -43,6 +43,7 @@ const ProviderDashboard = () => {
   } = useProviderMetrics();
   const {
     availableWishes,
+    pendingQuotedWishes,
     submittingQuote,
     submitQuote,
   } = useJobBoard();
