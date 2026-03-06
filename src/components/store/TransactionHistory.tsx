@@ -130,6 +130,12 @@ export function TransactionHistory({ receipts }: TransactionHistoryProps) {
             ))}
           </div>
         </ScrollArea>
+
+        <ReceiptDetailDialog
+          receipt={selectedReceipt}
+          open={!!selectedReceipt}
+          onOpenChange={(open) => !open && setSelectedReceipt(null)}
+        />
       </CardContent>
     </Card>
   );
