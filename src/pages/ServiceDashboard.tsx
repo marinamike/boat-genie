@@ -83,6 +83,7 @@ export default function ServiceDashboard() {
         <TabsContent value="leads" className="mt-4">
           <LeadStream
             wishes={availableWishes}
+            pendingWishes={pendingQuotedWishes}
             providerServices={providerServices}
             onSubmitQuote={submitQuote}
             submitting={submittingQuote}
