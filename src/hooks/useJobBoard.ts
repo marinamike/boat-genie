@@ -107,6 +107,7 @@ function matchesProviderService(
 
 export function useJobBoard() {
   const [availableWishes, setAvailableWishes] = useState<WishFormItem[]>([]);
+  const [pendingQuotedWishes, setPendingQuotedWishes] = useState<WishFormItem[]>([]);
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrderItem[]>([]);
   const [providerCategories, setProviderCategories] = useState<string[]>([]);
   const [providerServiceNames, setProviderServiceNames] = useState<string[]>([]);
