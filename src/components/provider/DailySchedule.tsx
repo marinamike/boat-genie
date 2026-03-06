@@ -51,8 +51,20 @@ export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onR
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [scanningWorkOrder, setScanningWorkOrder] = useState<ActiveWorkOrder | null>(null);
   const [manualCheckInWorkOrder, setManualCheckInWorkOrder] = useState<ActiveWorkOrder | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const { toast } = useToast();
   const { verifyQRCode, isProcessing } = useQRCheckIn();
+
+  const filteredWorkOrders = useMemo(() => {
+    if (!dateRange?.from) return workOrders;
+    return workOrders.filter((wo) => {
+      if (!wo.scheduled_date) return !dateRange.from; // show unscheduled only if no filter
+      const woDate = startOfDay(parseISO(wo.scheduled_date));
+      const from = startOfDay(dateRange.from!);
+      const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
+      return isWithinInterval(woDate, { start: from, end: to });
+    });
+  }, [workOrders, dateRange]);
 
   const handleScanSuccess = async (code: string) => {
     if (!scanningWorkOrder) return;
