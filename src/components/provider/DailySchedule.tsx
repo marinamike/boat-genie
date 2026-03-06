@@ -112,12 +112,18 @@ export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onR
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
   };
 
+  const dateRangeLabel = dateRange?.from
+    ? dateRange.to
+      ? `${format(dateRange.from, "MMM d")} – ${format(dateRange.to, "MMM d")}`
+      : format(dateRange.from, "MMM d, yyyy")
+    : null;
+
   if (workOrders.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="font-semibold text-lg">No Active Jobs Today</h3>
+          <h3 className="font-semibold text-lg">No Active Jobs</h3>
           <p className="text-muted-foreground text-center">
             Check the Leads tab to quote on new opportunities.
           </p>
@@ -129,15 +135,50 @@ export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onR
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-semibold text-lg flex items-center gap-2">
             <Clock className="w-5 h-5" />
-            Daily Schedule
+            Schedule
           </h3>
-          <Badge variant="secondary">{workOrders.length} job{workOrders.length !== 1 ? "s" : ""}</Badge>
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("gap-1.5", dateRangeLabel && "text-primary")}>
+                  <CalendarIcon className="w-4 h-4" />
+                  {dateRangeLabel || "All Dates"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={1}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            {dateRange?.from && (
+              <Button variant="ghost" size="sm" onClick={() => setDateRange(undefined)} className="h-8 w-8 p-0">
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+            <Badge variant="secondary">{filteredWorkOrders.length} job{filteredWorkOrders.length !== 1 ? "s" : ""}</Badge>
+          </div>
         </div>
 
-        {workOrders.map((wo) => {
+        {filteredWorkOrders.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Calendar className="w-10 h-10 text-muted-foreground mb-3" />
+              <p className="text-muted-foreground text-sm">No jobs scheduled for this date range</p>
+              <Button variant="link" size="sm" onClick={() => setDateRange(undefined)}>Show all</Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {filteredWorkOrders.map((wo) => {
           const status = statusConfig[wo.status] || statusConfig.assigned;
           const isLoading = loadingId === wo.id;
 
