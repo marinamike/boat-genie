@@ -1,63 +1,32 @@
 
-# Cancellation Policy for Accepted Quotes
 
-## Overview
-After a customer accepts a provider's quote, cancellation will require acknowledging the provider's cancellation policy and associated fee. Providers will configure their cancellation policy message and rate in their business profile.
+## Problem
 
-## Changes
+The provider schedule (and entire provider dashboard) is unreachable. There are two gaps:
 
-### 1. Database Migration
-Add two new columns to the `businesses` table:
-- `cancellation_policy_message` (text, nullable) -- Custom message shown to customers before cancellation (e.g., "Cancellations after acceptance are subject to a fee to cover scheduling and materials costs.")
-- `cancellation_fee_percent` (numeric, nullable) -- Percentage of the quote total charged on cancellation (e.g., 25 means 25%)
+1. **No `provider` role in the type system** — `AppRole` only includes `boat_owner | admin | marina_staff`. No provider role exists in the enum or routing.
+2. **No provider routes in `App.tsx`** — The `RoleBasedRoutes` switch statement has no `case` for a provider role, so even if someone had a provider role in the database, they'd fall through to the default (owner) routes.
 
-### 2. Provider Profile Form (`ProviderProfileForm.tsx`)
-Add a new "Cancellation Policy" card section with:
-- A textarea for the cancellation policy message
-- A numeric input for the cancellation fee percentage
-- Wire these fields into the existing form save logic via `useProviderProfile`
+The `ProviderDashboard` page, `ProviderLayout`, and `DailySchedule` component all exist and are fully built — they just can't be reached.
 
-### 3. Provider Profile Hook (`useProviderProfile.ts`)
-- Add `cancellation_policy_message` and `cancellation_fee_percent` to the `ProviderProfile` interface
-- Map these fields in fetch, create, and update functions
+## Plan
 
-### 4. Quote Acceptance Flow -- Cancellation Gate (`WishDetailDialog.tsx`)
-When a customer tries to cancel an **accepted** wish (work order status is `assigned` or `in_progress`):
-- Fetch the provider's cancellation policy from the `businesses` table (via the work order's `provider_id`)
-- Show a cancellation confirmation dialog that displays:
-  - The provider's custom cancellation policy message
-  - The calculated cancellation fee (percentage of the escrow/quote total)
-  - A checkbox "I acknowledge this cancellation fee"
-- The "Confirm Cancellation" button remains disabled until the checkbox is checked
-- If no cancellation policy is configured by the provider, show a default message with no fee
+### 1. Add provider role to the type system
+- In `src/hooks/useUserRole.ts`, add `"provider"` to the `AppRole` union type.
 
-### 5. Quote Acceptance Flow -- Post-Acceptance Cancel (`PendingQuotesSection.tsx`)
-Currently, cancellation of accepted work is handled in `WishDetailDialog`. The `isPending` check already gates the cancel button. We need to also allow cancellation for `approved`/`in_progress` statuses but with the policy gate. Update the dialog to:
-- Show "Cancel Service" button for accepted/in-progress wishes (not just pending ones)
-- Route through the cancellation policy acknowledgment flow
+### 2. Add provider routes to `App.tsx`
+- Add a `case "provider":` block in the `RoleBasedRoutes` switch that mounts:
+  - `ProviderLayout` as the layout wrapper
+  - `/provider` → `ProviderDashboard`
+  - `/profile` → `Profile`
+  - `/platform-admin` → `PlatformAdmin`
+  - Default redirect to `/provider`
 
-## Technical Details
+### 3. Update database enum (if needed)
+- Check if `app_role` enum in the database includes a `provider` value. If not, add it via migration so the `user_roles` table can store it.
 
-```text
-Flow:
-  Customer clicks "Cancel" on accepted wish
-       |
-       v
-  Fetch provider's business record (cancellation_policy_message, cancellation_fee_percent)
-       |
-       v
-  Show AlertDialog with:
-    - Policy message text
-    - "Cancellation fee: $X.XX (Y% of $Z.ZZ)"
-    - Checkbox: "I acknowledge and accept the cancellation fee"
-       |
-       v
-  On confirm: Update work_order status to 'cancelled', 
-              wish_forms status to 'rejected'
-```
+### 4. Add provider to role selector
+- Update `src/components/onboarding/RoleSelector.tsx` to include a "Service Provider" option so users can select this role during onboarding.
 
-### Files to modify:
-- **Migration**: Add `cancellation_policy_message` and `cancellation_fee_percent` columns to `businesses`
-- `src/hooks/useProviderProfile.ts`: Add new fields to interface and CRUD mapping
-- `src/components/provider/ProviderProfileForm.tsx`: Add cancellation policy card
-- `src/components/owner/WishDetailDialog.tsx`: Add policy-gated cancellation for accepted wishes
+This will make the provider dashboard and its schedule accessible to users with the provider role.
+
