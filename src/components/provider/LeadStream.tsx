@@ -183,13 +183,15 @@ export function LeadStream({ wishes, pendingWishes = [], providerServices, onSub
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Briefcase className="w-5 h-5" />
-            New Leads
-          </h3>
-          <Badge variant="secondary">{wishes.length} lead{wishes.length !== 1 ? "s" : ""}</Badge>
-        </div>
+        {wishes.length > 0 && (
+          <>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Briefcase className="w-5 h-5" />
+                New Leads
+              </h3>
+              <Badge variant="secondary">{wishes.length} lead{wishes.length !== 1 ? "s" : ""}</Badge>
+            </div>
 
         {wishes.map((wish) => {
           const matchedService = getMatchingService(wish.service_type, providerServices);
