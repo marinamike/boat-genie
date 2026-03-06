@@ -160,25 +160,39 @@ export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddT
                           / {item.reorder_point} min
                         </span>
                       </TableCell>
-                      {canWrite && (
+                      {(canWrite || onAddToCart) && (
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => onEdit(item)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => setDeletingItem(item)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {onAddToCart && item.is_active && item.current_quantity > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-primary hover:text-primary"
+                                onClick={() => onAddToCart(item)}
+                              >
+                                <ShoppingCart className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canWrite && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => onEdit(item)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => setDeletingItem(item)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       )}
