@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { StoreItem, StoreItemCategory } from "@/hooks/useStoreInventory";
-import { Package, Search, Pencil, Trash2, Wrench } from "lucide-react";
+import { Package, Search, Pencil, Trash2, Wrench, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InventoryManagerProps {
@@ -37,9 +37,10 @@ interface InventoryManagerProps {
   onEdit: (item: StoreItem) => void;
   onDelete: (id: string) => void;
   canWrite: boolean;
+  onAddToCart?: (item: StoreItem) => void;
 }
 
-export function InventoryManager({ inventory, onEdit, onDelete, canWrite }: InventoryManagerProps) {
+export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddToCart }: InventoryManagerProps) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [deletingItem, setDeletingItem] = useState<StoreItem | null>(null);
@@ -113,7 +114,7 @@ export function InventoryManager({ inventory, onEdit, onDelete, canWrite }: Inve
                     <TableHead className="text-right">Cost</TableHead>
                     <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">Stock</TableHead>
-                    {canWrite && <TableHead className="w-24">Actions</TableHead>}
+                    {(canWrite || onAddToCart) && <TableHead className="w-32">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -159,25 +160,39 @@ export function InventoryManager({ inventory, onEdit, onDelete, canWrite }: Inve
                           / {item.reorder_point} min
                         </span>
                       </TableCell>
-                      {canWrite && (
+                      {(canWrite || onAddToCart) && (
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => onEdit(item)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => setDeletingItem(item)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {onAddToCart && item.is_active && item.current_quantity > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-primary hover:text-primary"
+                                onClick={() => onAddToCart(item)}
+                              >
+                                <ShoppingCart className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canWrite && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => onEdit(item)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => setDeletingItem(item)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       )}

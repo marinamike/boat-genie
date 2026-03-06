@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { useStoreInventory, StoreItem } from "@/hooks/useStoreInventory";
+import { useStoreInventory, StoreItem, CartItem } from "@/hooks/useStoreInventory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +19,6 @@ import {
   DollarSign,
   TrendingUp
 } from "lucide-react";
-import { format } from "date-fns";
 
 export default function StoreDashboard() {
   const { business, isOwner, hasModuleAccess } = useBusiness();
@@ -35,8 +34,36 @@ export default function StoreDashboard() {
 
   const [showInventoryForm, setShowInventoryForm] = useState(false);
   const [editingItem, setEditingItem] = useState<StoreItem | null>(null);
+  const [activeTab, setActiveTab] = useState("register");
+  const [cart, setCart] = useState<CartItem[]>([]);
 
   const canWrite = isOwner || hasModuleAccess("store", "write");
+
+  const addToCart = (item: StoreItem) => {
+    const existing = cart.find(c => c.type === "inventory" && c.item_id === item.id);
+    if (existing) {
+      setCart(cart.map(c =>
+        c.id === existing.id
+          ? { ...c, quantity: c.quantity + 1, line_total: (c.quantity + 1) * c.unit_price }
+          : c
+      ));
+    } else {
+      setCart([...cart, {
+        id: `inv-${item.id}-${Date.now()}`,
+        type: "inventory",
+        item_id: item.id,
+        name: item.name,
+        quantity: 1,
+        unit_price: item.retail_price,
+        line_total: item.retail_price,
+      }]);
+    }
+  };
+
+  const handleAddToCartFromInventory = (item: StoreItem) => {
+    addToCart(item);
+    setActiveTab("register");
+  };
 
   // Calculate stats
   const todaysSales = receipts
@@ -127,11 +154,16 @@ export default function StoreDashboard() {
         </Card>
       </div>
 
-      <Tabs defaultValue="register" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="register" className="flex items-center gap-1">
             <ShoppingCart className="h-4 w-4" />
             <span className="hidden sm:inline">Register</span>
+            {cart.length > 0 && (
+              <Badge variant="default" className="ml-1 h-5 w-5 p-0 justify-center text-[10px]">
+                {cart.length}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="inventory" className="flex items-center gap-1">
             <Package className="h-4 w-4" />
@@ -153,7 +185,11 @@ export default function StoreDashboard() {
         </TabsList>
 
         <TabsContent value="register" className="mt-4">
-          <POSRegister />
+          <POSRegister
+            cart={cart}
+            setCart={setCart}
+            addToCart={addToCart}
+          />
         </TabsContent>
 
         <TabsContent value="inventory" className="mt-4">
@@ -165,6 +201,7 @@ export default function StoreDashboard() {
             }}
             onDelete={deleteItem}
             canWrite={canWrite}
+            onAddToCart={handleAddToCartFromInventory}
           />
         </TabsContent>
 
