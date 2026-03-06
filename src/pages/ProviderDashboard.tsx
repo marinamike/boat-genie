@@ -43,6 +43,7 @@ const ProviderDashboard = () => {
   } = useProviderMetrics();
   const {
     availableWishes,
+    pendingQuotedWishes,
     submittingQuote,
     submitQuote,
   } = useJobBoard();
@@ -212,6 +213,7 @@ const ProviderDashboard = () => {
                 ) : (
                   <LeadStream 
                     wishes={availableWishes}
+                    pendingWishes={pendingQuotedWishes}
                     providerServices={providerServices}
                     onSubmitQuote={submitQuote}
                     submitting={submittingQuote}

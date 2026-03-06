@@ -107,6 +107,7 @@ function matchesProviderService(
 
 export function useJobBoard() {
   const [availableWishes, setAvailableWishes] = useState<WishFormItem[]>([]);
+  const [pendingQuotedWishes, setPendingQuotedWishes] = useState<WishFormItem[]>([]);
   const [activeWorkOrders, setActiveWorkOrders] = useState<WorkOrderItem[]>([]);
   const [providerCategories, setProviderCategories] = useState<string[]>([]);
   const [providerServiceNames, setProviderServiceNames] = useState<string[]>([]);
@@ -225,7 +226,25 @@ export function useJobBoard() {
         quotes: Array.isArray(wo.quotes) ? wo.quotes : wo.quotes ? [wo.quotes] : [],
       }));
 
-      setAvailableWishes(filteredWishes as WishFormItem[]);
+      // Fetch wish IDs that this provider has already quoted (pending work orders)
+      const { data: quotedOrders } = await supabase
+        .from("work_orders")
+        .select("boat_id, title")
+        .eq("provider_id", session.user.id)
+        .eq("status", "pending");
+
+      const quotedBoatIds = new Set((quotedOrders || []).map(wo => wo.boat_id));
+
+      // Split into new leads vs pending quoted leads
+      const newLeads = (filteredWishes as WishFormItem[]).filter(
+        w => !quotedBoatIds.has(w.boat?.id || "")
+      );
+      const pendingLeads = (filteredWishes as WishFormItem[]).filter(
+        w => quotedBoatIds.has(w.boat?.id || "")
+      );
+
+      setAvailableWishes(newLeads);
+      setPendingQuotedWishes(pendingLeads);
       setActiveWorkOrders(workOrders);
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -361,6 +380,7 @@ export function useJobBoard() {
 
   return {
     availableWishes,
+    pendingQuotedWishes,
     activeWorkOrders,
     providerCategories,
     providerServiceNames,
