@@ -17,7 +17,7 @@ import type { ProviderService } from "@/hooks/useProviderMetrics";
 export default function ServiceDashboard() {
   const [activeTab, setActiveTab] = useState("workorders");
   const serviceManagement = useServiceManagement();
-  const { availableWishes, submitQuote, submittingQuote } = useJobBoard();
+  const { availableWishes, pendingQuotedWishes, submitQuote, submittingQuote } = useJobBoard();
   const { activeMenuItems } = useServiceMenu();
 
   // Map business_service_menu items to ProviderService shape for LeadStream
