@@ -114,7 +114,7 @@ export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddT
                     <TableHead className="text-right">Cost</TableHead>
                     <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">Stock</TableHead>
-                    {canWrite && <TableHead className="w-24">Actions</TableHead>}
+                    {(canWrite || onAddToCart) && <TableHead className="w-32">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
