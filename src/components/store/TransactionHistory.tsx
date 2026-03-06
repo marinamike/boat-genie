@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SalesReceipt } from "@/hooks/useStoreInventory";
 import { Receipt, User, CreditCard, Banknote } from "lucide-react";
 import { format } from "date-fns";
+import { ReceiptDetailDialog } from "./ReceiptDetailDialog";
 
 interface TransactionHistoryProps {
   receipts: SalesReceipt[];
 }
 
 export function TransactionHistory({ receipts }: TransactionHistoryProps) {
+  const [selectedReceipt, setSelectedReceipt] = useState<SalesReceipt | null>(null);
+
   if (receipts.length === 0) {
     return (
       <Card>
@@ -56,7 +60,8 @@ export function TransactionHistory({ receipts }: TransactionHistoryProps) {
                   {dayReceipts.map(receipt => (
                     <div
                       key={receipt.id}
-                      className="p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedReceipt(receipt)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div>
@@ -125,6 +130,12 @@ export function TransactionHistory({ receipts }: TransactionHistoryProps) {
             ))}
           </div>
         </ScrollArea>
+
+        <ReceiptDetailDialog
+          receipt={selectedReceipt}
+          open={!!selectedReceipt}
+          onOpenChange={(open) => !open && setSelectedReceipt(null)}
+        />
       </CardContent>
     </Card>
   );
