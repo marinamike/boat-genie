@@ -209,7 +209,17 @@ export function DailySchedule({ workOrders, onNotifyArrival, onUpdateStatus, onR
                     Get Directions
                   </Button>
 
-                  {wo.status === "assigned" ? (
+                  {wo.status === "pending" ? (
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      variant="outline"
+                      disabled
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      Awaiting Customer Approval
+                    </Button>
+                  ) : wo.status === "assigned" ? (
                     <Button
                       size="sm"
                       className="flex-1"
