@@ -213,6 +213,7 @@ const ProviderDashboard = () => {
                 ) : (
                   <LeadStream 
                     wishes={availableWishes}
+                    pendingWishes={pendingQuotedWishes}
                     providerServices={providerServices}
                     onSubmitQuote={submitQuote}
                     submitting={submittingQuote}
