@@ -60,7 +60,8 @@ export function TransactionHistory({ receipts }: TransactionHistoryProps) {
                   {dayReceipts.map(receipt => (
                     <div
                       key={receipt.id}
-                      className="p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedReceipt(receipt)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div>
