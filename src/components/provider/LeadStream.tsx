@@ -135,7 +135,7 @@ function getMatchingService(wishServiceType: string, services: ProviderService[]
   return null;
 }
 
-export function LeadStream({ wishes, providerServices, onSubmitQuote, submitting }: LeadStreamProps) {
+export function LeadStream({ wishes, pendingWishes = [], providerServices, onSubmitQuote, submitting }: LeadStreamProps) {
   const [selectedWish, setSelectedWish] = useState<WishFormItem | null>(null);
   const [matchingService, setMatchingService] = useState<ProviderService | null>(null);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
