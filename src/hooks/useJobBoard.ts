@@ -380,6 +380,7 @@ export function useJobBoard() {
 
   return {
     availableWishes,
+    pendingQuotedWishes,
     activeWorkOrders,
     providerCategories,
     providerServiceNames,
