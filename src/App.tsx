@@ -106,6 +106,19 @@ function RoleBasedRoutes() {
         </Routes>
       );
 
+    case "provider":
+      return (
+        <Routes>
+          <Route element={<ProviderLayout />}>
+            <Route path="/provider" element={<ProviderDashboard />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
+          <Route path="/platform-admin" element={<PlatformAdmin />} />
+          <Route path="/" element={<Navigate to="/provider" replace />} />
+          <Route path="*" element={<Navigate to="/provider" replace />} />
+        </Routes>
+      );
+
     case "admin":
       // "admin" now means Business Profile (marina/yard manager)
       return (
