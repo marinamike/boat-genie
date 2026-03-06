@@ -98,6 +98,7 @@ function ProviderEarningsBreakdown({
 
 interface LeadStreamProps {
   wishes: WishFormItem[];
+  pendingWishes?: WishFormItem[];
   providerServices: ProviderService[];
   onSubmitQuote: (wishId: string, data: QuoteFormData) => Promise<boolean>;
   submitting: boolean;
