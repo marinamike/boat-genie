@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { StoreItem, StoreItemCategory } from "@/hooks/useStoreInventory";
-import { Package, Search, Pencil, Trash2, Wrench } from "lucide-react";
+import { Package, Search, Pencil, Trash2, Wrench, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InventoryManagerProps {
