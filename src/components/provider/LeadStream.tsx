@@ -193,42 +193,94 @@ export function LeadStream({ wishes, pendingWishes = [], providerServices, onSub
               <Badge variant="secondary">{wishes.length} lead{wishes.length !== 1 ? "s" : ""}</Badge>
             </div>
 
-        {wishes.map((wish) => {
-          const matchedService = getMatchingService(wish.service_type, providerServices);
-          const hasPreCalculatedPrice = wish.calculated_price != null && wish.calculated_price > 0;
-          
-          return (
-            <Card key={wish.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-base">{displayServiceType(wish.service_type)}</CardTitle>
-                      {matchedService && (
-                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          Matches Your Menu
-                        </Badge>
-                      )}
+            {wishes.map((wish) => {
+              const matchedService = getMatchingService(wish.service_type, providerServices);
+              const hasPreCalculatedPrice = wish.calculated_price != null && wish.calculated_price > 0;
+              
+              return (
+                <Card key={wish.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-base">{displayServiceType(wish.service_type)}</CardTitle>
+                          {matchedService && (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              Matches Your Menu
+                            </Badge>
+                          )}
+                        </div>
+                        <CardDescription className="flex items-center gap-2 mt-1">
+                          <Ship className="w-4 h-4" />
+                          {wish.boat?.year && `${wish.boat.year} `}
+                          {[wish.boat?.make, wish.boat?.model].filter(Boolean).join(" ") || "Vessel"}
+                          {wish.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
+                        </CardDescription>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {wish.is_emergency && (
+                          <Badge className={urgencyColors.urgent}>
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            Emergency
+                          </Badge>
+                        )}
+                        {wish.urgency && wish.urgency !== "normal" && !wish.is_emergency && (
+                          <Badge className={urgencyColors[wish.urgency] || urgencyColors.normal}>
+                            {wish.urgency}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <CardDescription className="flex items-center gap-2 mt-1">
-                      <Ship className="w-4 h-4" />
-                      {wish.boat?.year && `${wish.boat.year} `}
-                      {[wish.boat?.make, wish.boat?.model].filter(Boolean).join(" ") || "Vessel"}
-                      {wish.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {wish.is_emergency && (
-                      <Badge className={urgencyColors.urgent}>
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        Emergency
-                      </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {wish.description}
+                    </p>
+
+                    {hasPreCalculatedPrice && (
+                      <ProviderEarningsBreakdown
+                        calculatedPrice={wish.calculated_price!}
+                        isEmergency={wish.is_emergency}
+                      />
                     )}
-                    {wish.urgency && wish.urgency !== "normal" && !wish.is_emergency && (
-                      <Badge className={urgencyColors[wish.urgency] || urgencyColors.normal}>
-                        {wish.urgency}
-                      </Badge>
+
+                    {wish.preferred_date && (
+                      <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                        <Calendar className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm font-medium text-amber-700">
+                          Requested by {format(new Date(wish.preferred_date), "MMMM d, yyyy")}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4" />
+                      <span>{wish.boat_profile?.marina_name || "Location not specified"}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="w-4 h-4" />
+                      <span>Submitted {formatDistanceToNow(new Date(wish.created_at), { addSuffix: true })}</span>
+                    </div>
+
+                    <Button 
+                      onClick={() => handleQuickQuote(wish)} 
+                      className="w-full"
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      {hasPreCalculatedPrice ? "Accept Job" : "Submit Quote"}
+                      {matchedService && !hasPreCalculatedPrice && (
+                        <span className="ml-2 text-xs opacity-80">
+                          (${matchedService.price}/{matchedService.pricing_model === "per_foot" ? "ft" : matchedService.pricing_model === "per_hour" ? "hr" : "flat"})
+                        </span>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </>
         )}
 
         {/* Pending Quoted Leads Section */}
@@ -279,61 +331,6 @@ export function LeadStream({ wishes, pendingWishes = [], providerServices, onSub
             ))}
           </>
         )}
-      </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {wish.description}
-                </p>
-
-                {/* Pre-calculated price shown to customer with provider earnings breakdown */}
-                {hasPreCalculatedPrice && (
-                  <ProviderEarningsBreakdown
-                    calculatedPrice={wish.calculated_price!}
-                    isEmergency={wish.is_emergency}
-                  />
-                )}
-
-                {/* Requested service date */}
-                {wish.preferred_date && (
-                  <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-                    <Calendar className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-medium text-amber-700">
-                      Requested by {format(new Date(wish.preferred_date), "MMMM d, yyyy")}
-                    </span>
-                  </div>
-                )}
-
-                {/* Location */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  <span>{wish.boat_profile?.marina_name || "Location not specified"}</span>
-                </div>
-
-                {/* Timing */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span>Submitted {formatDistanceToNow(new Date(wish.created_at), { addSuffix: true })}</span>
-                </div>
-
-                {/* Quick Quote Button */}
-                <Button 
-                  onClick={() => handleQuickQuote(wish)} 
-                  className="w-full"
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  {hasPreCalculatedPrice ? "Accept Job" : "Submit Quote"}
-                  {matchedService && !hasPreCalculatedPrice && (
-                    <span className="ml-2 text-xs opacity-80">
-                      (${matchedService.price}/{matchedService.pricing_model === "per_foot" ? "ft" : matchedService.pricing_model === "per_hour" ? "hr" : "flat"})
-                    </span>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
       </div>
 
       {/* Quick Quote Dialog */}
