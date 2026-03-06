@@ -166,12 +166,12 @@ export function LeadStream({ wishes, pendingWishes = [], providerServices, onSub
     }
   };
 
-  if (wishes.length === 0) {
+  if (wishes.length === 0 && pendingWishes.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Briefcase className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="font-semibold text-lg">No New Leads</h3>
+          <h3 className="font-semibold text-lg">No Leads</h3>
           <p className="text-muted-foreground text-center">
             New leads matching your services will appear here.
           </p>
