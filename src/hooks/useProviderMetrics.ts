@@ -120,7 +120,7 @@ export function useProviderMetrics() {
           )
         `)
         .eq("provider_id", userId)
-        .in("status", ["assigned", "in_progress"])
+        .in("status", ["pending", "assigned", "in_progress"])
         .order("priority", { ascending: false })
         .order("scheduled_date", { ascending: true });
 
