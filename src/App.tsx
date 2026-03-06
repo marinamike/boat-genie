@@ -139,24 +139,6 @@ function RoleBasedRoutes() {
           </Routes>
         </BusinessProvider>
       );
-      return (
-        <BusinessProvider>
-          <Routes>
-            <Route element={<BusinessLayout />}>
-              <Route path="/business" element={<BusinessDashboard />} />
-              <Route path="/business/slips" element={<SlipsDashboard />} />
-              <Route path="/business/jobs" element={<ServiceDashboard />} />
-              <Route path="/business/fuel" element={<FuelDashboard />} />
-              <Route path="/business/store" element={<StoreDashboard />} />
-              <Route path="/business/settings" element={<BusinessSettings />} />
-              <Route path="/profile" element={<Profile />} />
-            </Route>
-            <Route path="/platform-admin" element={<PlatformAdmin />} />
-            <Route path="/" element={<Navigate to="/business" replace />} />
-            <Route path="*" element={<Navigate to="/business" replace />} />
-          </Routes>
-        </BusinessProvider>
-      );
 
     default:
       return (
