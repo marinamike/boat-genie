@@ -37,9 +37,10 @@ interface InventoryManagerProps {
   onEdit: (item: StoreItem) => void;
   onDelete: (id: string) => void;
   canWrite: boolean;
+  onAddToCart?: (item: StoreItem) => void;
 }
 
-export function InventoryManager({ inventory, onEdit, onDelete, canWrite }: InventoryManagerProps) {
+export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddToCart }: InventoryManagerProps) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [deletingItem, setDeletingItem] = useState<StoreItem | null>(null);
