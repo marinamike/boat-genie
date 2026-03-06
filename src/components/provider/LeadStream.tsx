@@ -227,8 +227,57 @@ export function LeadStream({ wishes, pendingWishes = [], providerServices, onSub
                       <Badge className={urgencyColors[wish.urgency] || urgencyColors.normal}>
                         {wish.urgency}
                       </Badge>
-                    )}
+        )}
+
+        {/* Pending Quoted Leads Section */}
+        {pendingWishes.length > 0 && (
+          <>
+            <div className="flex items-center justify-between mt-6">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Pending Leads
+              </h3>
+              <Badge variant="outline">{pendingWishes.length} pending</Badge>
+            </div>
+
+            {pendingWishes.map((wish) => (
+              <Card key={wish.id} className="opacity-75">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">{displayServiceType(wish.service_type)}</CardTitle>
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Quote Pending
+                        </Badge>
+                      </div>
+                      <CardDescription className="flex items-center gap-2 mt-1">
+                        <Ship className="w-4 h-4" />
+                        {wish.boat?.year && `${wish.boat.year} `}
+                        {[wish.boat?.make, wish.boat?.model].filter(Boolean).join(" ") || "Vessel"}
+                        {wish.boat?.length_ft && ` • ${wish.boat.length_ft}ft`}
+                      </CardDescription>
+                    </div>
                   </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {wish.description}
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="w-4 h-4" />
+                    <span>Submitted {formatDistanceToNow(new Date(wish.created_at), { addSuffix: true })}</span>
+                  </div>
+                  <p className="text-sm text-amber-600 font-medium">
+                    Awaiting customer response
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        )}
+      </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
