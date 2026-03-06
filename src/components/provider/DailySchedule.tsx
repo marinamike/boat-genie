@@ -30,6 +30,7 @@ interface DailyScheduleProps {
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
+  pending: { label: "Pending Approval", color: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
   assigned: { label: "Assigned", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
   in_progress: { label: "On-Site", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
 };
