@@ -12,6 +12,8 @@ interface TransactionHistoryProps {
 }
 
 export function TransactionHistory({ receipts }: TransactionHistoryProps) {
+  const [selectedReceipt, setSelectedReceipt] = useState<SalesReceipt | null>(null);
+
   if (receipts.length === 0) {
     return (
       <Card>
