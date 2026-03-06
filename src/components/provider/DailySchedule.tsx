@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   MapPin, 
   Ship, 
@@ -12,15 +14,19 @@ import {
   Loader2,
   Clock,
   QrCode,
-  Wrench
+  Wrench,
+  CalendarIcon,
+  X
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ActiveWorkOrder } from "@/hooks/useProviderMetrics";
 import { QRScanner } from "./QRScanner";
 import { ManualCheckInDialog } from "./ManualCheckInDialog";
 import { useQRCheckIn } from "@/hooks/useQRCheckIn";
 import { WorkTimer } from "./WorkTimer";
+import type { DateRange } from "react-day-picker";
 
 interface DailyScheduleProps {
   workOrders: ActiveWorkOrder[];
