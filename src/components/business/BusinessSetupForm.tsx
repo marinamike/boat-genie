@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,13 +30,23 @@ const MODULE_OPTIONS: ModuleOption[] = [
 
 export function BusinessSetupForm() {
   const { user } = useAuth();
-  const { refreshBusiness } = useBusiness();
+  const { business, refreshBusiness } = useBusiness();
   const { toast } = useToast();
-  
+
+  const isEditMode = !!business;
+
   const [loading, setLoading] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [address, setAddress] = useState("");
   const [selectedModules, setSelectedModules] = useState<BusinessModule[]>([]);
+
+  useEffect(() => {
+    if (business) {
+      setBusinessName(business.business_name || "");
+      setAddress(business.address || "");
+      setSelectedModules(business.enabled_modules || []);
+    }
+  }, [business]);
 
   const toggleModule = (moduleId: BusinessModule) => {
     setSelectedModules((prev) =>
@@ -48,7 +58,7 @@ export function BusinessSetupForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
       return;
@@ -61,26 +71,34 @@ export function BusinessSetupForm() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("businesses").insert({
-        owner_id: user.id,
-        business_name: businessName.trim(),
-        address: address.trim() || null,
-        enabled_modules: selectedModules,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Business Created",
-        description: `${businessName} has been set up successfully!`,
-      });
+      if (isEditMode) {
+        const { error } = await supabase
+          .from("businesses")
+          .update({
+            business_name: businessName.trim(),
+            address: address.trim() || null,
+            enabled_modules: selectedModules,
+          })
+          .eq("id", business.id);
+        if (error) throw error;
+        toast({ title: "Saved", description: "Business profile updated." });
+      } else {
+        const { error } = await supabase.from("businesses").insert({
+          owner_id: user.id,
+          business_name: businessName.trim(),
+          address: address.trim() || null,
+          enabled_modules: selectedModules,
+        });
+        if (error) throw error;
+        toast({ title: "Business Created", description: `${businessName} has been set up successfully!` });
+      }
 
       await refreshBusiness();
     } catch (error: any) {
-      console.error("Error creating business:", error);
+      console.error("Error saving business:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create business.",
+        description: error.message || "Failed to save business.",
         variant: "destructive",
       });
     } finally {
@@ -92,9 +110,11 @@ export function BusinessSetupForm() {
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader className="text-center">
         <Building2 className="w-12 h-12 mx-auto text-primary mb-2" />
-        <CardTitle>Set Up Your Business</CardTitle>
+        <CardTitle>{isEditMode ? "Business Profile" : "Set Up Your Business"}</CardTitle>
         <CardDescription>
-          Create your business profile to start managing your marina or service operations.
+          {isEditMode
+            ? "Update your business information and enabled modules."
+            : "Create your business profile to start managing your marina or service operations."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -170,10 +190,10 @@ export function BusinessSetupForm() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
+                {isEditMode ? "Saving..." : "Creating..."}
               </>
             ) : (
-              "Create Business"
+              isEditMode ? "Save Changes" : "Create Business"
             )}
           </Button>
         </form>
