@@ -209,6 +209,88 @@ export function SlipSettings({
 
   return (
     <div className="space-y-6">
+      {/* Section 1: Slip Inventory Manager */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Slip Inventory</CardTitle>
+            <CardDescription>
+              Manage your slips and yard spaces. Edit names, dimensions, and rate overrides.
+            </CardDescription>
+          </div>
+          {onAddAsset && (
+            <Button onClick={onAddAsset}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Slip / Space
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {assets.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No slips configured yet. Use the "Add Slip / Space" button above to get started.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Slip Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Max LOA</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Rate Profile</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {assets.map((asset) => (
+                    <TableRow key={asset.id}>
+                      <TableCell className="font-medium">
+                        {asset.asset_name}
+                        {asset.dock_section && (
+                          <span className="text-muted-foreground text-sm ml-2">
+                            ({asset.dock_section})
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>{getAssetTypeLabel(asset.asset_type)}</TableCell>
+                      <TableCell className="text-right">
+                        {asset.max_loa_ft ? `${asset.max_loa_ft} ft` : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={asset.is_available ? "default" : "secondary"}>
+                          {asset.is_available ? "Available" : "Occupied"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {hasCustomRates(asset) ? (
+                          <Badge variant="outline" className="text-primary border-primary">
+                            Custom
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Standard</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingSlip(asset)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
       {/* Section 1: Global Slip Rates */}
       <Card>
         <CardHeader>
