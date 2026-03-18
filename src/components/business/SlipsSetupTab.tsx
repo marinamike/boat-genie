@@ -2,9 +2,7 @@ import { useState } from "react";
 import { useYardAssets } from "@/hooks/useYardAssets";
 import { SlipSettings } from "@/components/slips/SlipSettings";
 import { AssetForm } from "@/components/slips/AssetForm";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus } from "lucide-react";
 import { YardAsset } from "@/hooks/useYardAssets";
 
 export function SlipsSetupTab() {
@@ -19,18 +17,12 @@ export function SlipsSetupTab() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setShowCreateSheet(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Slip / Space
-        </Button>
-      </div>
-
+    <>
       <SlipSettings
         {...yardAssets}
         updateAsset={yardAssets.updateAsset}
         deleteMeter={yardAssets.deleteMeter}
+        onAddAsset={() => setShowCreateSheet(true)}
       />
 
       <Sheet open={showCreateSheet} onOpenChange={setShowCreateSheet}>
@@ -44,6 +36,6 @@ export function SlipsSetupTab() {
           />
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }

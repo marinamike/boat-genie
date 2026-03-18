@@ -40,6 +40,7 @@ interface SlipSettingsProps {
   updateMeter: (id: string, updates: Partial<UtilityMeter>) => Promise<boolean>;
   deleteMeter?: (id: string) => Promise<boolean>;
   updateAsset?: (id: string, updates: Partial<YardAsset>) => Promise<boolean>;
+  onAddAsset?: () => void;
 }
 
 export function SlipSettings({
@@ -50,6 +51,7 @@ export function SlipSettings({
   updateMeter,
   deleteMeter,
   updateAsset,
+  onAddAsset,
 }: SlipSettingsProps) {
   const { business, refreshBusiness } = useBusiness();
   const { runMonthlyBillingBatch, loading: billingLoading } = useRecurringBilling();
@@ -440,11 +442,19 @@ export function SlipSettings({
 
       {/* Section 4: Slip Inventory Manager */}
       <Card>
-        <CardHeader>
-          <CardTitle>Slip Inventory</CardTitle>
-          <CardDescription>
-            Manage your slips and yard spaces. Edit names, dimensions, and rate overrides.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Slip Inventory</CardTitle>
+            <CardDescription>
+              Manage your slips and yard spaces. Edit names, dimensions, and rate overrides.
+            </CardDescription>
+          </div>
+          {onAddAsset && (
+            <Button onClick={onAddAsset}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Slip / Space
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {assets.length === 0 ? (
