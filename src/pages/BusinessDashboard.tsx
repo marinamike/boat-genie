@@ -17,7 +17,6 @@ const moduleConfig: Record<BusinessModule, { label: string; icon: React.ElementT
   service: { label: "Service Yard", icon: Wrench, href: "/business/jobs", color: "text-orange-500" },
   fuel: { label: "Fuel Dock", icon: Fuel, href: "/business/fuel", color: "text-green-500" },
   ship_store: { label: "Ship Store", icon: Store, href: "/business/store", color: "text-purple-500" },
-  store: { label: "Ship Store", icon: Store, href: "/business/store", color: "text-purple-500" },
 };
 
 export default function BusinessDashboard() {
