@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { POSRegister } from "@/components/store/POSRegister";
 import { InventoryManager } from "@/components/store/InventoryManager";
-import { InventoryItemForm } from "@/components/store/InventoryItemForm";
 import { TransactionHistory } from "@/components/store/TransactionHistory";
 import { 
   Store, 
@@ -15,29 +14,21 @@ import {
   Package, 
   Receipt, 
   AlertTriangle,
-  Plus,
   DollarSign,
   TrendingUp
 } from "lucide-react";
 
 export default function StoreDashboard() {
-  const { business, isOwner, hasModuleAccess } = useBusiness();
+  const { business } = useBusiness();
   const { 
     inventory, 
     receipts, 
     lowStockItems,
     loading,
-    createItem,
-    updateItem,
-    deleteItem,
   } = useStoreInventory();
 
-  const [showInventoryForm, setShowInventoryForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<StoreItem | null>(null);
   const [activeTab, setActiveTab] = useState("register");
   const [cart, setCart] = useState<CartItem[]>([]);
-
-  const canWrite = isOwner || hasModuleAccess("store", "write");
 
   const addToCart = (item: StoreItem) => {
     const existing = cart.find(c => c.type === "inventory" && c.item_id === item.id);
@@ -90,23 +81,14 @@ export default function StoreDashboard() {
   return (
     <div className="container max-w-6xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Store className="h-6 w-6" />
-            Ship Store & POS
-          </h1>
-          <p className="text-muted-foreground">
-            {business?.business_name}
-          </p>
-        </div>
-        
-        {canWrite && (
-          <Button onClick={() => setShowInventoryForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Item
-          </Button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Store className="h-6 w-6" />
+          Ship Store & POS
+        </h1>
+        <p className="text-muted-foreground">
+          {business?.business_name}
+        </p>
       </div>
 
       {/* Quick Stats */}
@@ -195,12 +177,6 @@ export default function StoreDashboard() {
         <TabsContent value="inventory" className="mt-4">
           <InventoryManager
             inventory={inventory}
-            onEdit={(item) => {
-              setEditingItem(item);
-              setShowInventoryForm(true);
-            }}
-            onDelete={deleteItem}
-            canWrite={canWrite}
             onAddToCart={handleAddToCartFromInventory}
           />
         </TabsContent>
@@ -251,25 +227,6 @@ export default function StoreDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Inventory Form Sheet */}
-      <InventoryItemForm
-        open={showInventoryForm}
-        onOpenChange={(open) => {
-          setShowInventoryForm(open);
-          if (!open) setEditingItem(null);
-        }}
-        item={editingItem}
-        onSave={async (data) => {
-          if (editingItem) {
-            await updateItem(editingItem.id, data);
-          } else {
-            await createItem(data as any);
-          }
-          setShowInventoryForm(false);
-          setEditingItem(null);
-        }}
-      />
     </div>
   );
 }
