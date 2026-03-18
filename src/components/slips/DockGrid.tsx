@@ -252,7 +252,6 @@ export function DockGrid({
         open={!!selectedAsset}
         onOpenChange={(open) => !open && setSelectedAsset(null)}
         onUpdate={updateAsset}
-        onDelete={deleteAsset}
         onAssignBoat={assignBoatToSlip}
       />
     </div>
