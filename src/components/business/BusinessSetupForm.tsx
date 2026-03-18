@@ -20,23 +20,13 @@ export function BusinessSetupForm() {
   const [loading, setLoading] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [address, setAddress] = useState("");
-  const [selectedModules, setSelectedModules] = useState<BusinessModule[]>([]);
 
   useEffect(() => {
     if (business) {
       setBusinessName(business.business_name || "");
       setAddress(business.address || "");
-      setSelectedModules(business.enabled_modules || []);
     }
   }, [business]);
-
-  const toggleModule = (moduleId: BusinessModule) => {
-    setSelectedModules((prev) =>
-      prev.includes(moduleId)
-        ? prev.filter((m) => m !== moduleId)
-        : [...prev, moduleId]
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
