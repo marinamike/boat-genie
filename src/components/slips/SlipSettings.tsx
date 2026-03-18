@@ -40,6 +40,7 @@ interface SlipSettingsProps {
   updateMeter: (id: string, updates: Partial<UtilityMeter>) => Promise<boolean>;
   deleteMeter?: (id: string) => Promise<boolean>;
   updateAsset?: (id: string, updates: Partial<YardAsset>) => Promise<boolean>;
+  onAddAsset?: () => void;
 }
 
 export function SlipSettings({
