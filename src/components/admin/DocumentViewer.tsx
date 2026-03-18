@@ -5,6 +5,8 @@ interface DocumentViewerProps {
   documentUrl: string | null;
   label: string;
   expiryDate?: string | null;
+  verified?: boolean;
+  onVerifiedChange?: (v: boolean) => void;
 }
 
 export const DocumentViewer = ({ documentUrl, label, expiryDate }: DocumentViewerProps) => {
