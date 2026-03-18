@@ -107,12 +107,12 @@ export default function BusinessSettings() {
         <p className="text-muted-foreground">{business.business_name}</p>
       </div>
 
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs defaultValue="account" className="w-full">
         <ScrollArea className="w-full">
           <TabsList className="inline-flex w-max">
-            <TabsTrigger value="profile" className="flex items-center gap-1.5 px-3">
-              <Building2 className="w-4 h-4" />
-              <span>Profile</span>
+            <TabsTrigger value="account" className="flex items-center gap-1.5 px-3">
+              <User className="w-4 h-4" />
+              <span>Account</span>
             </TabsTrigger>
             <TabsTrigger value="service" className="flex items-center gap-1.5 px-3">
               <Wrench className="w-4 h-4" />
@@ -134,40 +134,16 @@ export default function BusinessSettings() {
               <Users className="w-4 h-4" />
               <span>Staff</span>
             </TabsTrigger>
-            <TabsTrigger value="account" className="flex items-center gap-1.5 px-3">
-              <User className="w-4 h-4" />
-              <span>Account</span>
-            </TabsTrigger>
           </TabsList>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        <TabsContent value="profile" className="mt-4 space-y-6">
+        <TabsContent value="account" className="mt-4 space-y-6">
           <BusinessSetupForm />
           <ModuleManager />
-        </TabsContent>
 
-        <TabsContent value="staff" className="mt-4">
-          <StaffManager />
-        </TabsContent>
+          <Separator />
 
-        <TabsContent value="service" className="mt-4">
-          <ServiceSetupTab />
-        </TabsContent>
-
-        <TabsContent value="slips" className="mt-4">
-          <SlipsSetupTab />
-        </TabsContent>
-
-        <TabsContent value="fuel" className="mt-4">
-          <FuelSetupTab />
-        </TabsContent>
-
-        <TabsContent value="store" className="mt-4">
-          <StoreSetupTab />
-        </TabsContent>
-
-        <TabsContent value="account" className="mt-4 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Profile Details</CardTitle>
@@ -193,6 +169,8 @@ export default function BusinessSettings() {
             </CardContent>
           </Card>
 
+          <Separator />
+
           {user?.email === PLATFORM_ADMIN_EMAIL && (
             <Button
               variant="outline"
@@ -212,6 +190,26 @@ export default function BusinessSettings() {
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </Button>
+        </TabsContent>
+
+        <TabsContent value="staff" className="mt-4">
+          <StaffManager />
+        </TabsContent>
+
+        <TabsContent value="service" className="mt-4">
+          <ServiceSetupTab />
+        </TabsContent>
+
+        <TabsContent value="slips" className="mt-4">
+          <SlipsSetupTab />
+        </TabsContent>
+
+        <TabsContent value="fuel" className="mt-4">
+          <FuelSetupTab />
+        </TabsContent>
+
+        <TabsContent value="store" className="mt-4">
+          <StoreSetupTab />
         </TabsContent>
       </Tabs>
     </div>
