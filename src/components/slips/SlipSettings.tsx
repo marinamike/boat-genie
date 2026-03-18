@@ -51,6 +51,7 @@ export function SlipSettings({
   updateMeter,
   deleteMeter,
   updateAsset,
+  onAddAsset,
 }: SlipSettingsProps) {
   const { business, refreshBusiness } = useBusiness();
   const { runMonthlyBillingBatch, loading: billingLoading } = useRecurringBilling();
