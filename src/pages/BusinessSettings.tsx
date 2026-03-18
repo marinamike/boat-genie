@@ -70,7 +70,7 @@ export default function BusinessSettings() {
       </div>
 
       <Tabs defaultValue="modules" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <Puzzle className="w-4 h-4" />
             <span className="hidden sm:inline">Modules</span>
@@ -81,7 +81,11 @@ export default function BusinessSettings() {
           </TabsTrigger>
           <TabsTrigger value="fuel" className="flex items-center gap-2">
             <Fuel className="w-4 h-4" />
-            <span className="hidden sm:inline">Fuel Setup</span>
+            <span className="hidden sm:inline">Fuel</span>
+          </TabsTrigger>
+          <TabsTrigger value="store" className="flex items-center gap-2">
+            <Store className="w-4 h-4" />
+            <span className="hidden sm:inline">Store</span>
           </TabsTrigger>
           <TabsTrigger value="staff" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -103,6 +107,10 @@ export default function BusinessSettings() {
 
         <TabsContent value="fuel" className="mt-4">
           <FuelSetupTab />
+        </TabsContent>
+
+        <TabsContent value="store" className="mt-4">
+          <StoreSetupTab />
         </TabsContent>
 
         <TabsContent value="staff" className="mt-4">
