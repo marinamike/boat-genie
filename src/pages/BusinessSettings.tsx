@@ -114,13 +114,13 @@ export default function BusinessSettings() {
               <User className="w-4 h-4" />
               <span>Account</span>
             </TabsTrigger>
-            <TabsTrigger value="service" className="flex items-center gap-1.5 px-3">
-              <Wrench className="w-4 h-4" />
-              <span>Service</span>
-            </TabsTrigger>
             <TabsTrigger value="slips" className="flex items-center gap-1.5 px-3">
               <Anchor className="w-4 h-4" />
               <span>Slips</span>
+            </TabsTrigger>
+            <TabsTrigger value="service" className="flex items-center gap-1.5 px-3">
+              <Wrench className="w-4 h-4" />
+              <span>Service</span>
             </TabsTrigger>
             <TabsTrigger value="fuel" className="flex items-center gap-1.5 px-3">
               <Fuel className="w-4 h-4" />
