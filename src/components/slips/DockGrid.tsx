@@ -97,6 +97,7 @@ export function DockGrid({
   alerts,
   loading,
   updateAsset,
+  deleteAsset,
   assignBoatToSlip,
 }: DockGridProps) {
   const [selectedAsset, setSelectedAsset] = useState<YardAsset | null>(null);
