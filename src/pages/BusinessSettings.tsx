@@ -5,6 +5,7 @@ import { StaffManager } from "@/components/business/StaffManager";
 import { BusinessSetupForm } from "@/components/business/BusinessSetupForm";
 import { FuelSetupTab } from "@/components/business/FuelSetupTab";
 import { StoreSetupTab } from "@/components/business/StoreSetupTab";
+import { ServiceStaffTab } from "@/components/business/ServiceStaffTab";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
