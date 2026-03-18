@@ -442,11 +442,19 @@ export function SlipSettings({
 
       {/* Section 4: Slip Inventory Manager */}
       <Card>
-        <CardHeader>
-          <CardTitle>Slip Inventory</CardTitle>
-          <CardDescription>
-            Manage your slips and yard spaces. Edit names, dimensions, and rate overrides.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Slip Inventory</CardTitle>
+            <CardDescription>
+              Manage your slips and yard spaces. Edit names, dimensions, and rate overrides.
+            </CardDescription>
+          </div>
+          {onAddAsset && (
+            <Button onClick={onAddAsset}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Slip / Space
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {assets.length === 0 ? (
