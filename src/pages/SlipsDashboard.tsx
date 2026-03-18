@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Grid3X3, FileText, Zap, Settings, Calendar } from "lucide-react";
+import { Grid3X3, FileText, Zap, Calendar } from "lucide-react";
 import { ReservationManager } from "@/components/marina/ReservationManager";
 import { DockGrid } from "@/components/slips/DockGrid";
 import { LeaseManager } from "@/components/slips/LeaseManager";
 import { MeterReadings } from "@/components/slips/MeterReadings";
-import { SlipSettings } from "@/components/slips/SlipSettings";
 import { useYardAssets } from "@/hooks/useYardAssets";
 
 export default function SlipsDashboard() {
@@ -22,7 +21,7 @@ export default function SlipsDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="grid" className="flex items-center gap-2">
             <Grid3X3 className="w-4 h-4" />
             <span className="hidden sm:inline">Dock Grid</span>
@@ -38,10 +37,6 @@ export default function SlipsDashboard() {
           <TabsTrigger value="meters" className="flex items-center gap-2">
             <Zap className="w-4 h-4" />
             <span className="hidden sm:inline">Meters</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Settings</span>
           </TabsTrigger>
         </TabsList>
 
@@ -59,10 +54,6 @@ export default function SlipsDashboard() {
 
         <TabsContent value="meters" className="mt-4">
           <MeterReadings {...yardAssets} />
-        </TabsContent>
-
-        <TabsContent value="settings" className="mt-4">
-          <SlipSettings {...yardAssets} updateAsset={yardAssets.updateAsset} deleteMeter={yardAssets.deleteMeter} />
         </TabsContent>
       </Tabs>
     </div>
