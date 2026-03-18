@@ -58,7 +58,6 @@ export function BusinessSetupForm() {
           owner_id: user.id,
           business_name: businessName.trim(),
           address: address.trim() || null,
-          enabled_modules: selectedModules,
         });
         if (error) throw error;
         toast({ title: "Business Created", description: `${businessName} has been set up successfully!` });
