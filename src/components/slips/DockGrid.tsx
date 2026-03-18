@@ -1,21 +1,17 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { 
   Anchor, 
   Ship, 
   Zap, 
   AlertTriangle, 
-  Plus, 
   ExternalLink,
   Droplets
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { YardAsset, UtilityMeter, PowerAlert, LeaseAgreement } from "@/hooks/useYardAssets";
 import { SlipDetailSheet } from "./SlipDetailSheet";
-import { AssetForm } from "./AssetForm";
 
 interface DockGridProps {
   assets: Array<YardAsset & {
@@ -26,9 +22,9 @@ interface DockGridProps {
   assetsBySection: Record<string, YardAsset[]>;
   alerts: PowerAlert[];
   loading: boolean;
-  createAsset: (asset: Partial<YardAsset>) => Promise<YardAsset | null>;
+  createAsset?: (asset: Partial<YardAsset>) => Promise<YardAsset | null>;
   updateAsset: (id: string, updates: Partial<YardAsset>) => Promise<boolean>;
-  deleteAsset: (id: string) => Promise<boolean>;
+  deleteAsset?: (id: string) => Promise<boolean>;
   assignBoatToSlip: (assetId: string, boatId: string | null, reservationId?: string) => Promise<boolean>;
 }
 
@@ -100,13 +96,10 @@ export function DockGrid({
   assetsBySection,
   alerts,
   loading,
-  createAsset,
   updateAsset,
-  deleteAsset,
   assignBoatToSlip,
 }: DockGridProps) {
   const [selectedAsset, setSelectedAsset] = useState<YardAsset | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
 
   if (loading) {
     return (
@@ -123,29 +116,23 @@ export function DockGrid({
       {/* Legend */}
       <Card>
         <CardContent className="py-3">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-500/20 border border-green-500" />
-                <span className="text-sm">Available</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-red-500/20 border border-red-500" />
-                <span className="text-sm">Occupied</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-yellow-500/20 border border-yellow-500" />
-                <span className="text-sm">Reserved</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-orange-500/20 border border-orange-500" />
-                <span className="text-sm">Arriving Today</span>
-              </div>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-500/20 border border-green-500" />
+              <span className="text-sm">Available</span>
             </div>
-            <Button onClick={() => setShowAddForm(true)} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Slip/Space
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-red-500/20 border border-red-500" />
+              <span className="text-sm">Occupied</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-yellow-500/20 border border-yellow-500" />
+              <span className="text-sm">Reserved</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-orange-500/20 border border-orange-500" />
+              <span className="text-sm">Arriving Today</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -192,13 +179,9 @@ export function DockGrid({
           <CardContent className="py-12 text-center">
             <Anchor className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No Slips Configured</h3>
-            <p className="text-muted-foreground mb-4">
-              Add your first slip or storage space to get started.
+            <p className="text-muted-foreground">
+              Go to the <span className="font-medium">Settings</span> tab to add slips and storage spaces.
             </p>
-            <Button onClick={() => setShowAddForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add First Slip
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -272,22 +255,6 @@ export function DockGrid({
         onDelete={deleteAsset}
         onAssignBoat={assignBoatToSlip}
       />
-
-      {/* Add Asset Form */}
-      <Sheet open={showAddForm} onOpenChange={setShowAddForm}>
-        <SheetContent className="sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Add Slip / Storage Space</SheetTitle>
-          </SheetHeader>
-          <AssetForm
-            onSubmit={async (data) => {
-              await createAsset(data);
-              setShowAddForm(false);
-            }}
-            onCancel={() => setShowAddForm(false)}
-          />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
