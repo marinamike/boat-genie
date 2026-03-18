@@ -106,11 +106,8 @@ export default function BusinessSettings() {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        <TabsContent value="profile" className="mt-4">
+        <TabsContent value="profile" className="mt-4 space-y-6">
           <BusinessSetupForm />
-        </TabsContent>
-
-        <TabsContent value="modules" className="mt-4">
           <ModuleManager />
         </TabsContent>
 
