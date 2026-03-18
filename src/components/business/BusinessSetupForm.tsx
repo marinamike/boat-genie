@@ -49,7 +49,6 @@ export function BusinessSetupForm() {
           .update({
             business_name: businessName.trim(),
             address: address.trim() || null,
-            enabled_modules: selectedModules,
           })
           .eq("id", business.id);
         if (error) throw error;
