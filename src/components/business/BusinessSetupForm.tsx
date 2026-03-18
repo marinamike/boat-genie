@@ -4,29 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, Loader2, Ship, Wrench, Fuel, Store } from "lucide-react";
+import { Building2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useToast } from "@/hooks/use-toast";
-import { Database } from "@/integrations/supabase/types";
-
-type BusinessModule = Database["public"]["Enums"]["business_module"];
-
-interface ModuleOption {
-  id: BusinessModule;
-  label: string;
-  description: string;
-  icon: React.ElementType;
-}
-
-const MODULE_OPTIONS: ModuleOption[] = [
-  { id: "slips", label: "Slips & Storage", description: "Manage dock slips and boat storage", icon: Ship },
-  { id: "service", label: "Service Yard", description: "Handle work orders and repairs", icon: Wrench },
-  { id: "fuel", label: "Fuel Dock", description: "Fuel sales and pump management", icon: Fuel },
-  { id: "ship_store", label: "Ship Store", description: "Retail and point-of-sale", icon: Store },
-];
 
 export function BusinessSetupForm() {
   const { user } = useAuth();
