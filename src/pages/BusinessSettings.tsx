@@ -48,7 +48,32 @@ export default function BusinessSettings() {
       });
   }, [user]);
 
-  const handleSaveProfile = async () => {
+  useEffect(() => {
+    if (business) {
+      setBusinessName(business.business_name || "");
+      setBusinessAddress(business.address || "");
+    }
+  }, [business]);
+
+  const handleSaveAllProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const [profileRes, businessRes] = await Promise.all([
+        supabase.from("profiles").update({ full_name: fullName, phone }).eq("id", user.id),
+        business
+          ? supabase.from("businesses").update({ business_name: businessName.trim(), address: businessAddress.trim() || null }).eq("id", business.id)
+          : Promise.resolve({ error: null }),
+      ]);
+      if (profileRes.error) throw profileRes.error;
+      if (businessRes.error) throw businessRes.error;
+      toast({ title: "Saved", description: "Profile updated successfully." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to save profile.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
     if (!user) return;
     setSaving(true);
     const { error } = await supabase
