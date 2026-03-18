@@ -29,6 +29,8 @@ export default function BusinessSettings() {
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [businessAddress, setBusinessAddress] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -46,20 +48,34 @@ export default function BusinessSettings() {
       });
   }, [user]);
 
-  const handleSaveProfile = async () => {
+  useEffect(() => {
+    if (business) {
+      setBusinessName(business.business_name || "");
+      setBusinessAddress(business.address || "");
+    }
+  }, [business]);
+
+  const handleSaveAllProfile = async () => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: fullName, phone })
-      .eq("id", user.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: "Error", description: "Failed to save profile.", variant: "destructive" });
-    } else {
+    try {
+      const [profileRes, businessRes] = await Promise.all([
+        supabase.from("profiles").update({ full_name: fullName, phone }).eq("id", user.id),
+        business
+          ? supabase.from("businesses").update({ business_name: businessName.trim(), address: businessAddress.trim() || null }).eq("id", business.id)
+          : Promise.resolve({ error: null }),
+      ]);
+      if (profileRes.error) throw profileRes.error;
+      if (businessRes.error) throw businessRes.error;
       toast({ title: "Saved", description: "Profile updated successfully." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to save profile.", variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
+
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -139,17 +155,34 @@ export default function BusinessSettings() {
         </ScrollArea>
 
         <TabsContent value="account" className="mt-4 space-y-6">
-          <BusinessSetupForm />
-          <ModuleManager />
-
-          <Separator />
-
           <Card>
             <CardHeader>
-              <CardTitle>Profile Details</CardTitle>
-              <CardDescription>Manage your personal information</CardDescription>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>Manage your business and personal information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name *</Label>
+                <Input
+                  id="businessName"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="e.g., Sunset Marina"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={businessAddress}
+                  onChange={(e) => setBusinessAddress(e.target.value)}
+                  placeholder="123 Harbor Way, Miami, FL"
+                />
+              </div>
+
+              <Separator />
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" value={user?.email || ""} disabled />
@@ -162,12 +195,14 @@ export default function BusinessSettings() {
                 <Label htmlFor="phone">Phone</Label>
                 <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" />
               </div>
-              <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+              <Button onClick={handleSaveAllProfile} disabled={saving} className="w-full">
                 {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 Save Changes
               </Button>
             </CardContent>
           </Card>
+
+          <ModuleManager />
 
           <Separator />
 
