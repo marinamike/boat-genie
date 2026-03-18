@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ModuleManager } from "@/components/business/ModuleManager";
@@ -11,9 +12,11 @@ import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield } from "lucide-react";
+import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -24,6 +27,39 @@ export default function BusinessSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setFullName(data.full_name || "");
+          setPhone(data.phone || "");
+        }
+      });
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: fullName, phone })
+      .eq("id", user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Error", description: "Failed to save profile.", variant: "destructive" });
+    } else {
+      toast({ title: "Saved", description: "Profile updated successfully." });
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -131,52 +167,51 @@ export default function BusinessSettings() {
           <StoreSetupTab />
         </TabsContent>
 
-        <TabsContent value="account" className="mt-4 space-y-4">
+        <TabsContent value="account" className="mt-4 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Account</CardTitle>
-              <CardDescription>Manage your account settings</CardDescription>
+              <CardTitle>Profile Details</CardTitle>
+              <CardDescription>Manage your personal information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Email</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" value={user?.email || ""} disabled />
               </div>
-
-              <Separator />
-
-              <Button
-                variant="outline"
-                onClick={() => navigate("/profile")}
-                className="w-full"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Edit Profile
-              </Button>
-
-              {user?.email === PLATFORM_ADMIN_EMAIL && (
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/platform-admin")}
-                  className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Platform Admin
-                </Button>
-              )}
-
-              <Separator />
-
-              <Button
-                variant="destructive"
-                onClick={handleLogout}
-                className="w-full"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" />
+              </div>
+              <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Save Changes
               </Button>
             </CardContent>
           </Card>
+
+          {user?.email === PLATFORM_ADMIN_EMAIL && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/platform-admin")}
+              className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Platform Admin
+            </Button>
+          )}
+
+          <Button
+            variant="destructive"
+            onClick={handleLogout}
+            className="w-full"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
         </TabsContent>
       </Tabs>
     </div>
