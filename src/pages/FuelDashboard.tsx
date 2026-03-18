@@ -9,38 +9,20 @@ import { QuickSaleForm } from "@/components/fuel/QuickSaleForm";
 import { DeliveryRequestForm } from "@/components/fuel/DeliveryRequestForm";
 import { ConfirmDeliverySheet } from "@/components/fuel/ConfirmDeliverySheet";
 import { ReconciliationForm } from "@/components/fuel/ReconciliationForm";
-import { TankSetupForm } from "@/components/fuel/TankSetupForm";
-import { PumpSetupForm } from "@/components/fuel/PumpSetupForm";
 import { DiscrepancyReport } from "@/components/fuel/DiscrepancyReport";
-import { PriceController } from "@/components/fuel/PriceController";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { 
   Fuel, 
   Truck, 
   ClipboardCheck, 
-  Plus, 
-  Settings, 
   Droplets,
   DollarSign,
   TrendingUp,
   AlertTriangle,
-  Pencil,
-  Trash2,
   CheckCircle2,
   Clock
 } from "lucide-react";
-import { FuelTank, FuelPump } from "@/hooks/useFuelManagement";
 
 export default function FuelDashboard() {
   const { business, isOwner, hasModuleAccess } = useBusiness();
@@ -51,12 +33,6 @@ export default function FuelDashboard() {
     deliveries, 
     reconciliations,
     loading,
-    createTank,
-    updateTank,
-    deleteTank,
-    createPump,
-    updatePump,
-    deletePump,
     recordSale,
     createDeliveryRequest,
     confirmDelivery,
@@ -66,12 +42,6 @@ export default function FuelDashboard() {
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
   const [showReconciliationForm, setShowReconciliationForm] = useState(false);
-  const [showTankSetup, setShowTankSetup] = useState(false);
-  const [showPumpSetup, setShowPumpSetup] = useState(false);
-  const [editingTank, setEditingTank] = useState<FuelTank | null>(null);
-  const [deletingPump, setDeletingPump] = useState<FuelPump | null>(null);
-  const [isDeletingPump, setIsDeletingPump] = useState(false);
-  const [editingPump, setEditingPump] = useState<FuelPump | null>(null);
   const [confirmingDelivery, setConfirmingDelivery] = useState<FuelDelivery | null>(null);
 
   const canWrite = isOwner || hasModuleAccess("fuel", "write");
@@ -87,14 +57,6 @@ export default function FuelDashboard() {
 
   const lowTanks = tanks.filter(t => t.current_volume_gallons <= t.low_level_threshold_gallons);
 
-  const handleDeletePump = async () => {
-    if (!deletingPump) return;
-    setIsDeletingPump(true);
-    await deletePump(deletingPump.id);
-    setIsDeletingPump(false);
-    setDeletingPump(null);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -106,23 +68,14 @@ export default function FuelDashboard() {
   return (
     <div className="container max-w-6xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Fuel className="h-6 w-6" />
-            Fuel Management
-          </h1>
-          <p className="text-muted-foreground">
-            {business?.business_name}
-          </p>
-        </div>
-        
-        {canWrite && (
-          <Button variant="outline" size="sm" onClick={() => setShowTankSetup(true)}>
-            <Settings className="h-4 w-4 mr-2" />
-            Setup
-          </Button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Fuel className="h-6 w-6" />
+          Fuel Management
+        </h1>
+        <p className="text-muted-foreground">
+          {business?.business_name}
+        </p>
       </div>
 
       {/* Quick Stats */}
@@ -193,9 +146,8 @@ export default function FuelDashboard() {
       </div>
 
       <Tabs defaultValue="tanks" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tanks">Tanks</TabsTrigger>
-          <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="transactions">Sales</TabsTrigger>
           <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -207,15 +159,9 @@ export default function FuelDashboard() {
               <CardContent className="py-12 text-center">
                 <Droplets className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="font-semibold mb-2">No Fuel Tanks Configured</h3>
-                <p className="text-muted-foreground mb-4">
-                  Add your fuel tanks to start tracking inventory
+                <p className="text-muted-foreground">
+                  Go to <span className="font-medium">Business Settings → Fuel Setup</span> to add tanks and pumps.
                 </p>
-                {canWrite && (
-                  <Button onClick={() => setShowTankSetup(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Tank
-                  </Button>
-                )}
               </CardContent>
             </Card>
           ) : (
@@ -225,31 +171,20 @@ export default function FuelDashboard() {
                   <TankGauge 
                     key={tank.id} 
                     tank={tank} 
-                    canEdit={canWrite}
-                    onEdit={() => {
-                      setEditingTank(tank);
-                      setShowTankSetup(true);
-                    }}
-                    onDelete={() => deleteTank(tank.id)}
+                    canEdit={false}
                   />
                 ))}
               </div>
 
-              {/* Pumps Section */}
+              {/* Pumps Section — read-only display */}
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader>
                   <CardTitle className="text-lg">Fuel Pumps</CardTitle>
-                  {canWrite && (
-                    <Button variant="outline" size="sm" onClick={() => setShowPumpSetup(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Pump
-                    </Button>
-                  )}
                 </CardHeader>
                 <CardContent>
                   {pumps.length === 0 ? (
                     <p className="text-muted-foreground text-sm">
-                      No pumps configured yet
+                      No pumps configured. Go to <span className="font-medium">Settings → Fuel Setup</span> to add pumps.
                     </p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -267,36 +202,11 @@ export default function FuelDashboard() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              <p className="text-sm font-medium">
-                                {pump.lifetime_meter_gallons.toLocaleString()} gal
-                              </p>
-                              <p className="text-xs text-muted-foreground">Lifetime</p>
-                            </div>
-                            {canWrite && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => {
-                                    setEditingPump(pump);
-                                    setShowPumpSetup(true);
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-destructive hover:text-destructive"
-                                  onClick={() => setDeletingPump(pump)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
+                          <div className="text-right">
+                            <p className="text-sm font-medium">
+                              {pump.lifetime_meter_gallons.toLocaleString()} gal
+                            </p>
+                            <p className="text-xs text-muted-foreground">Lifetime</p>
                           </div>
                         </div>
                       ))}
@@ -306,10 +216,6 @@ export default function FuelDashboard() {
               </Card>
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="pricing" className="mt-4">
-          <PriceController isOwner={isOwner} />
         </TabsContent>
 
         <TabsContent value="transactions" className="mt-4">
@@ -477,7 +383,7 @@ export default function FuelDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Forms - now receiving mutation handlers from single hook instance */}
+      {/* Operational Forms */}
       <QuickSaleForm 
         open={showSaleForm} 
         onOpenChange={setShowSaleForm} 
@@ -507,50 +413,6 @@ export default function FuelDashboard() {
         pumps={pumps}
         onRecordReconciliation={recordReconciliation}
       />
-      
-      <TankSetupForm 
-        open={showTankSetup} 
-        onOpenChange={(open) => {
-          setShowTankSetup(open);
-          if (!open) setEditingTank(null);
-        }}
-        editTank={editingTank}
-        onCreateTank={createTank}
-        onUpdateTank={updateTank}
-      />
-      
-      <PumpSetupForm 
-        open={showPumpSetup} 
-        onOpenChange={(open) => {
-          setShowPumpSetup(open);
-          if (!open) setEditingPump(null);
-        }}
-        editPump={editingPump}
-        onCreatePump={createPump}
-        onUpdatePump={updatePump}
-      />
-
-      {/* Delete Pump Confirmation */}
-      <AlertDialog open={!!deletingPump} onOpenChange={(open) => !open && setDeletingPump(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Pump</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{deletingPump?.pump_name}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingPump}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeletePump} 
-              disabled={isDeletingPump}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeletingPump ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

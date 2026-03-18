@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { ModuleManager } from "@/components/business/ModuleManager";
 import { StaffManager } from "@/components/business/StaffManager";
 import { BusinessSetupForm } from "@/components/business/BusinessSetupForm";
+import { FuelSetupTab } from "@/components/business/FuelSetupTab";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Users, Puzzle, User, LogOut, Shield, Wrench } from "lucide-react";
+import { Users, Puzzle, User, LogOut, Shield, Wrench, Fuel } from "lucide-react";
 import { ServiceMenuManager } from "@/components/business/ServiceMenuManager";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,7 +69,7 @@ export default function BusinessSettings() {
       </div>
 
       <Tabs defaultValue="modules" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <Puzzle className="w-4 h-4" />
             <span className="hidden sm:inline">Modules</span>
@@ -76,6 +77,10 @@ export default function BusinessSettings() {
           <TabsTrigger value="menu" className="flex items-center gap-2">
             <Wrench className="w-4 h-4" />
             <span className="hidden sm:inline">Service Menu</span>
+          </TabsTrigger>
+          <TabsTrigger value="fuel" className="flex items-center gap-2">
+            <Fuel className="w-4 h-4" />
+            <span className="hidden sm:inline">Fuel Setup</span>
           </TabsTrigger>
           <TabsTrigger value="staff" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -93,6 +98,10 @@ export default function BusinessSettings() {
 
         <TabsContent value="menu" className="mt-4">
           <ServiceMenuManager />
+        </TabsContent>
+
+        <TabsContent value="fuel" className="mt-4">
+          <FuelSetupTab />
         </TabsContent>
 
         <TabsContent value="staff" className="mt-4">
