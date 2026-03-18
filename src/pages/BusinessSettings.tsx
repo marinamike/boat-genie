@@ -5,12 +5,13 @@ import { StaffManager } from "@/components/business/StaffManager";
 import { BusinessSetupForm } from "@/components/business/BusinessSetupForm";
 import { FuelSetupTab } from "@/components/business/FuelSetupTab";
 import { StoreSetupTab } from "@/components/business/StoreSetupTab";
+import { ServiceStaffTab } from "@/components/business/ServiceStaffTab";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Users, Puzzle, User, LogOut, Shield, Wrench, Fuel, Store } from "lucide-react";
+import { Users, HardHat, Puzzle, User, LogOut, Shield, Wrench, Fuel, Store } from "lucide-react";
 import { ServiceMenuManager } from "@/components/business/ServiceMenuManager";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,7 +71,7 @@ export default function BusinessSettings() {
       </div>
 
       <Tabs defaultValue="modules" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <Puzzle className="w-4 h-4" />
             <span className="hidden sm:inline">Modules</span>
@@ -86,6 +87,10 @@ export default function BusinessSettings() {
           <TabsTrigger value="store" className="flex items-center gap-2">
             <Store className="w-4 h-4" />
             <span className="hidden sm:inline">Store</span>
+          </TabsTrigger>
+          <TabsTrigger value="service-staff" className="flex items-center gap-2">
+            <HardHat className="w-4 h-4" />
+            <span className="hidden sm:inline">Service Staff</span>
           </TabsTrigger>
           <TabsTrigger value="staff" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -111,6 +116,10 @@ export default function BusinessSettings() {
 
         <TabsContent value="store" className="mt-4">
           <StoreSetupTab />
+        </TabsContent>
+
+        <TabsContent value="service-staff" className="mt-4">
+          <ServiceStaffTab />
         </TabsContent>
 
         <TabsContent value="staff" className="mt-4">
