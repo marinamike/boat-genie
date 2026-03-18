@@ -112,49 +112,6 @@ export function BusinessSetupForm() {
             />
           </div>
 
-          <div className="space-y-3">
-            <Label>Select Modules to Enable</Label>
-            <p className="text-sm text-muted-foreground">
-              Choose which revenue streams you want to manage. You can change these later.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {MODULE_OPTIONS.map((module) => {
-                const Icon = module.icon;
-                const isSelected = selectedModules.includes(module.id);
-                const checkboxId = `module-${module.id}`;
-
-                return (
-                  <label
-                    key={module.id}
-                    htmlFor={checkboxId}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors block select-none ${
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Checkbox
-                        id={checkboxId}
-                        checked={isSelected}
-                        onCheckedChange={() => toggleModule(module.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{module.label}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {module.description}
-                        </p>
-                      </div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
 
           <Button type="submit" className="w-full h-12" disabled={loading}>
             {loading ? (
