@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Calendar, ClipboardCheck, Anchor, FileText, Briefcase } from "lucide-react";
+import { Wrench, Calendar, ClipboardCheck, Anchor, Briefcase } from "lucide-react";
 import { useServiceManagement } from "@/hooks/useServiceManagement";
 import { useJobBoard } from "@/hooks/useJobBoard";
 import { useServiceMenu } from "@/hooks/useServiceMenu";
@@ -9,7 +9,6 @@ import { ServiceWorkOrders } from "@/components/service/ServiceWorkOrders";
 import { YardCalendar } from "@/components/service/YardCalendar";
 import { ServiceQCQueue } from "@/components/service/ServiceQCQueue";
 import { BoatsOnBlocksList } from "@/components/service/BoatsOnBlocksList";
-import { YardEquipmentSettings } from "@/components/service/YardEquipmentSettings";
 import { LeadStream } from "@/components/provider/LeadStream";
 import type { ProviderService } from "@/hooks/useProviderMetrics";
 
@@ -39,7 +38,7 @@ export default function ServiceDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="workorders" className="flex items-center gap-1">
             <Wrench className="w-4 h-4" />
             <span className="hidden sm:inline">Jobs</span>
@@ -64,10 +63,6 @@ export default function ServiceDashboard() {
           <TabsTrigger value="blocks" className="flex items-center gap-1">
             <Anchor className="w-4 h-4" />
             <span className="hidden sm:inline">On Blocks</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-1">
-            <FileText className="w-4 h-4" />
-            <span className="hidden sm:inline">Setup</span>
           </TabsTrigger>
         </TabsList>
 
@@ -95,10 +90,6 @@ export default function ServiceDashboard() {
 
         <TabsContent value="blocks" className="mt-4">
           <BoatsOnBlocksList {...serviceManagement} />
-        </TabsContent>
-
-        <TabsContent value="settings" className="mt-4">
-          <YardEquipmentSettings {...serviceManagement} />
         </TabsContent>
       </Tabs>
     </div>

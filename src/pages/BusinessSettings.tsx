@@ -5,7 +5,7 @@ import { StaffManager } from "@/components/business/StaffManager";
 import { BusinessSetupForm } from "@/components/business/BusinessSetupForm";
 import { FuelSetupTab } from "@/components/business/FuelSetupTab";
 import { StoreSetupTab } from "@/components/business/StoreSetupTab";
-import { ServiceStaffTab } from "@/components/business/ServiceStaffTab";
+import { ServiceSetupTab } from "@/components/business/ServiceSetupTab";
 import { SlipsSetupTab } from "@/components/business/SlipsSetupTab";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Building2, Puzzle, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield } from "lucide-react";
-import { ServiceMenuManager } from "@/components/business/ServiceMenuManager";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -87,9 +86,9 @@ export default function BusinessSettings() {
               <Users className="w-4 h-4" />
               <span>Staff</span>
             </TabsTrigger>
-            <TabsTrigger value="menu" className="flex items-center gap-1.5 px-3">
+            <TabsTrigger value="service" className="flex items-center gap-1.5 px-3">
               <Wrench className="w-4 h-4" />
-              <span>Service Menu</span>
+              <span>Service</span>
             </TabsTrigger>
             <TabsTrigger value="slips" className="flex items-center gap-1.5 px-3">
               <Anchor className="w-4 h-4" />
@@ -119,17 +118,12 @@ export default function BusinessSettings() {
           <ModuleManager />
         </TabsContent>
 
-        <TabsContent value="staff" className="mt-4 space-y-6">
+        <TabsContent value="staff" className="mt-4">
           <StaffManager />
-          <Separator />
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Service Staff & Specialties</h3>
-            <ServiceStaffTab />
-          </div>
         </TabsContent>
 
-        <TabsContent value="menu" className="mt-4">
-          <ServiceMenuManager />
+        <TabsContent value="service" className="mt-4">
+          <ServiceSetupTab />
         </TabsContent>
 
         <TabsContent value="slips" className="mt-4">
