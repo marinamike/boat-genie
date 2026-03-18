@@ -1,3 +1,4 @@
+// CANONICAL BUSINESS HUB — entry point for admin role
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useStoreInventory } from "@/hooks/useStoreInventory";
 import { useFuelManagement } from "@/hooks/useFuelManagement";

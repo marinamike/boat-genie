@@ -1,3 +1,4 @@
+// CANONICAL PLATFORM ADMIN — email-gated, uses components/platform-admin/
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";

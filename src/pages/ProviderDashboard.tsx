@@ -1,3 +1,4 @@
+// CANONICAL PROVIDER DASHBOARD — entry point for provider role
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
