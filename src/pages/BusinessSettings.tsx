@@ -74,19 +74,8 @@ export default function BusinessSettings() {
       setSaving(false);
     }
   };
-    if (!user) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: fullName, phone })
-      .eq("id", user.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: "Error", description: "Failed to save profile.", variant: "destructive" });
-    } else {
-      toast({ title: "Saved", description: "Profile updated successfully." });
-    }
-  };
+
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
