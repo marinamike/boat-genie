@@ -78,10 +78,6 @@ export default function BusinessSettings() {
               <Building2 className="w-4 h-4" />
               <span>Profile</span>
             </TabsTrigger>
-            <TabsTrigger value="staff" className="flex items-center gap-1.5 px-3">
-              <Users className="w-4 h-4" />
-              <span>Staff</span>
-            </TabsTrigger>
             <TabsTrigger value="service" className="flex items-center gap-1.5 px-3">
               <Wrench className="w-4 h-4" />
               <span>Service</span>
@@ -97,6 +93,10 @@ export default function BusinessSettings() {
             <TabsTrigger value="store" className="flex items-center gap-1.5 px-3">
               <Store className="w-4 h-4" />
               <span>Store</span>
+            </TabsTrigger>
+            <TabsTrigger value="staff" className="flex items-center gap-1.5 px-3">
+              <Users className="w-4 h-4" />
+              <span>Staff</span>
             </TabsTrigger>
             <TabsTrigger value="account" className="flex items-center gap-1.5 px-3">
               <User className="w-4 h-4" />
