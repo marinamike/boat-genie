@@ -139,17 +139,34 @@ export default function BusinessSettings() {
         </ScrollArea>
 
         <TabsContent value="account" className="mt-4 space-y-6">
-          <BusinessSetupForm />
-          <ModuleManager />
-
-          <Separator />
-
           <Card>
             <CardHeader>
-              <CardTitle>Profile Details</CardTitle>
-              <CardDescription>Manage your personal information</CardDescription>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>Manage your business and personal information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name *</Label>
+                <Input
+                  id="businessName"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="e.g., Sunset Marina"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={businessAddress}
+                  onChange={(e) => setBusinessAddress(e.target.value)}
+                  placeholder="123 Harbor Way, Miami, FL"
+                />
+              </div>
+
+              <Separator />
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" value={user?.email || ""} disabled />
@@ -162,12 +179,14 @@ export default function BusinessSettings() {
                 <Label htmlFor="phone">Phone</Label>
                 <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" />
               </div>
-              <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+              <Button onClick={handleSaveAllProfile} disabled={saving} className="w-full">
                 {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 Save Changes
               </Button>
             </CardContent>
           </Card>
+
+          <ModuleManager />
 
           <Separator />
 
