@@ -449,7 +449,7 @@ export function SlipSettings({
         <CardContent>
           {assets.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No slips configured yet. Add slips from the Dock Grid tab.
+              No slips configured yet. Use the "Add Slip / Space" button above to get started.
             </div>
           ) : (
             <div className="overflow-x-auto">
