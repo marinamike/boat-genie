@@ -77,7 +77,6 @@ export function SlipSettings({
     water: "",
   });
 
-  // Load current rates from business
   useEffect(() => {
     if (business) {
       setSlipRates({
@@ -94,7 +93,6 @@ export function SlipSettings({
     }
   }, [business]);
 
-  // Fetch active leases count
   useEffect(() => {
     const fetchActiveLeases = async () => {
       if (!business?.id) return;
@@ -172,16 +170,11 @@ export function SlipSettings({
 
   const getAssetTypeLabel = (type: string) => {
     switch (type) {
-      case "wet_slip":
-        return "Wet Slip";
-      case "dry_rack":
-        return "Dry Rack";
-      case "yard_block":
-        return "Yard Block";
-      case "mooring":
-        return "Mooring";
-      default:
-        return type;
+      case "wet_slip": return "Wet Slip";
+      case "dry_rack": return "Dry Rack";
+      case "yard_block": return "Yard Block";
+      case "mooring": return "Mooring";
+      default: return type;
     }
   };
 
@@ -209,7 +202,7 @@ export function SlipSettings({
 
   return (
     <div className="space-y-6">
-      {/* Section 1: Slip Inventory Manager */}
+      {/* Section 1: Slip Inventory */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
@@ -309,16 +302,7 @@ export function SlipSettings({
               <Label htmlFor="daily_rate" className="text-sm">Daily</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="daily_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="2.50"
-                  value={slipRates.daily}
-                  onChange={(e) => setSlipRates({ ...slipRates, daily: e.target.value })}
-                  className="pl-7"
-                />
+                <Input id="daily_rate" type="number" step="0.01" min="0" placeholder="2.50" value={slipRates.daily} onChange={(e) => setSlipRates({ ...slipRates, daily: e.target.value })} className="pl-7" />
               </div>
               <span className="text-xs text-muted-foreground">/ft/day</span>
             </div>
@@ -326,16 +310,7 @@ export function SlipSettings({
               <Label htmlFor="weekly_rate" className="text-sm">Weekly</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="weekly_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="15.00"
-                  value={slipRates.weekly}
-                  onChange={(e) => setSlipRates({ ...slipRates, weekly: e.target.value })}
-                  className="pl-7"
-                />
+                <Input id="weekly_rate" type="number" step="0.01" min="0" placeholder="15.00" value={slipRates.weekly} onChange={(e) => setSlipRates({ ...slipRates, weekly: e.target.value })} className="pl-7" />
               </div>
               <span className="text-xs text-muted-foreground">/ft/week</span>
             </div>
@@ -343,16 +318,7 @@ export function SlipSettings({
               <Label htmlFor="monthly_rate" className="text-sm">Monthly</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="monthly_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="45.00"
-                  value={slipRates.monthly}
-                  onChange={(e) => setSlipRates({ ...slipRates, monthly: e.target.value })}
-                  className="pl-7"
-                />
+                <Input id="monthly_rate" type="number" step="0.01" min="0" placeholder="45.00" value={slipRates.monthly} onChange={(e) => setSlipRates({ ...slipRates, monthly: e.target.value })} className="pl-7" />
               </div>
               <span className="text-xs text-muted-foreground">/ft/month</span>
             </div>
@@ -360,16 +326,7 @@ export function SlipSettings({
               <Label htmlFor="seasonal_rate" className="text-sm">Seasonal</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="seasonal_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="200.00"
-                  value={slipRates.seasonal}
-                  onChange={(e) => setSlipRates({ ...slipRates, seasonal: e.target.value })}
-                  className="pl-7"
-                />
+                <Input id="seasonal_rate" type="number" step="0.01" min="0" placeholder="200.00" value={slipRates.seasonal} onChange={(e) => setSlipRates({ ...slipRates, seasonal: e.target.value })} className="pl-7" />
               </div>
               <span className="text-xs text-muted-foreground">/ft/season</span>
             </div>
@@ -377,16 +334,7 @@ export function SlipSettings({
               <Label htmlFor="annual_rate" className="text-sm">Annual</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="annual_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="350.00"
-                  value={slipRates.annual}
-                  onChange={(e) => setSlipRates({ ...slipRates, annual: e.target.value })}
-                  className="pl-7"
-                />
+                <Input id="annual_rate" type="number" step="0.01" min="0" placeholder="350.00" value={slipRates.annual} onChange={(e) => setSlipRates({ ...slipRates, annual: e.target.value })} className="pl-7" />
               </div>
               <span className="text-xs text-muted-foreground">/ft/year</span>
             </div>
@@ -394,15 +342,9 @@ export function SlipSettings({
           <div className="mt-4 flex justify-end">
             <Button onClick={handleSaveSlipRates} disabled={savingSlipRates}>
               {savingSlipRates ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
               ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Slip Rates
-                </>
+                <><Save className="w-4 h-4 mr-2" />Save Slip Rates</>
               )}
             </Button>
           </div>
@@ -445,10 +387,7 @@ export function SlipSettings({
                     : (business?.water_rate_per_gallon ?? 0);
 
                 return (
-                  <div
-                    key={meter.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
+                  <div key={meter.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       {meter.meter_type === "power" ? (
                         <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -463,13 +402,9 @@ export function SlipSettings({
                         <div className="font-semibold flex items-center gap-2">
                           {meter.meter_name}
                           {hasCustomRate && (
-                            <Badge variant="outline" className="text-primary border-primary text-xs">
-                              Custom
-                            </Badge>
+                            <Badge variant="outline" className="text-primary border-primary text-xs">Custom</Badge>
                           )}
-                          {!meter.is_active && (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
+                          {!meter.is_active && <Badge variant="secondary">Inactive</Badge>}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {asset?.asset_name || "Unassigned"}
@@ -486,17 +421,10 @@ export function SlipSettings({
                           Current: {meter.current_reading.toLocaleString()}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditForm(meter)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => openEditForm(meter)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Switch
-                        checked={meter.is_active}
-                        onCheckedChange={() => toggleMeterActive(meter)}
-                      />
+                      <Switch checked={meter.is_active} onCheckedChange={() => toggleMeterActive(meter)} />
                     </div>
                   </div>
                 );
@@ -528,16 +456,7 @@ export function SlipSettings({
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="power_rate"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  placeholder="0.15"
-                  value={utilityRates.power}
-                  onChange={(e) => setUtilityRates({ ...utilityRates, power: e.target.value })}
-                  className="pl-7"
-                />
+                <Input id="power_rate" type="number" step="0.001" min="0" placeholder="0.15" value={utilityRates.power} onChange={(e) => setUtilityRates({ ...utilityRates, power: e.target.value })} className="pl-7" />
               </div>
               <span className="text-xs text-muted-foreground">per kWh</span>
             </div>
@@ -548,16 +467,7 @@ export function SlipSettings({
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="water_rate"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  placeholder="0.01"
-                  value={utilityRates.water}
-                  onChange={(e) => setUtilityRates({ ...utilityRates, water: e.target.value })}
-                  className="pl-7"
-                />
+                <Input id="water_rate" type="number" step="0.001" min="0" placeholder="0.01" value={utilityRates.water} onChange={(e) => setUtilityRates({ ...utilityRates, water: e.target.value })} className="pl-7" />
               </div>
               <span className="text-xs text-muted-foreground">per gallon</span>
             </div>
@@ -565,15 +475,9 @@ export function SlipSettings({
           <div className="mt-4 flex justify-end">
             <Button onClick={handleSaveUtilityRates} disabled={savingUtilityRates}>
               {savingUtilityRates ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
               ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Utility Rates
-                </>
+                <><Save className="w-4 h-4 mr-2" />Save Utility Rates</>
               )}
             </Button>
           </div>
@@ -615,240 +519,6 @@ export function SlipSettings({
                 <li>Include any unbilled meter readings from the current month</li>
                 <li>Create draft invoices for each active tenant</li>
               </ul>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Tips */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">💡 Tips</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            <strong>Meter Assignment:</strong> Link meters to specific slips to
-            automatically associate readings with the current occupant's account.
-          </p>
-          <p>
-            <strong>Billing:</strong> Meter readings are tracked but billing is
-            handled separately. Export unbilled charges for invoicing.
-          </p>
-          <p>
-            <strong>Rates:</strong> Set competitive rates based on your local utility
-            costs plus your margin.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Slip Edit Sheet */}
-      {updateAsset && (
-        <SlipEditSheet
-          asset={editingSlip}
-          globalRates={{
-            daily: slipRates.daily ? parseFloat(slipRates.daily) : null,
-            weekly: slipRates.weekly ? parseFloat(slipRates.weekly) : null,
-            monthly: slipRates.monthly ? parseFloat(slipRates.monthly) : null,
-            seasonal: slipRates.seasonal ? parseFloat(slipRates.seasonal) : null,
-            annual: slipRates.annual ? parseFloat(slipRates.annual) : null,
-          }}
-          open={!!editingSlip}
-          onOpenChange={(open) => !open && setEditingSlip(null)}
-          onUpdate={updateAsset}
-        />
-      )}
-
-      {/* Meter Edit Sheet */}
-      <MeterEditSheet
-        meter={editingMeter}
-        assets={assets}
-        meters={meters}
-        globalRates={{
-          power: business?.power_rate_per_kwh ?? null,
-          water: business?.water_rate_per_gallon ?? null,
-        }}
-        open={showMeterForm}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowMeterForm(false);
-            setEditingMeter(null);
-          }
-        }}
-        onUpdate={updateMeter}
-        onCreate={createMeter}
-        onDelete={deleteMeter}
-      />
-
-      {/* Monthly Billing Dialog */}
-      <RunMonthlyBillingDialog
-        open={showBillingDialog}
-        onOpenChange={setShowBillingDialog}
-        onRunBilling={runMonthlyBillingBatch}
-        activeLeaseCount={activeLeases.length}
-      />
-    </div>
-  );
-}
-          )}
-        </CardHeader>
-        <CardContent>
-          {assets.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No slips configured yet. Use the "Add Slip / Space" button above to get started.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Slip Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Max LOA</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Rate Profile</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {assets.map((asset) => (
-                    <TableRow key={asset.id}>
-                      <TableCell className="font-medium">
-                        {asset.asset_name}
-                        {asset.dock_section && (
-                          <span className="text-muted-foreground text-sm ml-2">
-                            ({asset.dock_section})
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>{getAssetTypeLabel(asset.asset_type)}</TableCell>
-                      <TableCell className="text-right">
-                        {asset.max_loa_ft ? `${asset.max_loa_ft} ft` : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={asset.is_available ? "default" : "secondary"}>
-                          {asset.is_available ? "Available" : "Occupied"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {hasCustomRates(asset) ? (
-                          <Badge variant="outline" className="text-primary border-primary">
-                            Custom
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">Standard</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingSlip(asset)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Section 5: Utility Meters */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Utility Meters</CardTitle>
-          <Button size="sm" onClick={openCreateForm}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Meter
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {meters.length === 0 ? (
-            <div className="text-center py-8">
-              <Zap className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-semibold mb-2">No Meters Configured</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Add power and water meters to track utility usage
-              </p>
-              <Button onClick={openCreateForm}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add First Meter
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {meters.map((meter) => {
-                const asset = assets.find((a) => a.id === meter.yard_asset_id);
-                // Rate inheritance: custom rate if > 0, else global business rate
-                const hasCustomRate = meter.rate_per_unit > 0;
-                const effectiveRate = hasCustomRate
-                  ? meter.rate_per_unit
-                  : meter.meter_type === "power"
-                    ? (business?.power_rate_per_kwh ?? 0)
-                    : (business?.water_rate_per_gallon ?? 0);
-
-                return (
-                  <div
-                    key={meter.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      {meter.meter_type === "power" ? (
-                        <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                          <Zap className="w-5 h-5 text-yellow-600" />
-                        </div>
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <Droplets className="w-5 h-5 text-blue-600" />
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-semibold flex items-center gap-2">
-                          {meter.meter_name}
-                          {hasCustomRate && (
-                            <Badge variant="outline" className="text-primary border-primary text-xs">
-                              Custom
-                            </Badge>
-                          )}
-                          {!meter.is_active && (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {asset?.asset_name || "Unassigned"}
-                          {meter.meter_number && ` • #${meter.meter_number}`}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="font-mono text-sm">
-                          ${effectiveRate.toFixed(2)}/{meter.meter_type === "power" ? "kWh" : "gal"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Current: {meter.current_reading.toLocaleString()}
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditForm(meter)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Switch
-                        checked={meter.is_active}
-                        onCheckedChange={() => toggleMeterActive(meter)}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           )}
         </CardContent>
