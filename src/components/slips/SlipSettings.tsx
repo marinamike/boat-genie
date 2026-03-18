@@ -77,7 +77,6 @@ export function SlipSettings({
     water: "",
   });
 
-  // Load current rates from business
   useEffect(() => {
     if (business) {
       setSlipRates({
@@ -94,7 +93,6 @@ export function SlipSettings({
     }
   }, [business]);
 
-  // Fetch active leases count
   useEffect(() => {
     const fetchActiveLeases = async () => {
       if (!business?.id) return;
@@ -172,16 +170,11 @@ export function SlipSettings({
 
   const getAssetTypeLabel = (type: string) => {
     switch (type) {
-      case "wet_slip":
-        return "Wet Slip";
-      case "dry_rack":
-        return "Dry Rack";
-      case "yard_block":
-        return "Yard Block";
-      case "mooring":
-        return "Mooring";
-      default:
-        return type;
+      case "wet_slip": return "Wet Slip";
+      case "dry_rack": return "Dry Rack";
+      case "yard_block": return "Yard Block";
+      case "mooring": return "Mooring";
+      default: return type;
     }
   };
 
@@ -209,238 +202,7 @@ export function SlipSettings({
 
   return (
     <div className="space-y-6">
-      {/* Section 1: Global Slip Rates */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
-            Global Slip Rates
-          </CardTitle>
-          <CardDescription>
-            Default pricing per foot that applies to all new slips. Individual slips can override these rates.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="daily_rate" className="text-sm">Daily</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="daily_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="2.50"
-                  value={slipRates.daily}
-                  onChange={(e) => setSlipRates({ ...slipRates, daily: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">/ft/day</span>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="weekly_rate" className="text-sm">Weekly</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="weekly_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="15.00"
-                  value={slipRates.weekly}
-                  onChange={(e) => setSlipRates({ ...slipRates, weekly: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">/ft/week</span>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="monthly_rate" className="text-sm">Monthly</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="monthly_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="45.00"
-                  value={slipRates.monthly}
-                  onChange={(e) => setSlipRates({ ...slipRates, monthly: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">/ft/month</span>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="seasonal_rate" className="text-sm">Seasonal</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="seasonal_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="200.00"
-                  value={slipRates.seasonal}
-                  onChange={(e) => setSlipRates({ ...slipRates, seasonal: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">/ft/season</span>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="annual_rate" className="text-sm">Annual</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="annual_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="350.00"
-                  value={slipRates.annual}
-                  onChange={(e) => setSlipRates({ ...slipRates, annual: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">/ft/year</span>
-            </div>
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button onClick={handleSaveSlipRates} disabled={savingSlipRates}>
-              {savingSlipRates ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Slip Rates
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Section 2: Utility Pricing */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5" />
-            Utility Pricing
-          </CardTitle>
-          <CardDescription>
-            Default rates for power and water billing used during checkout calculations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="power_rate" className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-500" />
-                Electric Rate
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="power_rate"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  placeholder="0.15"
-                  value={utilityRates.power}
-                  onChange={(e) => setUtilityRates({ ...utilityRates, power: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">per kWh</span>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="water_rate" className="flex items-center gap-2">
-                <Droplets className="w-4 h-4 text-sky-500" />
-                Water Rate
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="water_rate"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  placeholder="0.01"
-                  value={utilityRates.water}
-                  onChange={(e) => setUtilityRates({ ...utilityRates, water: e.target.value })}
-                  className="pl-7"
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">per gallon</span>
-            </div>
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button onClick={handleSaveUtilityRates} disabled={savingUtilityRates}>
-              {savingUtilityRates ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Utility Rates
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Section 3: Recurring Billing */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarDays className="w-5 h-5" />
-            Recurring Billing
-          </CardTitle>
-          <CardDescription>
-            Generate monthly invoices for all active long-term leases (Annual/Seasonal contracts).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-            <div>
-              <div className="font-medium">Monthly Invoice Generation</div>
-              <div className="text-sm text-muted-foreground">
-                {activeLeases.length} active lease{activeLeases.length !== 1 ? "s" : ""} ready for billing
-              </div>
-            </div>
-            <Button onClick={() => setShowBillingDialog(true)} disabled={activeLeases.length === 0}>
-              <Receipt className="w-4 h-4 mr-2" />
-              Generate Monthly Invoices
-            </Button>
-          </div>
-          
-          {activeLeases.length > 0 && (
-            <div className="mt-4 text-sm text-muted-foreground">
-              <p>Clicking this will:</p>
-              <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
-                <li>Calculate base rent from each lease agreement</li>
-                <li>Include any unbilled meter readings from the current month</li>
-                <li>Create draft invoices for each active tenant</li>
-              </ul>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Section 4: Slip Inventory Manager */}
+      {/* Section 1: Slip Inventory */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
@@ -523,7 +285,75 @@ export function SlipSettings({
 
       <Separator />
 
-      {/* Section 5: Utility Meters */}
+      {/* Section 2: Global Slip Rates */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5" />
+            Global Slip Rates
+          </CardTitle>
+          <CardDescription>
+            Default pricing per foot that applies to all new slips. Individual slips can override these rates.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="daily_rate" className="text-sm">Daily</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input id="daily_rate" type="number" step="0.01" min="0" placeholder="2.50" value={slipRates.daily} onChange={(e) => setSlipRates({ ...slipRates, daily: e.target.value })} className="pl-7" />
+              </div>
+              <span className="text-xs text-muted-foreground">/ft/day</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="weekly_rate" className="text-sm">Weekly</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input id="weekly_rate" type="number" step="0.01" min="0" placeholder="15.00" value={slipRates.weekly} onChange={(e) => setSlipRates({ ...slipRates, weekly: e.target.value })} className="pl-7" />
+              </div>
+              <span className="text-xs text-muted-foreground">/ft/week</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="monthly_rate" className="text-sm">Monthly</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input id="monthly_rate" type="number" step="0.01" min="0" placeholder="45.00" value={slipRates.monthly} onChange={(e) => setSlipRates({ ...slipRates, monthly: e.target.value })} className="pl-7" />
+              </div>
+              <span className="text-xs text-muted-foreground">/ft/month</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="seasonal_rate" className="text-sm">Seasonal</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input id="seasonal_rate" type="number" step="0.01" min="0" placeholder="200.00" value={slipRates.seasonal} onChange={(e) => setSlipRates({ ...slipRates, seasonal: e.target.value })} className="pl-7" />
+              </div>
+              <span className="text-xs text-muted-foreground">/ft/season</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="annual_rate" className="text-sm">Annual</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input id="annual_rate" type="number" step="0.01" min="0" placeholder="350.00" value={slipRates.annual} onChange={(e) => setSlipRates({ ...slipRates, annual: e.target.value })} className="pl-7" />
+              </div>
+              <span className="text-xs text-muted-foreground">/ft/year</span>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={handleSaveSlipRates} disabled={savingSlipRates}>
+              {savingSlipRates ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+              ) : (
+                <><Save className="w-4 h-4 mr-2" />Save Slip Rates</>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Section 3: Utility Meters */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Utility Meters</CardTitle>
@@ -549,7 +379,6 @@ export function SlipSettings({
             <div className="space-y-3">
               {meters.map((meter) => {
                 const asset = assets.find((a) => a.id === meter.yard_asset_id);
-                // Rate inheritance: custom rate if > 0, else global business rate
                 const hasCustomRate = meter.rate_per_unit > 0;
                 const effectiveRate = hasCustomRate
                   ? meter.rate_per_unit
@@ -558,10 +387,7 @@ export function SlipSettings({
                     : (business?.water_rate_per_gallon ?? 0);
 
                 return (
-                  <div
-                    key={meter.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
+                  <div key={meter.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       {meter.meter_type === "power" ? (
                         <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -576,13 +402,9 @@ export function SlipSettings({
                         <div className="font-semibold flex items-center gap-2">
                           {meter.meter_name}
                           {hasCustomRate && (
-                            <Badge variant="outline" className="text-primary border-primary text-xs">
-                              Custom
-                            </Badge>
+                            <Badge variant="outline" className="text-primary border-primary text-xs">Custom</Badge>
                           )}
-                          {!meter.is_active && (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
+                          {!meter.is_active && <Badge variant="secondary">Inactive</Badge>}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {asset?.asset_name || "Unassigned"}
@@ -599,21 +421,104 @@ export function SlipSettings({
                           Current: {meter.current_reading.toLocaleString()}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditForm(meter)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => openEditForm(meter)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Switch
-                        checked={meter.is_active}
-                        onCheckedChange={() => toggleMeterActive(meter)}
-                      />
+                      <Switch checked={meter.is_active} onCheckedChange={() => toggleMeterActive(meter)} />
                     </div>
                   </div>
                 );
               })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Section 4: Utility Pricing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            Utility Pricing
+          </CardTitle>
+          <CardDescription>
+            Default rates for power and water billing used during checkout calculations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="power_rate" className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                Electric Rate
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input id="power_rate" type="number" step="0.001" min="0" placeholder="0.15" value={utilityRates.power} onChange={(e) => setUtilityRates({ ...utilityRates, power: e.target.value })} className="pl-7" />
+              </div>
+              <span className="text-xs text-muted-foreground">per kWh</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="water_rate" className="flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-sky-500" />
+                Water Rate
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input id="water_rate" type="number" step="0.001" min="0" placeholder="0.01" value={utilityRates.water} onChange={(e) => setUtilityRates({ ...utilityRates, water: e.target.value })} className="pl-7" />
+              </div>
+              <span className="text-xs text-muted-foreground">per gallon</span>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={handleSaveUtilityRates} disabled={savingUtilityRates}>
+              {savingUtilityRates ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+              ) : (
+                <><Save className="w-4 h-4 mr-2" />Save Utility Rates</>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Section 5: Recurring Billing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5" />
+            Recurring Billing
+          </CardTitle>
+          <CardDescription>
+            Generate monthly invoices for all active long-term leases (Annual/Seasonal contracts).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+            <div>
+              <div className="font-medium">Monthly Invoice Generation</div>
+              <div className="text-sm text-muted-foreground">
+                {activeLeases.length} active lease{activeLeases.length !== 1 ? "s" : ""} ready for billing
+              </div>
+            </div>
+            <Button onClick={() => setShowBillingDialog(true)} disabled={activeLeases.length === 0}>
+              <Receipt className="w-4 h-4 mr-2" />
+              Generate Monthly Invoices
+            </Button>
+          </div>
+          
+          {activeLeases.length > 0 && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p>Clicking this will:</p>
+              <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
+                <li>Calculate base rent from each lease agreement</li>
+                <li>Include any unbilled meter readings from the current month</li>
+                <li>Create draft invoices for each active tenant</li>
+              </ul>
             </div>
           )}
         </CardContent>
