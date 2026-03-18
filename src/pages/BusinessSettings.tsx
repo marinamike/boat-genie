@@ -167,52 +167,51 @@ export default function BusinessSettings() {
           <StoreSetupTab />
         </TabsContent>
 
-        <TabsContent value="account" className="mt-4 space-y-4">
+        <TabsContent value="account" className="mt-4 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Account</CardTitle>
-              <CardDescription>Manage your account settings</CardDescription>
+              <CardTitle>Profile Details</CardTitle>
+              <CardDescription>Manage your personal information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Email</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" value={user?.email || ""} disabled />
               </div>
-
-              <Separator />
-
-              <Button
-                variant="outline"
-                onClick={() => navigate("/profile")}
-                className="w-full"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Edit Profile
-              </Button>
-
-              {user?.email === PLATFORM_ADMIN_EMAIL && (
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/platform-admin")}
-                  className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Platform Admin
-                </Button>
-              )}
-
-              <Separator />
-
-              <Button
-                variant="destructive"
-                onClick={handleLogout}
-                className="w-full"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" />
+              </div>
+              <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Save Changes
               </Button>
             </CardContent>
           </Card>
+
+          {user?.email === PLATFORM_ADMIN_EMAIL && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/platform-admin")}
+              className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Platform Admin
+            </Button>
+          )}
+
+          <Button
+            variant="destructive"
+            onClick={handleLogout}
+            className="w-full"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
         </TabsContent>
       </Tabs>
     </div>
