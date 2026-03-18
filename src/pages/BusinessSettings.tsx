@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Users, Puzzle, User, LogOut, Shield, Wrench, Fuel, Store } from "lucide-react";
+import { Users, HardHat, Puzzle, User, LogOut, Shield, Wrench, Fuel, Store } from "lucide-react";
 import { ServiceMenuManager } from "@/components/business/ServiceMenuManager";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
