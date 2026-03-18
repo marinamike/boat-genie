@@ -12,12 +12,14 @@ import { LowStockAlerts } from "@/components/store/LowStockAlerts";
 type BusinessModule = Database["public"]["Enums"]["business_module"];
 const PLATFORM_ADMIN_EMAIL = "info@marinamike.com";
 
+const shipStoreConfig = { label: "Ship Store", icon: Store, href: "/business/store", color: "text-purple-500" };
+
 const moduleConfig: Record<BusinessModule, { label: string; icon: React.ElementType; href: string; color: string }> = {
   slips: { label: "Slip Management", icon: Ship, href: "/business/slips", color: "text-blue-500" },
   service: { label: "Service Yard", icon: Wrench, href: "/business/jobs", color: "text-orange-500" },
   fuel: { label: "Fuel Dock", icon: Fuel, href: "/business/fuel", color: "text-green-500" },
-  ship_store: { label: "Ship Store", icon: Store, href: "/business/store", color: "text-purple-500" },
-  store: { label: "Ship Store", icon: Store, href: "/business/store", color: "text-purple-500" },
+  ship_store: shipStoreConfig,
+  store: shipStoreConfig,
 };
 
 export default function BusinessDashboard() {
