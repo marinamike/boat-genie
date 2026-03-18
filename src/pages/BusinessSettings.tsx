@@ -27,6 +27,39 @@ export default function BusinessSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setFullName(data.full_name || "");
+          setPhone(data.phone || "");
+        }
+      });
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: fullName, phone })
+      .eq("id", user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Error", description: "Failed to save profile.", variant: "destructive" });
+    } else {
+      toast({ title: "Saved", description: "Profile updated successfully." });
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
