@@ -29,6 +29,8 @@ export default function BusinessSettings() {
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [businessAddress, setBusinessAddress] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
