@@ -194,10 +194,9 @@ export function ProviderApprovalQueue() {
       const adminEmail = adminProfile?.email || session.user.email;
 
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "rejected",
-          rejection_reason: rejectionReason,
+          verification_status: "rejected",
         })
         .eq("id", selectedProvider.id);
 

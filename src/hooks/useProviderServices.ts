@@ -297,7 +297,7 @@ export function useAllProviderServices(category?: string) {
           .from("provider_services")
           .select(`
             *,
-            provider:provider_profiles(business_name)
+            provider:businesses(business_name)
           `)
           .eq("is_active", true)
           .order("price");
