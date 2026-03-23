@@ -42,13 +42,7 @@ const DryStackLaunch = () => {
         const { data: admin, error: adminError } = await supabase.rpc("is_admin");
         if (adminError) throw adminError;
 
-        const { data: provider, error: providerError } = await supabase.rpc("has_role", {
-          _user_id: session.user.id,
-          _role: "provider",
-        });
-        if (providerError) throw providerError;
-
-        setIsStaff(!!admin || !!provider);
+        setIsStaff(!!admin);
       } catch (e) {
         console.error("DryStackLaunch auth check failed:", e);
         // Fail open to non-staff view rather than trapping user on spinner.
