@@ -87,7 +87,7 @@ export function ProviderApprovalQueue() {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setPendingProviders(data as ProviderProfile[]);
+      setPendingProviders(data as unknown as ProviderProfile[]);
     } catch (error) {
       console.error("Error fetching pending providers:", error);
     } finally {

@@ -117,7 +117,7 @@ export default function MarinaDetails() {
           .eq("is_verified", true)
           .limit(5);
 
-        setNearbyProviders((providers || []) as Provider[]);
+        setNearbyProviders((providers || []).map((p: any) => ({ ...p, bio: p.description })) as Provider[]);
       } catch (error) {
         console.error("Error fetching marina:", error);
       } finally {
