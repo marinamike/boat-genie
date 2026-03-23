@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin } from "lucide-react";
-import { CreateServiceWorkOrderDialog } from "./CreateServiceWorkOrderDialog";
+import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
