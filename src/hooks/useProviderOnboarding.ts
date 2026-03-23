@@ -300,10 +300,9 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "rejected",
-          rejection_reason: reason,
+          verification_status: "rejected",
         })
         .eq("id", providerId);
 
