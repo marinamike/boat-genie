@@ -24,13 +24,10 @@ import { cn } from "@/lib/utils";
 
 interface InventoryManagerProps {
   inventory: StoreItem[];
-  onEdit?: (item: StoreItem) => void;
-  onDelete?: (id: string) => void;
-  canWrite?: boolean;
   onAddToCart?: (item: StoreItem) => void;
 }
 
-export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddToCart }: InventoryManagerProps) {
+export function InventoryManager({ inventory, onAddToCart }: InventoryManagerProps) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
