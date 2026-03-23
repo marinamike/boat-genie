@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Play, Pause, Clock, ChevronRight, FilePlus } from "lucide-react";
+import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin } from "lucide-react";
 import { CreateServiceWorkOrderDialog } from "./CreateServiceWorkOrderDialog";
+import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
+import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { format, differenceInMinutes } from "date-fns";
@@ -20,6 +22,7 @@ interface WorkOrder {
   description: string | null;
   status: string;
   boat_id: string;
+  provider_checked_in_at: string | null;
   boats?: { name: string; make: string | null; model: string | null; owner_id: string };
 }
 
