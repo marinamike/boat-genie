@@ -24,13 +24,10 @@ import { cn } from "@/lib/utils";
 
 interface InventoryManagerProps {
   inventory: StoreItem[];
-  onEdit?: (item: StoreItem) => void;
-  onDelete?: (id: string) => void;
-  canWrite?: boolean;
   onAddToCart?: (item: StoreItem) => void;
 }
 
-export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddToCart }: InventoryManagerProps) {
+export function InventoryManager({ inventory, onAddToCart }: InventoryManagerProps) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
@@ -94,7 +91,7 @@ export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddT
                   <TableHead>Category</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
-                  {(canWrite || onAddToCart) && <TableHead className="w-24">Actions</TableHead>}
+                  {onAddToCart && <TableHead className="w-24">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -137,7 +134,7 @@ export function InventoryManager({ inventory, onEdit, onDelete, canWrite, onAddT
                         / {item.reorder_point} min
                       </span>
                     </TableCell>
-                    {(canWrite || onAddToCart) && (
+                    {onAddToCart && (
                       <TableCell>
                         <div className="flex gap-1">
                           {onAddToCart && item.is_active && item.current_quantity > 0 && (
