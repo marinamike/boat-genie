@@ -254,6 +254,13 @@ export default function BusinessSettings() {
         <TabsContent value="store" className="mt-4">
           <StoreSetupTab />
         </TabsContent>
+
+        <TabsContent value="compliance" className="mt-4 space-y-6">
+          <InsuranceVaultForm />
+          <TaxInfoForm />
+          <BankSetupForm />
+          <TermsAcceptanceForm />
+        </TabsContent>
       </Tabs>
     </div>
   );
