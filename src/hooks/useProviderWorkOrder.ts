@@ -55,11 +55,11 @@ export function useProviderWorkOrder() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Get provider profile
+      // Get business profile
       const { data: profile } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("id, business_name")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .single();
 
       if (!profile) return;
