@@ -17,6 +17,7 @@ export interface WishFormData {
   preferredDate?: string;
   calculatedPrice?: number;
   photos?: string[];
+  providerId?: string;
 }
 
 export interface ServiceRate {
@@ -155,6 +156,7 @@ export function useWishForm() {
           calculated_price: formData.calculatedPrice || null,
           photos: formData.photos || [],
           status: "submitted",
+          provider_id: formData.providerId || null,
         });
 
         if (error) {

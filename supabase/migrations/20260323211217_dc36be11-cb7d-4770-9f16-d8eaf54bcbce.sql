@@ -1,0 +1,1 @@
+ALTER TABLE public.wish_forms ADD COLUMN provider_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
