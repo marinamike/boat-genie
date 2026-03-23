@@ -720,6 +720,16 @@ export function useServiceManagement() {
     return invoice;
   };
 
+  // Computed metrics
+  const activeJobsCount = workOrders.filter(wo => ["assigned", "in_progress"].includes(wo.status)).length;
+  const pendingQuotesCount = workOrders.filter(wo => wo.status === "pending").length;
+  const completedWorkOrders = workOrders.filter(wo => wo.status === "completed");
+  const totalEarnings = completedWorkOrders.reduce((sum, wo) => {
+    const gross = wo.wholesale_price || 0;
+    const fee = wo.lead_fee || gross * 0.05;
+    return sum + (gross - fee);
+  }, 0);
+
   return {
     // Data
     serviceStaff,
@@ -733,8 +743,15 @@ export function useServiceManagement() {
     qcInspections,
     partsPulls,
     invoices,
+    workOrders,
     loading,
     activeTimeEntry,
+
+    // Computed
+    activeJobsCount,
+    pendingQuotesCount,
+    completedWorkOrders,
+    totalEarnings,
 
     // Actions
     refreshAll,
