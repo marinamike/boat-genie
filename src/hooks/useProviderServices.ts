@@ -100,14 +100,14 @@ export function useProviderServices(providerId?: string) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
 
-      // Get provider profile ID
+      // Get business profile ID
       const { data: profile } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("id")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .single();
 
-      if (!profile) throw new Error("Provider profile not found");
+      if (!profile) throw new Error("Business profile not found");
 
       const { error } = await supabase
         .from("provider_services")
