@@ -55,6 +55,7 @@ export function ServiceWorkOrders({
   });
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [checkInWorkOrder, setCheckInWorkOrder] = useState<WorkOrder | null>(null);
 
   useEffect(() => {
     fetchWorkOrders();
