@@ -137,11 +137,10 @@ export function ProviderApprovalQueue() {
       
       // Update provider status
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "active",
-          approved_at: new Date().toISOString(),
-          approved_by: session.user.id,
+          is_verified: true,
+          verified_at: new Date().toISOString(),
         })
         .eq("id", provider.id);
 
