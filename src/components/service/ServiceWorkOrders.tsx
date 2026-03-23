@@ -88,7 +88,7 @@ export function ServiceWorkOrders({
     setLoading(true);
     const { data, error } = await supabase
       .from("work_orders")
-      .select("id, title, description, status, boat_id, boats(name, make, model, owner_id)")
+      .select("id, title, description, status, boat_id, provider_checked_in_at, boats(name, make, model, owner_id)")
       .eq("business_id", business.id)
       .in("status", ["pending", "assigned", "in_progress"])
       .order("created_at", { ascending: false });
