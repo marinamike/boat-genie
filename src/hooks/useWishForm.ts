@@ -144,6 +144,23 @@ export function useWishForm() {
           return false;
         }
 
+        // Server-side price verification: fetch actual membership tier and boat length
+        const [profileRes, boatRes, ratesRes] = await Promise.all([
+          supabase.from("profiles").select("membership_tier").eq("id", user.id).single(),
+          supabase.from("boats").select("length_ft").eq("id", formData.boatId).single(),
+          supabase.from("service_rates").select("*").eq("service_name", formData.serviceType).eq("is_active", true).single(),
+        ]);
+
+        let verifiedPrice = formData.calculatedPrice || null;
+
+        if (profileRes.data && boatRes.data?.length_ft && ratesRes.data) {
+          const tier = profileRes.data.membership_tier as MembershipTier;
+          const boatLength = boatRes.data.length_ft;
+          const rate = ratesRes.data as ServiceRate;
+          const { totalPrice } = calculatePrice(rate, boatLength, tier, formData.isEmergency);
+          verifiedPrice = totalPrice;
+        }
+
         // Create the wish form record
         const { error } = await supabase.from("wish_forms").insert({
           requester_id: user.id,
@@ -153,7 +170,7 @@ export function useWishForm() {
           urgency: formData.urgency,
           is_emergency: formData.isEmergency,
           preferred_date: formData.preferredDate || null,
-          calculated_price: formData.calculatedPrice || null,
+          calculated_price: verifiedPrice,
           photos: formData.photos || [],
           status: "submitted",
           provider_id: formData.providerId || null,
