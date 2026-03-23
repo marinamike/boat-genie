@@ -91,7 +91,7 @@ export function InventoryManager({ inventory, onAddToCart }: InventoryManagerPro
                   <TableHead>Category</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
-                  {(canWrite || onAddToCart) && <TableHead className="w-24">Actions</TableHead>}
+                  {onAddToCart && <TableHead className="w-24">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
