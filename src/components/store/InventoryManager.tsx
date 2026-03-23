@@ -134,7 +134,7 @@ export function InventoryManager({ inventory, onAddToCart }: InventoryManagerPro
                         / {item.reorder_point} min
                       </span>
                     </TableCell>
-                    {(canWrite || onAddToCart) && (
+                    {onAddToCart && (
                       <TableCell>
                         <div className="flex gap-1">
                           {onAddToCart && item.is_active && item.current_quantity > 0 && (
