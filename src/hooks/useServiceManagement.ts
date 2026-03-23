@@ -350,6 +350,22 @@ export function useServiceManagement() {
     else setPhases((data as any) || []);
   }, [business?.id]);
 
+  const fetchWorkOrders = useCallback(async () => {
+    if (!business?.id) return;
+    const { data, error } = await supabase
+      .from("work_orders")
+      .select("id, title, status, boat_id, wholesale_price, lead_fee, completed_at, funds_released_at, boats(name)")
+      .eq("business_id", business.id)
+      .order("created_at", { ascending: false });
+    if (error) console.error("Error fetching work orders:", error);
+    else {
+      setWorkOrders((data || []).map((wo: any) => ({
+        ...wo,
+        boat_name: wo.boats?.name || "Unknown",
+      })));
+    }
+  }, [business?.id]);
+
   const refreshAll = useCallback(async () => {
     setLoading(true);
     await Promise.all([
@@ -360,9 +376,10 @@ export function useServiceManagement() {
       fetchBoatsOnBlocks(),
       fetchQCTemplates(),
       fetchTimeEntries(),
+      fetchWorkOrders(),
     ]);
     setLoading(false);
-  }, [fetchServiceStaff, fetchEquipment, fetchBays, fetchCalendarEvents, fetchBoatsOnBlocks, fetchQCTemplates, fetchTimeEntries]);
+  }, [fetchServiceStaff, fetchEquipment, fetchBays, fetchCalendarEvents, fetchBoatsOnBlocks, fetchQCTemplates, fetchTimeEntries, fetchWorkOrders]);
 
   useEffect(() => {
     refreshAll();
