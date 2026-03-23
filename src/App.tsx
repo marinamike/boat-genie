@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { VesselProvider } from "@/contexts/VesselContext";
-import { OwnerLayout, ProviderLayout, StaffLayout, BusinessLayout } from "@/layouts";
+import { OwnerLayout, StaffLayout, BusinessLayout } from "@/layouts";
 import { BusinessProvider } from "@/contexts/BusinessContext";
 import { MarineLoadingScreen } from "@/components/ui/marine-loading";
 
@@ -21,9 +21,6 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import BoatLog from "./pages/BoatLog";
 import Membership from "./pages/Membership";
-
-// Provider pages
-import ProviderDashboard from "./pages/ProviderDashboard";
 
 // Staff pages
 import DockView from "./pages/DockView";
@@ -52,7 +49,7 @@ const queryClient = new QueryClient({
 /**
  * Three-Profile Architecture:
  * - Customer (boat_owner): Boat owners who need services
- * - Business (admin): Marina/yard operators who manage modules
+ * - Business (admin/provider): Marina/yard operators and service providers
  * - Staff (marina_staff): Employees assigned to specific modules
  */
 function RoleBasedRoutes() {
@@ -107,21 +104,8 @@ function RoleBasedRoutes() {
         </Routes>
       );
 
-    case "provider":
-      return (
-        <Routes>
-          <Route element={<ProviderLayout />}>
-            <Route path="/provider" element={<ProviderDashboard />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-          <Route path="/platform-admin" element={<PlatformAdmin />} />
-          <Route path="/" element={<Navigate to="/provider" replace />} />
-          <Route path="*" element={<Navigate to="/provider" replace />} />
-        </Routes>
-      );
-
     case "admin":
-      // "admin" now means Business Profile (marina/yard manager)
+    case "provider":
       return (
         <BusinessProvider>
           <Routes>

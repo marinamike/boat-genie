@@ -1,0 +1,1 @@
+UPDATE public.user_roles SET role = 'admin' WHERE role = 'provider';

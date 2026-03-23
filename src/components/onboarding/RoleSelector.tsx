@@ -18,7 +18,7 @@ const roles = [
     icon: Ship,
   },
   {
-    id: "provider" as AppRole,
+    id: "admin" as AppRole,
     title: "Service Provider",
     description: "Offer marine services, manage jobs, and grow your business",
     icon: Wrench,
