@@ -16,7 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2 } from "lucide-react";
+import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2, ClipboardCheck } from "lucide-react";
+import { InsuranceVaultForm } from "@/components/provider/InsuranceVaultForm";
+import { BankSetupForm } from "@/components/provider/BankSetupForm";
+import { TaxInfoForm } from "@/components/provider/TaxInfoForm";
+import { TermsAcceptanceForm } from "@/components/provider/TermsAcceptanceForm";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
