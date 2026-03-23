@@ -203,6 +203,18 @@ function calculateTotalHours(punchIn: string, punchOut: string | null, breakMinu
   return Math.max(0, mins / 60);
 }
 
+export interface ServiceWorkOrder {
+  id: string;
+  title: string;
+  status: string;
+  boat_id: string;
+  wholesale_price: number | null;
+  lead_fee: number | null;
+  completed_at: string | null;
+  funds_released_at: string | null;
+  boat_name: string;
+}
+
 export function useServiceManagement() {
   const { business } = useBusiness();
   const [serviceStaff, setServiceStaff] = useState<ServiceStaff[]>([]);
@@ -216,6 +228,7 @@ export function useServiceManagement() {
   const [qcInspections, setQCInspections] = useState<QCInspection[]>([]);
   const [partsPulls, setPartsPulls] = useState<PartsPull[]>([]);
   const [invoices, setInvoices] = useState<ServiceInvoice[]>([]);
+  const [workOrders, setWorkOrders] = useState<ServiceWorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
 
@@ -337,6 +350,22 @@ export function useServiceManagement() {
     else setPhases((data as any) || []);
   }, [business?.id]);
 
+  const fetchWorkOrders = useCallback(async () => {
+    if (!business?.id) return;
+    const { data, error } = await supabase
+      .from("work_orders")
+      .select("id, title, status, boat_id, wholesale_price, lead_fee, completed_at, funds_released_at, boats(name)")
+      .eq("business_id", business.id)
+      .order("created_at", { ascending: false });
+    if (error) console.error("Error fetching work orders:", error);
+    else {
+      setWorkOrders((data || []).map((wo: any) => ({
+        ...wo,
+        boat_name: wo.boats?.name || "Unknown",
+      })));
+    }
+  }, [business?.id]);
+
   const refreshAll = useCallback(async () => {
     setLoading(true);
     await Promise.all([
@@ -347,9 +376,10 @@ export function useServiceManagement() {
       fetchBoatsOnBlocks(),
       fetchQCTemplates(),
       fetchTimeEntries(),
+      fetchWorkOrders(),
     ]);
     setLoading(false);
-  }, [fetchServiceStaff, fetchEquipment, fetchBays, fetchCalendarEvents, fetchBoatsOnBlocks, fetchQCTemplates, fetchTimeEntries]);
+  }, [fetchServiceStaff, fetchEquipment, fetchBays, fetchCalendarEvents, fetchBoatsOnBlocks, fetchQCTemplates, fetchTimeEntries, fetchWorkOrders]);
 
   useEffect(() => {
     refreshAll();
@@ -690,6 +720,16 @@ export function useServiceManagement() {
     return invoice;
   };
 
+  // Computed metrics
+  const activeJobsCount = workOrders.filter(wo => ["assigned", "in_progress"].includes(wo.status)).length;
+  const pendingQuotesCount = workOrders.filter(wo => wo.status === "pending").length;
+  const completedWorkOrders = workOrders.filter(wo => wo.status === "completed");
+  const totalEarnings = completedWorkOrders.reduce((sum, wo) => {
+    const gross = wo.wholesale_price || 0;
+    const fee = wo.lead_fee || gross * 0.05;
+    return sum + (gross - fee);
+  }, 0);
+
   return {
     // Data
     serviceStaff,
@@ -703,8 +743,15 @@ export function useServiceManagement() {
     qcInspections,
     partsPulls,
     invoices,
+    workOrders,
     loading,
     activeTimeEntry,
+
+    // Computed
+    activeJobsCount,
+    pendingQuotesCount,
+    completedWorkOrders,
+    totalEarnings,
 
     // Actions
     refreshAll,
