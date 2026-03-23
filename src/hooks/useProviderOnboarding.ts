@@ -155,7 +155,7 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update(updates as Record<string, unknown>)
         .eq("id", profile.id);
 
