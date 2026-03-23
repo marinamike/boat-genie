@@ -202,12 +202,9 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          terms_accepted: true,
-          terms_accepted_at: new Date().toISOString(),
-          rates_agreed: true,
-          rates_locked_at: new Date().toISOString(),
+          accepting_jobs: true,
         })
         .eq("id", profile.id);
 
