@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 // Three-profile architecture: Customer (boat_owner), Business (admin), Staff (marina_staff)
-export type AppRole = "boat_owner" | "provider" | "admin" | "marina_staff";
+export type AppRole = "boat_owner" | "admin" | "marina_staff";
 
 interface Business {
   id: string;

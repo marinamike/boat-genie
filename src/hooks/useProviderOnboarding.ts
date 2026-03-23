@@ -63,9 +63,9 @@ export function useProviderOnboarding() {
       setIsAdmin(adminCheck === true);
 
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("*")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -155,7 +155,7 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update(updates as Record<string, unknown>)
         .eq("id", profile.id);
 
@@ -176,10 +176,9 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "pending_review",
-          submitted_for_review_at: new Date().toISOString(),
+          verification_status: "pending" as any,
         })
         .eq("id", profile.id);
 
@@ -203,12 +202,9 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          terms_accepted: true,
-          terms_accepted_at: new Date().toISOString(),
-          rates_agreed: true,
-          rates_locked_at: new Date().toISOString(),
+          accepting_jobs: true,
         })
         .eq("id", profile.id);
 
@@ -281,11 +277,10 @@ export function useProviderOnboarding() {
       const { data: { session } } = await supabase.auth.getSession();
       
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "active",
-          approved_at: new Date().toISOString(),
-          approved_by: session?.user.id,
+          is_verified: true,
+          verified_at: new Date().toISOString(),
         })
         .eq("id", providerId);
 
@@ -305,10 +300,9 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "rejected",
-          rejection_reason: reason,
+          verification_status: "rejected",
         })
         .eq("id", providerId);
 
@@ -328,10 +322,10 @@ export function useProviderOnboarding() {
 
     try {
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("*")
-        .eq("onboarding_status", "pending_review")
-        .order("submitted_for_review_at", { ascending: true });
+        .eq("verification_status", "pending" as any)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       return data as unknown as ProviderOnboardingProfile[];

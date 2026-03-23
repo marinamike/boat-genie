@@ -55,15 +55,15 @@ export function ActiveProvidersCard({ onMessageProvider }: ActiveProvidersCardPr
         return;
       }
 
-      // Get provider profiles for insurance info
+      // Get business profiles for provider info
       const providerIds = [...new Set(dockWorkOrders.map(wo => wo.provider_id))];
-      const { data: providerProfiles } = await supabase
-        .from("provider_profiles")
-        .select("user_id, business_name, insurance_expiry, onboarding_status")
-        .in("user_id", providerIds);
+      const { data: businessProfiles } = await supabase
+        .from("businesses")
+        .select("owner_id, business_name, insurance_expiry, is_verified")
+        .in("owner_id", providerIds);
 
       const combined: ActiveProvider[] = dockWorkOrders.map((wo: any) => {
-        const profile = providerProfiles?.find(p => p.user_id === wo.provider_id);
+        const profile = businessProfiles?.find(p => p.owner_id === wo.provider_id);
         const insuranceExpiry = profile?.insurance_expiry;
         const isInsuranceValid = insuranceExpiry 
           ? new Date(insuranceExpiry) > new Date() 
@@ -79,7 +79,7 @@ export function ActiveProvidersCard({ onMessageProvider }: ActiveProvidersCardPr
           slip_number: wo.dock_status?.slip_number,
           started_at: wo.started_at,
           work_order_id: wo.work_order_id,
-          insurance_verified: isInsuranceValid && profile?.onboarding_status === "approved",
+          insurance_verified: isInsuranceValid && profile?.is_verified === true,
           insurance_expiry: insuranceExpiry,
         };
       });

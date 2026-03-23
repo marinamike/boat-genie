@@ -252,11 +252,11 @@ export function useBoatLog(initialBoatId?: string) {
     }
 
     const { data: providers } = await supabase
-      .from("provider_profiles")
-      .select("user_id, business_name")
-      .in("user_id", providerIds);
+      .from("businesses")
+      .select("owner_id, business_name")
+      .in("owner_id", providerIds);
 
-    const providerMap = new Map(providers?.map(p => [p.user_id, p.business_name]) || []);
+    const providerMap = new Map(providers?.map(p => [p.owner_id, p.business_name]) || []);
 
     return workOrders.map(wo => ({
       ...wo,

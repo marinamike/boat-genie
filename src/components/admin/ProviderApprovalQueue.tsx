@@ -81,13 +81,13 @@ export function ProviderApprovalQueue() {
   const fetchPendingProviders = async () => {
     try {
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("*")
-        .eq("onboarding_status", "pending_review")
-        .order("submitted_for_review_at", { ascending: true });
+        .eq("verification_status", "pending")
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setPendingProviders(data as ProviderProfile[]);
+      setPendingProviders(data as unknown as ProviderProfile[]);
     } catch (error) {
       console.error("Error fetching pending providers:", error);
     } finally {
@@ -137,11 +137,10 @@ export function ProviderApprovalQueue() {
       
       // Update provider status
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "active",
-          approved_at: new Date().toISOString(),
-          approved_by: session.user.id,
+          is_verified: true,
+          verified_at: new Date().toISOString(),
         })
         .eq("id", provider.id);
 
@@ -195,10 +194,9 @@ export function ProviderApprovalQueue() {
       const adminEmail = adminProfile?.email || session.user.email;
 
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "rejected",
-          rejection_reason: rejectionReason,
+          verification_status: "rejected",
         })
         .eq("id", selectedProvider.id);
 

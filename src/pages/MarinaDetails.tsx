@@ -110,14 +110,14 @@ export default function MarinaDetails() {
           photos: Array.isArray(marinaData.photos) ? marinaData.photos : [],
         });
 
-        // Fetch nearby providers (mock - just get top providers for now)
+        // Fetch nearby service providers from businesses table
         const { data: providers } = await supabase
-          .from("provider_profiles")
-          .select("id, business_name, service_categories, bio")
-          .eq("onboarding_status", "approved")
+          .from("businesses")
+          .select("id, business_name, service_categories, description")
+          .eq("is_verified", true)
           .limit(5);
 
-        setNearbyProviders((providers || []) as Provider[]);
+        setNearbyProviders((providers || []).map((p: any) => ({ ...p, bio: p.description })) as Provider[]);
       } catch (error) {
         console.error("Error fetching marina:", error);
       } finally {

@@ -105,7 +105,6 @@ function RoleBasedRoutes() {
       );
 
     case "admin":
-    case "provider":
       return (
         <BusinessProvider>
           <Routes>

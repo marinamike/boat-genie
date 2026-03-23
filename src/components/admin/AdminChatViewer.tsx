@@ -92,18 +92,18 @@ export function AdminChatViewer({ workOrderId, workOrderTitle }: AdminChatViewer
         .select("id, full_name, email")
         .in("id", participantIds);
 
-      // Fetch provider profiles
+      // Fetch business profiles for providers
       const { data: providerProfiles } = await supabase
-        .from("provider_profiles")
-        .select("user_id, business_name, primary_contact_email")
-        .in("user_id", participantIds);
+        .from("businesses")
+        .select("owner_id, business_name, contact_email")
+        .in("owner_id", participantIds);
 
       // Map messages with full info for admin
       const mappedMessages: FullMessage[] = (messagesData || []).map(msg => {
         const senderProfile = profiles?.find(p => p.id === msg.sender_id);
-        const senderProviderProfile = providerProfiles?.find(p => p.user_id === msg.sender_id);
+        const senderProviderProfile = providerProfiles?.find(p => p.owner_id === msg.sender_id);
         const recipientProfile = profiles?.find(p => p.id === msg.recipient_id);
-        const recipientProviderProfile = providerProfiles?.find(p => p.user_id === msg.recipient_id);
+        const recipientProviderProfile = providerProfiles?.find(p => p.owner_id === msg.recipient_id);
 
         const isProviderSender = msg.sender_id === workOrder?.provider_id;
         const isProviderRecipient = msg.recipient_id === workOrder?.provider_id;

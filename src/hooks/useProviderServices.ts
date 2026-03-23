@@ -58,11 +58,11 @@ export function useProviderServices(providerId?: string) {
       if (providerId) {
         query = query.eq("provider_id", providerId);
       } else {
-        // Get current user's provider profile first
+        // Get current user's business profile first
         const { data: profile } = await supabase
-          .from("provider_profiles")
+          .from("businesses")
           .select("id")
-          .eq("user_id", session.user.id)
+          .eq("owner_id", session.user.id)
           .maybeSingle();
 
         if (!profile) {
@@ -100,14 +100,14 @@ export function useProviderServices(providerId?: string) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
 
-      // Get provider profile ID
+      // Get business profile ID
       const { data: profile } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("id")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .single();
 
-      if (!profile) throw new Error("Provider profile not found");
+      if (!profile) throw new Error("Business profile not found");
 
       const { error } = await supabase
         .from("provider_services")
@@ -203,9 +203,9 @@ export function useProviderServices(providerId?: string) {
       if (!session) return false;
 
       const { data: profile } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("id")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .single();
 
       if (!profile) return false;
@@ -297,7 +297,7 @@ export function useAllProviderServices(category?: string) {
           .from("provider_services")
           .select(`
             *,
-            provider:provider_profiles(business_name)
+            provider:businesses(business_name)
           `)
           .eq("is_active", true)
           .order("price");

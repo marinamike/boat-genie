@@ -50,8 +50,7 @@ export function MarinaChatSheet({ open, onOpenChange, initialWorkOrderId }: Mari
           status,
           service_type,
           provider_id,
-          boats:boat_id (name, owner_id),
-          provider_profiles:provider_id (business_name)
+          boats:boat_id (name, owner_id)
         `)
         .in("status", ["assigned", "in_progress", "pending"]);
 
@@ -59,6 +58,17 @@ export function MarinaChatSheet({ open, onOpenChange, initialWorkOrderId }: Mari
         setConversations([]);
         setLoading(false);
         return;
+      }
+
+      // Get provider business names
+      const providerIds = [...new Set(workOrders.map((wo: any) => wo.provider_id).filter(Boolean))];
+      let providerMap = new Map<string, string>();
+      if (providerIds.length > 0) {
+        const { data: businesses } = await supabase
+          .from("businesses")
+          .select("owner_id, business_name")
+          .in("owner_id", providerIds);
+        providerMap = new Map((businesses || []).map(b => [b.owner_id, b.business_name || "Provider"]));
       }
 
       // Get message counts for each work order
@@ -96,7 +106,7 @@ export function MarinaChatSheet({ open, onOpenChange, initialWorkOrderId }: Mari
             id: `provider-${wo.id}`,
             work_order_id: wo.id,
             type: "provider",
-            name: wo.provider_profiles?.business_name || "Provider",
+            name: providerMap.get(wo.provider_id) || "Provider",
             boat_name: wo.boats?.name,
             last_message: latestMessage?.content?.substring(0, 50),
             last_message_at: latestMessage?.created_at,

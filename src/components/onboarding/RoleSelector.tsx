@@ -1,4 +1,4 @@
-import { Ship, Building2, HardHat, Wrench } from "lucide-react";
+import { Ship, Building2, HardHat } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/hooks/useUserRole";
@@ -16,12 +16,6 @@ const roles = [
     title: "Customer",
     description: "Manage your vessel, request services, and track maintenance",
     icon: Ship,
-  },
-  {
-    id: "admin" as AppRole,
-    title: "Service Provider",
-    description: "Offer marine services, manage jobs, and grow your business",
-    icon: Wrench,
   },
   {
     id: "admin" as AppRole,
