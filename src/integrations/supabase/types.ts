@@ -656,6 +656,7 @@ export type Database = {
       }
       businesses: {
         Row: {
+          accepting_jobs: boolean
           accepts_longterm: boolean | null
           accepts_transient: boolean | null
           address: string | null
@@ -719,6 +720,7 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          accepting_jobs?: boolean
           accepts_longterm?: boolean | null
           accepts_transient?: boolean | null
           address?: string | null
@@ -782,6 +784,7 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          accepting_jobs?: boolean
           accepts_longterm?: boolean | null
           accepts_transient?: boolean | null
           address?: string | null
