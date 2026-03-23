@@ -28,6 +28,7 @@ interface Business {
   default_monthly_rate_per_ft?: number | null;
   default_seasonal_rate_per_ft?: number | null;
   default_annual_rate_per_ft?: number | null;
+  accepting_jobs?: boolean;
 }
 
 interface BusinessContextType {

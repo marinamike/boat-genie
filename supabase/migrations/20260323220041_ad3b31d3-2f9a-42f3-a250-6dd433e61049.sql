@@ -1,0 +1,1 @@
+ALTER TABLE public.businesses ADD COLUMN accepting_jobs boolean NOT NULL DEFAULT true;

@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Play, Pause, Clock, ChevronRight, FilePlus } from "lucide-react";
+import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin } from "lucide-react";
 import { CreateServiceWorkOrderDialog } from "./CreateServiceWorkOrderDialog";
+import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
+import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { format, differenceInMinutes } from "date-fns";
@@ -20,6 +22,7 @@ interface WorkOrder {
   description: string | null;
   status: string;
   boat_id: string;
+  provider_checked_in_at: string | null;
   boats?: { name: string; make: string | null; model: string | null; owner_id: string };
 }
 
@@ -52,6 +55,7 @@ export function ServiceWorkOrders({
   });
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [checkInWorkOrder, setCheckInWorkOrder] = useState<WorkOrder | null>(null);
 
   useEffect(() => {
     fetchWorkOrders();
@@ -84,7 +88,7 @@ export function ServiceWorkOrders({
     setLoading(true);
     const { data, error } = await supabase
       .from("work_orders")
-      .select("id, title, description, status, boat_id, boats(name, make, model, owner_id)")
+      .select("id, title, description, status, boat_id, provider_checked_in_at, boats(name, make, model, owner_id)")
       .eq("business_id", business.id)
       .in("status", ["pending", "assigned", "in_progress"])
       .order("created_at", { ascending: false });
@@ -174,12 +178,14 @@ export function ServiceWorkOrders({
             workOrders.map((wo) => (
               <div
                 key={wo.id}
-                onClick={() => setSelectedWorkOrder(wo)}
-                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                className={`p-3 border rounded-lg transition-colors ${
                   selectedWorkOrder?.id === wo.id ? "border-primary bg-primary/5" : "hover:border-primary/50"
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div
+                  onClick={() => setSelectedWorkOrder(wo)}
+                  className="flex items-center justify-between cursor-pointer"
+                >
                   <div>
                     <p className="font-medium">{wo.title}</p>
                     <p className="text-sm text-muted-foreground">{wo.boats?.name || "Unknown Boat"}</p>
@@ -189,6 +195,26 @@ export function ServiceWorkOrders({
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
+                {/* Check In & Work Timer for active work orders */}
+                {(wo.status === "assigned" || wo.status === "in_progress") && (
+                  <div className="mt-2 flex items-center gap-2 pt-2 border-t">
+                    {wo.provider_checked_in_at ? (
+                      <WorkTimer startTime={wo.provider_checked_in_at} isRunning={wo.status === "in_progress"} />
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCheckInWorkOrder(wo);
+                        }}
+                      >
+                        <MapPin className="w-4 h-4 mr-1" />
+                        Check In
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -362,6 +388,18 @@ export function ServiceWorkOrders({
         )}
       </div>
     </div>
+
+      {checkInWorkOrder && (
+        <ManualCheckInDialog
+          open={!!checkInWorkOrder}
+          onClose={() => setCheckInWorkOrder(null)}
+          workOrderId={checkInWorkOrder.id}
+          boatId={checkInWorkOrder.boat_id}
+          marinaLat={null}
+          marinaLng={null}
+          onSuccess={fetchWorkOrders}
+        />
+      )}
     </div>
   );
 }

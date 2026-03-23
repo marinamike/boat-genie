@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Wrench, Calendar, ClipboardCheck, Anchor, Briefcase, DollarSign } from "lucide-react";
 import { useServiceManagement } from "@/hooks/useServiceManagement";
 import { useJobBoard } from "@/hooks/useJobBoard";
 import { useServiceMenu } from "@/hooks/useServiceMenu";
+import { useBusiness } from "@/contexts/BusinessContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { ServiceWorkOrders } from "@/components/service/ServiceWorkOrders";
 import { YardCalendar } from "@/components/service/YardCalendar";
 import { ServiceQCQueue } from "@/components/service/ServiceQCQueue";
@@ -20,6 +24,26 @@ export default function ServiceDashboard() {
   const serviceManagement = useServiceManagement();
   const { availableWishes, pendingQuotedWishes, submitQuote, submittingQuote } = useJobBoard();
   const { activeMenuItems } = useServiceMenu();
+  const { business, refreshBusiness } = useBusiness();
+  const [togglingAvailability, setTogglingAvailability] = useState(false);
+
+  const isAvailable = business?.accepting_jobs ?? true;
+
+  const handleToggleAvailability = async (checked: boolean) => {
+    if (!business?.id) return;
+    setTogglingAvailability(true);
+    const { error } = await supabase
+      .from("businesses")
+      .update({ accepting_jobs: checked } as any)
+      .eq("id", business.id);
+    if (error) {
+      toast.error("Failed to update availability");
+    } else {
+      toast.success(checked ? "Now accepting jobs" : "Marked as unavailable");
+      await refreshBusiness();
+    }
+    setTogglingAvailability(false);
+  };
 
   // Map business_service_menu items to ProviderService shape for LeadStream
   const providerServices: ProviderService[] = activeMenuItems.map(item => ({
@@ -44,11 +68,23 @@ export default function ServiceDashboard() {
 
   return (
     <div className="container max-w-6xl mx-auto p-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Service & Refit</h1>
-        <p className="text-muted-foreground">
-          Work orders, yard scheduling, and quality control
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Service & Refit</h1>
+          <p className="text-muted-foreground">
+            Work orders, yard scheduling, and quality control
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-sm font-medium ${isAvailable ? "text-green-600" : "text-muted-foreground"}`}>
+            {isAvailable ? "Available" : "Unavailable"}
+          </span>
+          <Switch
+            checked={isAvailable}
+            onCheckedChange={handleToggleAvailability}
+            disabled={togglingAvailability}
+          />
+        </div>
       </div>
 
       <ProviderMetricsHeader
