@@ -148,7 +148,7 @@ export function useJobBoard() {
       }
       setProviderServiceNames(serviceNames);
 
-      // Fetch available wishes (submitted or reviewed status)
+      // Fetch wishes directed to this provider
       const { data: wishes, error: wishError } = await supabase
         .from("wish_forms")
         .select(`
@@ -172,12 +172,12 @@ export function useJobBoard() {
             boat_profiles(marina_name, slip_number)
           )
         `)
+        .eq("provider_id", session.user.id)
         .in("status", ["submitted", "reviewed", "approved"])
         .order("created_at", { ascending: false });
 
       if (wishError) throw wishError;
 
-      // Filter wishes by provider's Service Menu
       const filteredWishes = (wishes || [])
         .map((wish) => {
           const boat = wish.boat;
@@ -190,10 +190,6 @@ export function useJobBoard() {
             boat: boat ? { ...boat, boat_profiles: undefined } : null,
             boat_profile: boatProfile || null,
           };
-        })
-        .filter((wish) => {
-          if (serviceNames.length === 0) return false;
-          return matchesProviderService(wish.service_type, serviceNames, menuCategories);
         });
 
       // Fetch active work orders assigned to this provider
