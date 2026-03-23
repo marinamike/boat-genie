@@ -81,10 +81,10 @@ export function ProviderApprovalQueue() {
   const fetchPendingProviders = async () => {
     try {
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("*")
-        .eq("onboarding_status", "pending_review")
-        .order("submitted_for_review_at", { ascending: true });
+        .eq("verification_status", "pending")
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setPendingProviders(data as ProviderProfile[]);
