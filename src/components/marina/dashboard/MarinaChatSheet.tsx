@@ -51,7 +51,7 @@ export function MarinaChatSheet({ open, onOpenChange, initialWorkOrderId }: Mari
           service_type,
           provider_id,
           boats:boat_id (name, owner_id),
-          provider_profiles:provider_id (business_name)
+          businesses:provider_id (business_name)
         `)
         .in("status", ["assigned", "in_progress", "pending"]);
 
