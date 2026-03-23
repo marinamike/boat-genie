@@ -106,7 +106,7 @@ export function MarinaChatSheet({ open, onOpenChange, initialWorkOrderId }: Mari
             id: `provider-${wo.id}`,
             work_order_id: wo.id,
             type: "provider",
-            name: wo.businesses?.business_name || "Provider",
+            name: providerMap.get(wo.provider_id) || "Provider",
             boat_name: wo.boats?.name,
             last_message: latestMessage?.content?.substring(0, 50),
             last_message_at: latestMessage?.created_at,
