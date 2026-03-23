@@ -63,9 +63,9 @@ export function useProviderOnboarding() {
       setIsAdmin(adminCheck === true);
 
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("*")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .maybeSingle();
 
       if (error) throw error;
