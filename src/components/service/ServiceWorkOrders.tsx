@@ -388,6 +388,18 @@ export function ServiceWorkOrders({
         )}
       </div>
     </div>
+
+      {checkInWorkOrder && (
+        <ManualCheckInDialog
+          open={!!checkInWorkOrder}
+          onClose={() => setCheckInWorkOrder(null)}
+          workOrderId={checkInWorkOrder.id}
+          boatId={checkInWorkOrder.boat_id}
+          marinaLat={null}
+          marinaLng={null}
+          onSuccess={fetchWorkOrders}
+        />
+      )}
     </div>
   );
 }
