@@ -131,9 +131,9 @@ export function useProviderWorkOrder() {
       if (!session) return;
 
       const { data: profile } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("id")
-        .eq("user_id", session.user.id)
+        .eq("owner_id", session.user.id)
         .single();
 
       if (!profile) return;

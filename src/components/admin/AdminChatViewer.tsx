@@ -101,9 +101,9 @@ export function AdminChatViewer({ workOrderId, workOrderTitle }: AdminChatViewer
       // Map messages with full info for admin
       const mappedMessages: FullMessage[] = (messagesData || []).map(msg => {
         const senderProfile = profiles?.find(p => p.id === msg.sender_id);
-        const senderProviderProfile = providerProfiles?.find(p => p.user_id === msg.sender_id);
+        const senderProviderProfile = providerProfiles?.find(p => p.owner_id === msg.sender_id);
         const recipientProfile = profiles?.find(p => p.id === msg.recipient_id);
-        const recipientProviderProfile = providerProfiles?.find(p => p.user_id === msg.recipient_id);
+        const recipientProviderProfile = providerProfiles?.find(p => p.owner_id === msg.recipient_id);
 
         const isProviderSender = msg.sender_id === workOrder?.provider_id;
         const isProviderRecipient = msg.recipient_id === workOrder?.provider_id;

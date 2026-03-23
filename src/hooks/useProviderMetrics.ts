@@ -74,11 +74,11 @@ export function useProviderMetrics() {
 
       const userId = session.user.id;
 
-      // Fetch provider profile for services
+      // Fetch business profile for services
       const { data: providerProfile } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("id")
-        .eq("user_id", userId)
+        .eq("owner_id", userId)
         .maybeSingle();
 
       // Fetch provider's services

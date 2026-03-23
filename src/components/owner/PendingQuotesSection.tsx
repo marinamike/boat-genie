@@ -109,11 +109,11 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
           .maybeSingle();
 
         if (workOrder) {
-          // Get provider info
+          // Get provider info from businesses table
           const { data: provider } = await supabase
-            .from("provider_profiles")
+            .from("businesses")
             .select("business_name")
-            .eq("user_id", quote.provider_id)
+            .eq("owner_id", quote.provider_id)
             .maybeSingle();
 
           quotesWithDetails.push({

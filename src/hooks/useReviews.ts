@@ -166,11 +166,11 @@ export function useReviews() {
 
       const [{ data: profiles }, { data: providers }] = await Promise.all([
         supabase.from("profiles").select("id, full_name").in("id", ownerIds),
-        supabase.from("provider_profiles").select("user_id, business_name").in("user_id", providerIds),
+        supabase.from("businesses").select("owner_id, business_name").in("owner_id", providerIds),
       ]);
 
       const profileMap = new Map((profiles || []).map(p => [p.id, p.full_name]));
-      const providerMap = new Map((providers || []).map(p => [p.user_id, p.business_name]));
+      const providerMap = new Map((providers || []).map(p => [p.owner_id, p.business_name]));
 
       return (data || []).map(r => ({
         ...r,

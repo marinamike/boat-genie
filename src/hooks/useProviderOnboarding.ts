@@ -322,10 +322,10 @@ export function useProviderOnboarding() {
 
     try {
       const { data, error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .select("*")
-        .eq("onboarding_status", "pending_review")
-        .order("submitted_for_review_at", { ascending: true });
+        .eq("verification_status", "pending_review")
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       return data as unknown as ProviderOnboardingProfile[];
