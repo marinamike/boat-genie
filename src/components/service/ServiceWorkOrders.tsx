@@ -153,11 +153,10 @@ export function ServiceWorkOrders({
         </Button>
       </div>
 
-      <CreateServiceWorkOrderDialog
+      <CreateWorkOrderDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onCreated={fetchWorkOrders}
-        serviceStaff={serviceStaff.map(s => ({ id: s.id, staff_name: s.staff_name }))}
+        onSuccess={fetchWorkOrders}
       />
 
       <div className="grid md:grid-cols-2 gap-4">
