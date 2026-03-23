@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Calendar, ClipboardCheck, Anchor, Briefcase } from "lucide-react";
+import { Wrench, Calendar, ClipboardCheck, Anchor, Briefcase, DollarSign } from "lucide-react";
 import { useServiceManagement } from "@/hooks/useServiceManagement";
 import { useJobBoard } from "@/hooks/useJobBoard";
 import { useServiceMenu } from "@/hooks/useServiceMenu";
@@ -10,7 +10,10 @@ import { YardCalendar } from "@/components/service/YardCalendar";
 import { ServiceQCQueue } from "@/components/service/ServiceQCQueue";
 import { BoatsOnBlocksList } from "@/components/service/BoatsOnBlocksList";
 import { LeadStream } from "@/components/provider/LeadStream";
+import { ProviderMetricsHeader } from "@/components/provider/ProviderMetricsHeader";
+import { EarningsTab } from "@/components/provider/EarningsTab";
 import type { ProviderService } from "@/hooks/useProviderMetrics";
+import type { CompletedJob } from "@/hooks/useProviderMetrics";
 
 export default function ServiceDashboard() {
   const [activeTab, setActiveTab] = useState("workorders");
@@ -28,6 +31,17 @@ export default function ServiceDashboard() {
     category: item.category,
   }));
 
+  // Map completed work orders to CompletedJob shape for EarningsTab
+  const completedJobs: CompletedJob[] = serviceManagement.completedWorkOrders.map(wo => ({
+    id: wo.id,
+    title: wo.title,
+    completed_at: wo.completed_at,
+    wholesale_price: wo.wholesale_price,
+    lead_fee: wo.lead_fee,
+    funds_released_at: wo.funds_released_at,
+    boat_name: wo.boat_name,
+  }));
+
   return (
     <div className="container max-w-6xl mx-auto p-4 space-y-6">
       <div>
@@ -37,8 +51,14 @@ export default function ServiceDashboard() {
         </p>
       </div>
 
+      <ProviderMetricsHeader
+        activeJobs={serviceManagement.activeJobsCount}
+        pendingQuotes={serviceManagement.pendingQuotesCount}
+        totalEarnings={serviceManagement.totalEarnings}
+      />
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="workorders" className="flex items-center gap-1">
             <Wrench className="w-4 h-4" />
             <span className="hidden sm:inline">Jobs</span>
@@ -63,6 +83,10 @@ export default function ServiceDashboard() {
           <TabsTrigger value="blocks" className="flex items-center gap-1">
             <Anchor className="w-4 h-4" />
             <span className="hidden sm:inline">On Blocks</span>
+          </TabsTrigger>
+          <TabsTrigger value="earnings" className="flex items-center gap-1">
+            <DollarSign className="w-4 h-4" />
+            <span className="hidden sm:inline">Earnings</span>
           </TabsTrigger>
         </TabsList>
 
@@ -90,6 +114,13 @@ export default function ServiceDashboard() {
 
         <TabsContent value="blocks" className="mt-4">
           <BoatsOnBlocksList {...serviceManagement} />
+        </TabsContent>
+
+        <TabsContent value="earnings" className="mt-4">
+          <EarningsTab
+            completedJobs={completedJobs}
+            totalEarnings={serviceManagement.totalEarnings}
+          />
         </TabsContent>
       </Tabs>
     </div>
