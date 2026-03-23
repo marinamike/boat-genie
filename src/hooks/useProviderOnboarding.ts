@@ -176,10 +176,9 @@ export function useProviderOnboarding() {
 
     try {
       const { error } = await supabase
-        .from("provider_profiles")
+        .from("businesses")
         .update({
-          onboarding_status: "pending_review",
-          submitted_for_review_at: new Date().toISOString(),
+          verification_status: "pending_review",
         })
         .eq("id", profile.id);
 
