@@ -19,12 +19,6 @@ const roles = [
   },
   {
     id: "admin" as AppRole,
-    title: "Service Provider",
-    description: "Offer marine services, manage jobs, and grow your business",
-    icon: Wrench,
-  },
-  {
-    id: "admin" as AppRole,
     title: "Business",
     description: "Manage marina operations, services, fuel, and retail",
     icon: Building2,
