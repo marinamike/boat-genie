@@ -203,6 +203,18 @@ function calculateTotalHours(punchIn: string, punchOut: string | null, breakMinu
   return Math.max(0, mins / 60);
 }
 
+export interface ServiceWorkOrder {
+  id: string;
+  title: string;
+  status: string;
+  boat_id: string;
+  wholesale_price: number | null;
+  lead_fee: number | null;
+  completed_at: string | null;
+  funds_released_at: string | null;
+  boat_name: string;
+}
+
 export function useServiceManagement() {
   const { business } = useBusiness();
   const [serviceStaff, setServiceStaff] = useState<ServiceStaff[]>([]);
@@ -216,6 +228,7 @@ export function useServiceManagement() {
   const [qcInspections, setQCInspections] = useState<QCInspection[]>([]);
   const [partsPulls, setPartsPulls] = useState<PartsPull[]>([]);
   const [invoices, setInvoices] = useState<ServiceInvoice[]>([]);
+  const [workOrders, setWorkOrders] = useState<ServiceWorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
 
