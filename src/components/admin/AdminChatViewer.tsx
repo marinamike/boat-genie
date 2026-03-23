@@ -92,11 +92,11 @@ export function AdminChatViewer({ workOrderId, workOrderTitle }: AdminChatViewer
         .select("id, full_name, email")
         .in("id", participantIds);
 
-      // Fetch provider profiles
+      // Fetch business profiles for providers
       const { data: providerProfiles } = await supabase
-        .from("provider_profiles")
-        .select("user_id, business_name, primary_contact_email")
-        .in("user_id", participantIds);
+        .from("businesses")
+        .select("owner_id, business_name, contact_email")
+        .in("owner_id", participantIds);
 
       // Map messages with full info for admin
       const mappedMessages: FullMessage[] = (messagesData || []).map(msg => {
