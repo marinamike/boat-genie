@@ -178,12 +178,14 @@ export function ServiceWorkOrders({
             workOrders.map((wo) => (
               <div
                 key={wo.id}
-                onClick={() => setSelectedWorkOrder(wo)}
-                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                className={`p-3 border rounded-lg transition-colors ${
                   selectedWorkOrder?.id === wo.id ? "border-primary bg-primary/5" : "hover:border-primary/50"
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div
+                  onClick={() => setSelectedWorkOrder(wo)}
+                  className="flex items-center justify-between cursor-pointer"
+                >
                   <div>
                     <p className="font-medium">{wo.title}</p>
                     <p className="text-sm text-muted-foreground">{wo.boats?.name || "Unknown Boat"}</p>
@@ -193,6 +195,26 @@ export function ServiceWorkOrders({
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
+                {/* Check In & Work Timer for active work orders */}
+                {(wo.status === "assigned" || wo.status === "in_progress") && (
+                  <div className="mt-2 flex items-center gap-2 pt-2 border-t">
+                    {wo.provider_checked_in_at ? (
+                      <WorkTimer startTime={wo.provider_checked_in_at} isRunning={wo.status === "in_progress"} />
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCheckInWorkOrder(wo);
+                        }}
+                      >
+                        <MapPin className="w-4 h-4 mr-1" />
+                        Check In
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}
