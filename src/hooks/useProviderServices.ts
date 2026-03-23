@@ -58,11 +58,11 @@ export function useProviderServices(providerId?: string) {
       if (providerId) {
         query = query.eq("provider_id", providerId);
       } else {
-        // Get current user's provider profile first
+        // Get current user's business profile first
         const { data: profile } = await supabase
-          .from("provider_profiles")
+          .from("businesses")
           .select("id")
-          .eq("user_id", session.user.id)
+          .eq("owner_id", session.user.id)
           .maybeSingle();
 
         if (!profile) {
