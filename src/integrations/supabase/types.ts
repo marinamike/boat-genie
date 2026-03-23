@@ -4810,6 +4810,7 @@ export type Database = {
           is_emergency: boolean
           photos: string[] | null
           preferred_date: string | null
+          provider_id: string | null
           requester_id: string
           service_type: string
           status: Database["public"]["Enums"]["wish_form_status"]
@@ -4826,6 +4827,7 @@ export type Database = {
           is_emergency?: boolean
           photos?: string[] | null
           preferred_date?: string | null
+          provider_id?: string | null
           requester_id: string
           service_type: string
           status?: Database["public"]["Enums"]["wish_form_status"]
@@ -4842,6 +4844,7 @@ export type Database = {
           is_emergency?: boolean
           photos?: string[] | null
           preferred_date?: string | null
+          provider_id?: string | null
           requester_id?: string
           service_type?: string
           status?: Database["public"]["Enums"]["wish_form_status"]
@@ -4854,6 +4857,13 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wish_forms_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
