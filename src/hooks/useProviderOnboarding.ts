@@ -324,7 +324,7 @@ export function useProviderOnboarding() {
       const { data, error } = await supabase
         .from("businesses")
         .select("*")
-        .eq("verification_status", "pending_review")
+        .eq("verification_status", "pending" as any)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
