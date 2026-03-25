@@ -333,7 +333,14 @@ export function CreateWorkOrderDialog({
                             <SelectContent>
                               {existingCustomers.map(customer => (
                                 <SelectItem key={customer.ownerId} value={customer.ownerId}>
-                                  {customer.ownerName}
+                                  <span className="flex items-center gap-2">
+                                    {customer.ownerName}
+                                    {customer.isGuest && (
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-600">
+                                        Guest
+                                      </Badge>
+                                    )}
+                                  </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>
