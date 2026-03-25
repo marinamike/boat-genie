@@ -179,13 +179,15 @@ export function CreateWorkOrderDialog({
 
     let success: boolean;
     if (customerType === "existing" && selectedBoatId && selectedCustomerId) {
+      const guestId = selectedCustomer?.isGuest ? selectedCustomer.guestCustomerId : undefined;
       success = await createWorkOrderForExisting(
         selectedBoatId,
         selectedCustomerId,
         selectedServiceId,
         quote,
         notes,
-        scheduledDate
+        scheduledDate,
+        guestId
       );
     } else {
       success = await createWorkOrderForNew(
