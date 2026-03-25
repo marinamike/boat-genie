@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User, Pencil, PlusCircle } from "lucide-react";
+import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
