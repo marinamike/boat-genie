@@ -504,6 +504,23 @@ export function ServiceWorkOrders({
           onSuccess={fetchWorkOrders}
         />
       )}
+
+      {selectedWorkOrder && (
+        <EditWorkOrderSheet
+          open={showEditSheet}
+          onOpenChange={setShowEditSheet}
+          workOrder={selectedWorkOrder}
+          onSaved={() => {
+            fetchWorkOrders().then(() => {
+              // Re-select the updated work order after refresh
+              setSelectedWorkOrder(prev => {
+                if (!prev) return null;
+                return prev;
+              });
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
