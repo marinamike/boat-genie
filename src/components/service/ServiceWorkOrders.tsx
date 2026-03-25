@@ -510,13 +510,14 @@ export function ServiceWorkOrders({
           open={showEditSheet}
           onOpenChange={setShowEditSheet}
           workOrder={selectedWorkOrder}
-          onSaved={() => {
-            fetchWorkOrders().then(() => {
-              // Re-select the updated work order after refresh
-              setSelectedWorkOrder(prev => {
-                if (!prev) return null;
-                return prev;
-              });
+          onSaved={async () => {
+            const prevId = selectedWorkOrder.id;
+            await fetchWorkOrders();
+            // fetchWorkOrders updates workOrders state; re-select from fresh data
+            setWorkOrders(prev => {
+              const updated = prev.find(wo => wo.id === prevId);
+              if (updated) setSelectedWorkOrder(updated);
+              return prev;
             });
           }}
         />
