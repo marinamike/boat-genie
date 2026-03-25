@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { PRICING_CONSTANTS, formatPrice } from "@/lib/pricing";
+import { formatPrice } from "@/lib/pricing";
 
 export interface ExistingCustomer {
   ownerId: string;
@@ -197,12 +197,12 @@ export function useProviderWorkOrder() {
       basePrice = 0;
     }
 
-    // Platform fees (5% + 5%)
-    const serviceFee = basePrice * PRICING_CONSTANTS.SERVICE_FEE_RATE; // 5% to owner
-    const leadFee = basePrice * PRICING_CONSTANTS.LEAD_FEE_RATE; // 5% from provider
+    // No platform fees for manually created work orders
+    const serviceFee = 0;
+    const leadFee = 0;
 
-    const totalOwnerPrice = basePrice + serviceFee + materialsDeposit;
-    const totalProviderReceives = basePrice - leadFee;
+    const totalOwnerPrice = basePrice + materialsDeposit;
+    const totalProviderReceives = basePrice;
 
     return {
       basePrice,
