@@ -26,7 +26,7 @@ export interface NewCustomerData {
 export interface ProviderServiceOption {
   id: string;
   serviceName: string;
-  pricingModel: "per_foot" | "flat_rate";
+  pricingModel: "per_foot" | "flat_rate" | "hourly";
   price: number;
   category: string;
   description: string | null;
@@ -124,7 +124,7 @@ export function useProviderWorkOrder() {
     }
   }, []);
 
-  // Fetch provider's locked services
+  // Fetch active services from business service menu
   const fetchProviderServices = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -139,28 +139,33 @@ export function useProviderWorkOrder() {
       if (!profile) return;
 
       const { data: services } = await supabase
-        .from("provider_services")
+        .from("business_service_menu")
         .select("*")
-        .eq("provider_id", profile.id)
+        .eq("business_id", profile.id)
         .eq("is_active", true)
-        .eq("is_locked", true)
         .order("category")
-        .order("service_name");
+        .order("name");
 
       if (!services) return;
 
       setProviderServices(
-        services.map(s => ({
-          id: s.id,
-          serviceName: s.service_name,
-          pricingModel: s.pricing_model as "per_foot" | "flat_rate",
-          price: Number(s.price),
-          category: s.category,
-          description: s.description,
-        }))
+        services.map(s => {
+          const pricingModel: "per_foot" | "flat_rate" | "hourly" =
+            s.pricing_model === "per_foot" ? "per_foot"
+            : s.pricing_model === "hourly" ? "hourly"
+            : "flat_rate";
+          return {
+            id: s.id,
+            serviceName: s.name,
+            pricingModel,
+            price: Number(s.default_price),
+            category: s.category,
+            description: s.description,
+          };
+        })
       );
     } catch (error) {
-      console.error("Error fetching provider services:", error);
+      console.error("Error fetching services:", error);
     }
   }, []);
 
@@ -186,7 +191,7 @@ export function useProviderWorkOrder() {
       basePrice = customPrice;
     } else if (service.pricingModel === "per_foot" && boatLengthFt) {
       basePrice = service.price * boatLengthFt;
-    } else if (service.pricingModel === "flat_rate") {
+    } else if (service.pricingModel === "flat_rate" || service.pricingModel === "hourly") {
       basePrice = service.price;
     } else {
       basePrice = 0;
