@@ -591,10 +591,6 @@ export function CreateWorkOrderDialog({
                       <span className="text-muted-foreground">Base Price</span>
                       <span>{formatPrice(quote.basePrice)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Service Fee (5%)</span>
-                      <span>{formatPrice(quote.serviceFee)}</span>
-                    </div>
                     {quote.materialsDeposit > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Materials Deposit</span>
@@ -603,12 +599,8 @@ export function CreateWorkOrderDialog({
                     )}
                     <Separator />
                     <div className="flex justify-between font-semibold">
-                      <span>Owner Pays</span>
+                      <span>Customer Pays</span>
                       <span className="text-primary">{formatPrice(quote.totalOwnerPrice)}</span>
-                    </div>
-                    <div className="flex justify-between text-muted-foreground text-xs">
-                      <span>You Receive (after 5% lead fee)</span>
-                      <span>{formatPrice(quote.totalProviderReceives)}</span>
                     </div>
                   </div>
                 )}
