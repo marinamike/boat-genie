@@ -1,30 +1,24 @@
 
 
-## Plan: Replace locked provider_services with business_service_menu in CreateWorkOrderDialog
+## Plan: Remove fees from manually created work orders
 
-### Problem
-Step 2 of `CreateWorkOrderDialog` fetches services from the legacy `provider_services` table filtered by `is_locked: true`. It should instead use the `business_service_menu` table (active items), which is the canonical service catalog.
+### Summary
+When a business creates a work order manually via `CreateWorkOrderDialog`, no platform fees (service fee or lead fee) should apply. The customer pays the base price + materials only.
 
 ### Changes
 
-**1. Update `useProviderWorkOrder.ts` — replace `fetchProviderServices`**
-- Change the query from `provider_services` (filtered by `is_locked`) to `business_service_menu` (filtered by `is_active`)
-- Map `business_service_menu` fields (`name`, `pricing_model`, `default_price`, `description`, `category`) to the existing `ProviderServiceOption` interface
-- Update `pricingModel` type to include `"hourly"` (since business_service_menu supports fixed/hourly/per_foot)
-- The `ProviderServiceOption` interface gets a minor update: `pricingModel` becomes `"per_foot" | "flat_rate" | "hourly"` (mapping `"fixed"` → `"flat_rate"` for compatibility)
+**1. `src/hooks/useProviderWorkOrder.ts` — `calculateQuote` function (lines 181-215)**
+- Set `serviceFee = 0` and `leadFee = 0`
+- `totalOwnerPrice = basePrice + materialsDeposit`
+- `totalProviderReceives = basePrice`
+- Remove the `PRICING_CONSTANTS` import if no longer used
 
-**2. Update `CreateWorkOrderDialog.tsx` — Step 2 UI**
-- Remove the "No Locked Services" empty state (lines 426-436) referencing locking prices
-- Replace with a simple "No services configured" message pointing to Service Menu in settings
-- Add handling for `hourly` pricing model in the badge display (e.g., `$X/hr`)
-- The service selection cards remain the same — click to select, grouped by category
-
-**3. Update pricing display in Step 3**
-- Handle `hourly` pricing model in the quote step (similar to per_foot: show note if no hours specified, or default to base rate)
+**2. `src/components/provider/CreateWorkOrderDialog.tsx` — Quote display (lines 588-613)**
+- Remove the "Service Fee (5%)" line (lines 594-597)
+- Remove the "You Receive (after 5% lead fee)" line (lines 609-612)
+- Keep: Base Price, Materials Deposit (conditional), and "Customer Pays" total
 
 ### Technical Detail
-- `business_service_menu.pricing_model` values: `"fixed"`, `"hourly"`, `"per_foot"`
-- `ProviderServiceOption.pricingModel` values: `"flat_rate"`, `"per_foot"` (+ adding `"hourly"`)
-- Mapping: `fixed` → `flat_rate` in the hook to minimize downstream changes
-- `calculateQuote` already handles `flat_rate` and `per_foot`; will add `hourly` case (treats like flat_rate for base price since hours are determined at completion)
+- The `WorkOrderQuote` interface keeps `serviceFee` and `leadFee` fields (set to 0) to avoid breaking the insert logic that writes these columns to `work_orders` and `quotes` tables — they'll simply store 0
+- Platform fees remain in `src/lib/pricing.ts` for marketplace-initiated jobs (wishes/leads); this change only affects business-initiated manual work orders
 
