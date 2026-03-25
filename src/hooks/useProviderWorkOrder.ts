@@ -272,38 +272,42 @@ export function useProviderWorkOrder() {
     serviceId: string,
     quote: WorkOrderQuote,
     notes?: string,
-    scheduledDate?: string
+    scheduledDate?: string,
+    guestCustomerId?: string
   ): Promise<boolean> => {
     setSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // Get service details
       const service = providerServices.find(s => s.id === serviceId);
       if (!service) throw new Error("Service not found");
 
-      // Create work order with pending status (awaiting owner approval)
+      const insertData: any = {
+        boat_id: boatId,
+        provider_id: session.user.id,
+        business_id: providerProfile?.id,
+        title: service.serviceName,
+        description: notes || `${service.serviceName} service`,
+        status: guestCustomerId ? "pending_approval" : "pending",
+        provider_initiated: true,
+        provider_service_id: serviceId,
+        retail_price: quote.totalOwnerPrice,
+        wholesale_price: quote.basePrice,
+        service_fee: quote.serviceFee,
+        lead_fee: quote.leadFee,
+        materials_deposit: quote.materialsDeposit,
+        scheduled_date: scheduledDate || null,
+        service_type: "genie_service",
+      };
+      if (guestCustomerId) {
+        insertData.guest_customer_id = guestCustomerId;
+      }
+
       const { data: workOrder, error: woError } = await supabase
         .from("work_orders")
-        .insert({
-          boat_id: boatId,
-          provider_id: session.user.id,
-          business_id: providerProfile?.id,
-          title: service.serviceName,
-          description: notes || `${service.serviceName} service`,
-          status: "pending",
-          provider_initiated: true,
-          provider_service_id: serviceId,
-          retail_price: quote.totalOwnerPrice,
-          wholesale_price: quote.basePrice,
-          service_fee: quote.serviceFee,
-          lead_fee: quote.leadFee,
-          materials_deposit: quote.materialsDeposit,
-          scheduled_date: scheduledDate || null,
-          service_type: "genie_service",
-        } as any)
-        .select()
+        .insert(insertData)
+        .select("*, approval_token")
         .single();
 
       if (woError) throw woError;
