@@ -357,7 +357,7 @@ export function useProviderWorkOrder() {
           service_type: "genie_service",
           guest_customer_id: guest.id,
         } as any)
-        .select()
+        .select("*, approval_token")
         .single();
 
       if (woError) throw woError;
@@ -380,9 +380,35 @@ export function useProviderWorkOrder() {
 
       if (quoteError) throw quoteError;
 
+      // 5. Send approval email via edge function
+      if (newCustomer.ownerEmail) {
+        const { error: emailError } = await supabase.functions.invoke("send-owner-invite", {
+          body: {
+            providerName: providerProfile.business_name || "Service Provider",
+            ownerName: newCustomer.ownerName,
+            ownerEmail: newCustomer.ownerEmail,
+            boatName: newCustomer.boatName,
+            serviceName: service.serviceName,
+            basePrice: quote.basePrice,
+            materialsDeposit: quote.materialsDeposit,
+            totalPrice: quote.totalOwnerPrice,
+            scheduledDate: scheduledDate || undefined,
+            notes: notes || undefined,
+            approvalToken: (workOrder as any).approval_token,
+          },
+        });
+
+        if (emailError) {
+          console.warn("Email send warning:", emailError);
+          // Don't fail the whole flow if email fails
+        }
+      }
+
       toast({
         title: "Work Order Created!",
-        description: `Work order for ${newCustomer.ownerName} has been created.`,
+        description: newCustomer.ownerEmail
+          ? `Approval email sent to ${newCustomer.ownerEmail}.`
+          : `Work order for ${newCustomer.ownerName} has been created.`,
       });
 
       return true;

@@ -16,6 +16,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import ApproveWorkOrder from "./pages/ApproveWorkOrder";
 
 // Owner pages
 import Dashboard from "./pages/Dashboard";
@@ -66,6 +67,7 @@ function RoleBasedRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/approve/:token" element={<ApproveWorkOrder />} />
         <Route path="/platform-admin" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -84,6 +86,7 @@ function RoleBasedRoutes() {
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="/marina/:id" element={<MarinaDetails />} />
+          <Route path="/approve/:token" element={<ApproveWorkOrder />} />
           <Route path="/platform-admin" element={<PlatformAdmin />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -98,6 +101,7 @@ function RoleBasedRoutes() {
             <Route path="/dry-stack" element={<DryStackLaunch />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
+          <Route path="/approve/:token" element={<ApproveWorkOrder />} />
           <Route path="/platform-admin" element={<PlatformAdmin />} />
           <Route path="/" element={<Navigate to="/dock" replace />} />
           <Route path="*" element={<Navigate to="/dock" replace />} />
@@ -117,6 +121,7 @@ function RoleBasedRoutes() {
               <Route path="/business/settings" element={<BusinessSettings />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
+            <Route path="/approve/:token" element={<ApproveWorkOrder />} />
             <Route path="/platform-admin" element={<PlatformAdmin />} />
             <Route path="/" element={<Navigate to="/business" replace />} />
             <Route path="*" element={<Navigate to="/business" replace />} />

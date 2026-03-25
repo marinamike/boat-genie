@@ -4997,6 +4997,8 @@ export type Database = {
       work_orders: {
         Row: {
           accepted_quote_id: string | null
+          approval_token: string | null
+          approved_at: string | null
           boat_id: string
           business_id: string | null
           check_in_method: string | null
@@ -5045,6 +5047,8 @@ export type Database = {
         }
         Insert: {
           accepted_quote_id?: string | null
+          approval_token?: string | null
+          approved_at?: string | null
           boat_id: string
           business_id?: string | null
           check_in_method?: string | null
@@ -5093,6 +5097,8 @@ export type Database = {
         }
         Update: {
           accepted_quote_id?: string | null
+          approval_token?: string | null
+          approved_at?: string | null
           boat_id?: string
           business_id?: string | null
           check_in_method?: string | null
