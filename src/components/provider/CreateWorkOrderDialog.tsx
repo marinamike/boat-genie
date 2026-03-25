@@ -625,7 +625,7 @@ export function CreateWorkOrderDialog({
                   ) : (
                     <Send className="w-4 h-4 mr-2" />
                   )}
-                  {customerType === "new" ? "Send Invite" : "Send Work Order"}
+                  {customerType === "new" ? "Create Work Order" : "Send Work Order"}
                 </Button>
               ) : (
                 <Button

@@ -293,7 +293,7 @@ export function useProviderWorkOrder() {
     }
   };
 
-  // Create work order for new customer (sends invite)
+  // Create work order for new (guest) customer
   const createWorkOrderForNew = async (
     newCustomer: NewCustomerData,
     serviceId: string,
@@ -309,50 +309,87 @@ export function useProviderWorkOrder() {
       const service = providerServices.find(s => s.id === serviceId);
       if (!service) throw new Error("Service not found");
 
-      // Create pending invite record
-      const { data: invite, error: inviteError } = await supabase
-        .from("pending_invites")
+      // 1. Create guest customer record
+      const { data: guest, error: guestError } = await supabase
+        .from("guest_customers")
         .insert({
-          provider_id: providerProfile.id,
+          business_id: providerProfile.id,
           owner_name: newCustomer.ownerName,
-          owner_email: newCustomer.ownerEmail,
+          owner_email: newCustomer.ownerEmail || null,
           boat_name: newCustomer.boatName,
           boat_length_ft: newCustomer.boatLengthFt,
         })
         .select()
         .single();
 
-      if (inviteError) throw inviteError;
+      if (guestError) throw guestError;
 
-      // Send invite email via edge function
-      const { error: emailError } = await supabase.functions.invoke("send-owner-invite", {
-        body: {
-          inviteId: invite.id,
-          providerName: providerProfile.business_name || "Service Provider",
-          ownerName: newCustomer.ownerName,
-          ownerEmail: newCustomer.ownerEmail,
-          boatName: newCustomer.boatName,
-          serviceName: service.serviceName,
-          totalPrice: quote.totalOwnerPrice,
-          inviteToken: invite.invite_token,
-        },
-      });
+      // 2. Create a boat record linked to a placeholder owner (the business owner acts as proxy)
+      const { data: boat, error: boatError } = await supabase
+        .from("boats")
+        .insert({
+          name: newCustomer.boatName,
+          owner_id: session.user.id, // business owner holds the boat until guest claims
+          length_ft: newCustomer.boatLengthFt,
+        })
+        .select()
+        .single();
 
-      if (emailError) {
-        console.warn("Email send warning:", emailError);
-        // Don't fail the whole flow if email fails
-      }
+      if (boatError) throw boatError;
+
+      // 3. Create work order immediately with pending_approval status
+      const { data: workOrder, error: woError } = await supabase
+        .from("work_orders")
+        .insert({
+          boat_id: boat.id,
+          provider_id: session.user.id,
+          title: service.serviceName,
+          description: notes || `${service.serviceName} service`,
+          status: "pending_approval",
+          provider_initiated: true,
+          provider_service_id: serviceId,
+          retail_price: quote.totalOwnerPrice,
+          wholesale_price: quote.basePrice,
+          service_fee: 0,
+          lead_fee: 0,
+          materials_deposit: quote.materialsDeposit,
+          scheduled_date: scheduledDate || null,
+          service_type: "genie_service",
+          guest_customer_id: guest.id,
+        })
+        .select()
+        .single();
+
+      if (woError) throw woError;
+
+      // 4. Create quote record
+      const { error: quoteError } = await supabase
+        .from("quotes")
+        .insert({
+          work_order_id: workOrder.id,
+          provider_id: session.user.id,
+          base_price: quote.basePrice,
+          service_fee: 0,
+          lead_fee: 0,
+          total_owner_price: quote.totalOwnerPrice,
+          total_provider_receives: quote.totalProviderReceives,
+          materials_deposit: quote.materialsDeposit,
+          status: "pending",
+          notes: notes,
+        });
+
+      if (quoteError) throw quoteError;
 
       toast({
-        title: "Invite Sent!",
-        description: `An invitation has been sent to ${newCustomer.ownerEmail}`,
+        title: "Work Order Created!",
+        description: `Work order for ${newCustomer.ownerName} has been created.`,
       });
 
       return true;
     } catch (error: any) {
-      console.error("Error creating invite:", error);
+      console.error("Error creating guest work order:", error);
       toast({
-        title: "Error sending invite",
+        title: "Error creating work order",
         description: error.message,
         variant: "destructive",
       });
