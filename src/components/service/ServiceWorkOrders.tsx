@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User } from "lucide-react";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
@@ -23,7 +24,10 @@ interface WorkOrder {
   status: string;
   boat_id: string;
   provider_checked_in_at: string | null;
+  guest_customer_id: string | null;
   boats?: { name: string; make: string | null; model: string | null; owner_id: string };
+  guest_customers?: { owner_name: string; owner_email: string | null } | null;
+  owner_profile?: { full_name: string | null; email: string | null } | null;
 }
 
 type ServiceManagementProps = ReturnType<typeof useServiceManagement>;
@@ -88,12 +92,58 @@ export function ServiceWorkOrders({
     setLoading(true);
     const { data, error } = await supabase
       .from("work_orders")
-      .select("id, title, description, status, boat_id, provider_checked_in_at, boats(name, make, model, owner_id)")
+      .select("id, title, description, status, boat_id, provider_checked_in_at, guest_customer_id, boats(name, make, model, owner_id)")
       .eq("business_id", business.id)
       .in("status", ["pending", "pending_approval", "approved", "assigned", "in_progress", "qc_review", "completed", "cancelled"] as any[])
       .order("created_at", { ascending: false });
-    if (error) console.error("Error fetching work orders:", error);
-    else setWorkOrders((data as any) || []);
+    if (error) {
+      console.error("Error fetching work orders:", error);
+      setLoading(false);
+      return;
+    }
+
+    const orders = (data as any[]) || [];
+
+    // Collect guest customer IDs and owner IDs to batch-fetch names
+    const guestIds = orders.map(o => o.guest_customer_id).filter(Boolean);
+    const ownerIds = orders.map(o => o.boats?.owner_id).filter(Boolean);
+
+    // Fetch guest customers
+    let guestMap: Record<string, { owner_name: string; owner_email: string | null }> = {};
+    if (guestIds.length > 0) {
+      const { data: guests } = await (supabase
+        .from("guest_customers" as any)
+        .select("id, owner_name, owner_email")
+        .in("id", guestIds) as any);
+      if (guests) {
+        for (const g of guests as any[]) {
+          guestMap[g.id] = { owner_name: g.owner_name, owner_email: g.owner_email };
+        }
+      }
+    }
+
+    // Fetch owner profiles
+    let profileMap: Record<string, { full_name: string | null; email: string | null }> = {};
+    if (ownerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ownerIds);
+      if (profiles) {
+        for (const p of profiles) {
+          profileMap[p.id] = { full_name: p.full_name, email: p.email };
+        }
+      }
+    }
+
+    // Merge data
+    const enriched: WorkOrder[] = orders.map(o => ({
+      ...o,
+      guest_customers: o.guest_customer_id ? guestMap[o.guest_customer_id] || null : null,
+      owner_profile: o.boats?.owner_id ? profileMap[o.boats.owner_id] || null : null,
+    }));
+
+    setWorkOrders(enriched);
     setLoading(false);
   };
 
@@ -196,7 +246,13 @@ export function ServiceWorkOrders({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{wo.title}</p>
-                    <p className="text-sm text-muted-foreground">{wo.boats?.name || "Unknown Boat"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {wo.boats?.name || "Unknown Boat"}
+                      {" · "}
+                      {wo.guest_customer_id
+                        ? wo.guest_customers?.owner_name || "Guest"
+                        : wo.owner_profile?.full_name || "Owner"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
                     {getStatusBadge(wo.status)}
@@ -233,6 +289,38 @@ export function ServiceWorkOrders({
       <div className="space-y-4">
         {selectedWorkOrder ? (
           <>
+            {/* Customer & Job Info */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {selectedWorkOrder.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {selectedWorkOrder.guest_customer_id
+                      ? selectedWorkOrder.guest_customers?.owner_name || "Unknown Guest"
+                      : selectedWorkOrder.owner_profile?.full_name || selectedWorkOrder.owner_profile?.email || "Unknown Owner"}
+                  </span>
+                  {selectedWorkOrder.guest_customer_id && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-600">
+                      Guest Customer
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {selectedWorkOrder.boats?.name || "Unknown Boat"}
+                  {selectedWorkOrder.boats?.make && ` · ${selectedWorkOrder.boats.make}`}
+                  {selectedWorkOrder.boats?.model && ` ${selectedWorkOrder.boats.model}`}
+                </div>
+                {selectedWorkOrder.description && (
+                  <p className="text-sm text-muted-foreground pt-1">{selectedWorkOrder.description}</p>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Time Clock */}
             <Card>
               <CardHeader className="pb-2">
