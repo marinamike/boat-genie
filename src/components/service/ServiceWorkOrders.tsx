@@ -173,7 +173,7 @@ export function ServiceWorkOrders({
 
   const statusConfig: Record<string, { label: string; className: string }> = {
     pending_approval: { label: "Awaiting Approval", className: "bg-amber-100 text-amber-800 border-amber-300" },
-    pending: { label: "Pending", className: "bg-amber-100 text-amber-800 border-amber-300" },
+    pending: { label: "Awaiting Approval", className: "bg-amber-100 text-amber-800 border-amber-300" },
     approved: { label: "Approved", className: "bg-blue-100 text-blue-800 border-blue-300" },
     assigned: { label: "Assigned", className: "bg-blue-100 text-blue-800 border-blue-300" },
     in_progress: { label: "In Progress", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
