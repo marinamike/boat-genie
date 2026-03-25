@@ -45,8 +45,7 @@ export function ServiceWorkOrders({
   punchOut,
   getActiveEntry,
 }: ServiceManagementProps) {
-  const { business, enabledModules } = useBusiness();
-  const hasSlipsModule = enabledModules.includes("slips" as any);
+  const { business } = useBusiness();
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -340,9 +339,8 @@ export function ServiceWorkOrders({
               </CardContent>
             </Card>
 
-            {/* Time Clock - only when slips module is NOT enabled */}
-            {!hasSlipsModule && (
-              <Card>
+            {/* Time Clock */}
+            <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Time Clock</CardTitle>
                 </CardHeader>
@@ -374,7 +372,6 @@ export function ServiceWorkOrders({
                   )}
                 </CardContent>
               </Card>
-            )}
 
             {/* Phases */}
             <Card>
