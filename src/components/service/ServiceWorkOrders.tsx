@@ -246,7 +246,13 @@ export function ServiceWorkOrders({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{wo.title}</p>
-                    <p className="text-sm text-muted-foreground">{wo.boats?.name || "Unknown Boat"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {wo.boats?.name || "Unknown Boat"}
+                      {" · "}
+                      {wo.guest_customer_id
+                        ? wo.guest_customers?.owner_name || "Guest"
+                        : wo.owner_profile?.full_name || "Owner"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
                     {getStatusBadge(wo.status)}
