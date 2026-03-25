@@ -425,11 +425,10 @@ export function CreateWorkOrderDialog({
                 {providerServices.length === 0 ? (
                   <Card>
                     <CardContent className="py-8 text-center">
-                      <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-                      <h3 className="font-semibold mb-2">No Locked Services</h3>
+                      <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                      <h3 className="font-semibold mb-2">No Services Configured</h3>
                       <p className="text-muted-foreground text-sm">
-                        You need to lock your service prices before creating work orders.
-                        Go to your Service Menu and lock your prices.
+                        Add services to your Service Menu in Business Settings to create work orders.
                       </p>
                     </CardContent>
                   </Card>
@@ -464,6 +463,8 @@ export function CreateWorkOrderDialog({
                                   <Badge variant="secondary">
                                     {service.pricingModel === "per_foot"
                                       ? `$${service.price}/ft`
+                                      : service.pricingModel === "hourly"
+                                      ? `$${service.price}/hr`
                                       : formatPrice(service.price)}
                                   </Badge>
                                 </div>
@@ -510,7 +511,7 @@ export function CreateWorkOrderDialog({
 
                 {/* Pricing */}
                 <div className="space-y-3">
-                  {selectedService.pricingModel === "per_foot" && !boatLength && (
+                  {selectedService.pricingModel === "per_foot" && !boatLength && !useCustomPrice && (
                     <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm">
                       <p className="text-amber-700 dark:text-amber-400">
                         Boat length not specified. Use custom price or update boat details.
