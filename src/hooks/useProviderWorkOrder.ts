@@ -330,9 +330,34 @@ export function useProviderWorkOrder() {
 
       if (quoteError) throw quoteError;
 
+      // Send approval email for guest customers
+      if (guestCustomerId && providerProfile) {
+        const guestCustomer = existingCustomers.find(c => c.guestCustomerId === guestCustomerId);
+        if (guestCustomer?.ownerEmail) {
+          const { error: emailError } = await supabase.functions.invoke("send-owner-invite", {
+            body: {
+              providerName: providerProfile.business_name || "Service Provider",
+              ownerName: guestCustomer.ownerName,
+              ownerEmail: guestCustomer.ownerEmail,
+              boatName: guestCustomer.boats[0]?.name || "your boat",
+              serviceName: service.serviceName,
+              basePrice: quote.basePrice,
+              materialsDeposit: quote.materialsDeposit,
+              totalPrice: quote.totalOwnerPrice,
+              scheduledDate: scheduledDate || undefined,
+              notes: notes || undefined,
+              approvalToken: (workOrder as any).approval_token,
+            },
+          });
+          if (emailError) console.warn("Email send warning:", emailError);
+        }
+      }
+
       toast({
-        title: "Work Order Sent!",
-        description: "The owner will be notified to approve and fund escrow.",
+        title: guestCustomerId ? "Work Order Created!" : "Work Order Sent!",
+        description: guestCustomerId
+          ? "Approval email sent to the customer."
+          : "The owner will be notified to approve.",
       });
 
       return true;
