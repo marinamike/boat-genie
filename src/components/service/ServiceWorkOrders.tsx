@@ -461,7 +461,7 @@ export function ServiceWorkOrders({
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Time Log</CardTitle>
-                  {currentStaffId && (
+                  {(
                     <Sheet open={showManualTimeSheet} onOpenChange={setShowManualTimeSheet}>
                       <SheetTrigger asChild>
                         <Button size="sm" variant="outline">
