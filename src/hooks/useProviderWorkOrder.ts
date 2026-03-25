@@ -311,7 +311,7 @@ export function useProviderWorkOrder() {
 
       // 1. Create guest customer record
       const { data: guest, error: guestError } = await supabase
-        .from("guest_customers")
+        .from("guest_customers" as any)
         .insert({
           business_id: providerProfile.id,
           owner_name: newCustomer.ownerName,
