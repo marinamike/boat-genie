@@ -383,7 +383,30 @@ export function useServiceManagement() {
 
   useEffect(() => {
     refreshAll();
-  }, [refreshAll]);
+
+    // Subscribe to realtime work_orders changes for this business
+    if (!business?.id) return;
+    const channel = supabase
+      .channel(`work_orders_${business.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "work_orders",
+          filter: `business_id=eq.${business.id}`,
+        },
+        () => {
+          // Refetch work orders on any change (insert, update, delete)
+          fetchWorkOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshAll, business?.id, fetchWorkOrders]);
 
   // ============ SERVICE STAFF CRUD ============
   const createServiceStaff = async (data: Partial<ServiceStaff>) => {
