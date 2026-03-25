@@ -1470,6 +1470,8 @@ export type Database = {
           business_id: string
           created_at: string
           id: string
+          merged_at: string | null
+          merged_to_user_id: string | null
           owner_email: string | null
           owner_name: string
           phone: string | null
@@ -1482,6 +1484,8 @@ export type Database = {
           business_id: string
           created_at?: string
           id?: string
+          merged_at?: string | null
+          merged_to_user_id?: string | null
           owner_email?: string | null
           owner_name: string
           phone?: string | null
@@ -1494,6 +1498,8 @@ export type Database = {
           business_id?: string
           created_at?: string
           id?: string
+          merged_at?: string | null
+          merged_to_user_id?: string | null
           owner_email?: string | null
           owner_name?: string
           phone?: string | null
