@@ -1,63 +1,30 @@
 
-# Cancellation Policy for Accepted Quotes
 
-## Overview
-After a customer accepts a provider's quote, cancellation will require acknowledging the provider's cancellation policy and associated fee. Providers will configure their cancellation policy message and rate in their business profile.
+## Plan: Replace locked provider_services with business_service_menu in CreateWorkOrderDialog
 
-## Changes
+### Problem
+Step 2 of `CreateWorkOrderDialog` fetches services from the legacy `provider_services` table filtered by `is_locked: true`. It should instead use the `business_service_menu` table (active items), which is the canonical service catalog.
 
-### 1. Database Migration
-Add two new columns to the `businesses` table:
-- `cancellation_policy_message` (text, nullable) -- Custom message shown to customers before cancellation (e.g., "Cancellations after acceptance are subject to a fee to cover scheduling and materials costs.")
-- `cancellation_fee_percent` (numeric, nullable) -- Percentage of the quote total charged on cancellation (e.g., 25 means 25%)
+### Changes
 
-### 2. Provider Profile Form (`ProviderProfileForm.tsx`)
-Add a new "Cancellation Policy" card section with:
-- A textarea for the cancellation policy message
-- A numeric input for the cancellation fee percentage
-- Wire these fields into the existing form save logic via `useProviderProfile`
+**1. Update `useProviderWorkOrder.ts` — replace `fetchProviderServices`**
+- Change the query from `provider_services` (filtered by `is_locked`) to `business_service_menu` (filtered by `is_active`)
+- Map `business_service_menu` fields (`name`, `pricing_model`, `default_price`, `description`, `category`) to the existing `ProviderServiceOption` interface
+- Update `pricingModel` type to include `"hourly"` (since business_service_menu supports fixed/hourly/per_foot)
+- The `ProviderServiceOption` interface gets a minor update: `pricingModel` becomes `"per_foot" | "flat_rate" | "hourly"` (mapping `"fixed"` → `"flat_rate"` for compatibility)
 
-### 3. Provider Profile Hook (`useProviderProfile.ts`)
-- Add `cancellation_policy_message` and `cancellation_fee_percent` to the `ProviderProfile` interface
-- Map these fields in fetch, create, and update functions
+**2. Update `CreateWorkOrderDialog.tsx` — Step 2 UI**
+- Remove the "No Locked Services" empty state (lines 426-436) referencing locking prices
+- Replace with a simple "No services configured" message pointing to Service Menu in settings
+- Add handling for `hourly` pricing model in the badge display (e.g., `$X/hr`)
+- The service selection cards remain the same — click to select, grouped by category
 
-### 4. Quote Acceptance Flow -- Cancellation Gate (`WishDetailDialog.tsx`)
-When a customer tries to cancel an **accepted** wish (work order status is `assigned` or `in_progress`):
-- Fetch the provider's cancellation policy from the `businesses` table (via the work order's `provider_id`)
-- Show a cancellation confirmation dialog that displays:
-  - The provider's custom cancellation policy message
-  - The calculated cancellation fee (percentage of the escrow/quote total)
-  - A checkbox "I acknowledge this cancellation fee"
-- The "Confirm Cancellation" button remains disabled until the checkbox is checked
-- If no cancellation policy is configured by the provider, show a default message with no fee
+**3. Update pricing display in Step 3**
+- Handle `hourly` pricing model in the quote step (similar to per_foot: show note if no hours specified, or default to base rate)
 
-### 5. Quote Acceptance Flow -- Post-Acceptance Cancel (`PendingQuotesSection.tsx`)
-Currently, cancellation of accepted work is handled in `WishDetailDialog`. The `isPending` check already gates the cancel button. We need to also allow cancellation for `approved`/`in_progress` statuses but with the policy gate. Update the dialog to:
-- Show "Cancel Service" button for accepted/in-progress wishes (not just pending ones)
-- Route through the cancellation policy acknowledgment flow
+### Technical Detail
+- `business_service_menu.pricing_model` values: `"fixed"`, `"hourly"`, `"per_foot"`
+- `ProviderServiceOption.pricingModel` values: `"flat_rate"`, `"per_foot"` (+ adding `"hourly"`)
+- Mapping: `fixed` → `flat_rate` in the hook to minimize downstream changes
+- `calculateQuote` already handles `flat_rate` and `per_foot`; will add `hourly` case (treats like flat_rate for base price since hours are determined at completion)
 
-## Technical Details
-
-```text
-Flow:
-  Customer clicks "Cancel" on accepted wish
-       |
-       v
-  Fetch provider's business record (cancellation_policy_message, cancellation_fee_percent)
-       |
-       v
-  Show AlertDialog with:
-    - Policy message text
-    - "Cancellation fee: $X.XX (Y% of $Z.ZZ)"
-    - Checkbox: "I acknowledge and accept the cancellation fee"
-       |
-       v
-  On confirm: Update work_order status to 'cancelled', 
-              wish_forms status to 'rejected'
-```
-
-### Files to modify:
-- **Migration**: Add `cancellation_policy_message` and `cancellation_fee_percent` columns to `businesses`
-- `src/hooks/useProviderProfile.ts`: Add new fields to interface and CRUD mapping
-- `src/components/provider/ProviderProfileForm.tsx`: Add cancellation policy card
-- `src/components/owner/WishDetailDialog.tsx`: Add policy-gated cancellation for accepted wishes
