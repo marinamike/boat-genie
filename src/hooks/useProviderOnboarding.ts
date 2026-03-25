@@ -73,12 +73,13 @@ export function useProviderOnboarding() {
       // Type assertion since the database has new columns
       setProfile(data as unknown as ProviderOnboardingProfile);
 
-      // Get service count
+      // Get service count from business service menu
       if (data) {
         const { count } = await supabase
-          .from("provider_services")
+          .from("business_service_menu")
           .select("*", { count: "exact", head: true })
-          .eq("provider_id", data.id);
+          .eq("business_id", data.id)
+          .eq("is_active", true);
         setServiceCount(count || 0);
       }
     } catch (error) {

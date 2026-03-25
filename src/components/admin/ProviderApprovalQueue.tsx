@@ -146,24 +146,7 @@ export function ProviderApprovalQueue() {
 
       if (error) throw error;
 
-      // Create audit log entry
-      const { error: logError } = await supabase
-        .from("provider_approval_logs")
-        .insert({
-          provider_id: provider.id,
-          action: "approved",
-          verified_by: session.user.id,
-          verified_by_name: adminName,
-          verified_by_email: adminEmail,
-          coi_verified: verification.coiVerified,
-          w9_verified: verification.w9Verified,
-          notes: `COI and W-9 verified by Admin ${adminName} on ${format(new Date(), "PPpp")}`,
-        });
-
-      if (logError) {
-        console.error("Failed to create audit log:", logError);
-        // Don't fail the approval, just warn
-      }
+      // Audit info is captured in the businesses table via verified_at and is_verified fields
       
       toast({ title: "Provider approved and activated!" });
       await fetchPendingProviders();
@@ -202,24 +185,7 @@ export function ProviderApprovalQueue() {
 
       if (error) throw error;
 
-      // Create audit log entry for rejection
-      const { error: logError } = await supabase
-        .from("provider_approval_logs")
-        .insert({
-          provider_id: selectedProvider.id,
-          action: "rejected",
-          verified_by: session.user.id,
-          verified_by_name: adminName,
-          verified_by_email: adminEmail,
-          coi_verified: verification.coiVerified,
-          w9_verified: verification.w9Verified,
-          rejection_reason: rejectionReason,
-          notes: `Application rejected by Admin ${adminName} on ${format(new Date(), "PPpp")}`,
-        });
-
-      if (logError) {
-        console.error("Failed to create audit log:", logError);
-      }
+      // Rejection status is captured in the businesses table via verification_status
       
       toast({ title: "Provider application rejected" });
       await fetchPendingProviders();
