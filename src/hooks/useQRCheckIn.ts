@@ -81,12 +81,20 @@ export function useQRCheckIn() {
         };
       }
 
+      // Get user's business id
+      const { data: bizProfile } = await supabase
+        .from("businesses")
+        .select("id")
+        .eq("owner_id", session.user.id)
+        .maybeSingle();
+
       // Record the check-in
       const { error: checkInError } = await supabase
-        .from("provider_checkins")
+        .from("business_checkins" as any)
         .insert({
           work_order_id: workOrderId,
-          provider_id: session.user.id,
+          business_id: bizProfile?.id || null,
+          user_id: session.user.id,
           boat_id: boatId,
           check_in_method: "qr_verified",
           qr_code_id: qrCode.id,
@@ -215,12 +223,20 @@ export function useQRCheckIn() {
         }
       }
 
+      // Get user's business id
+      const { data: bizProfile } = await supabase
+        .from("businesses")
+        .select("id")
+        .eq("owner_id", session.user.id)
+        .maybeSingle();
+
       // Record the check-in
       const { error: checkInError } = await supabase
-        .from("provider_checkins")
+        .from("business_checkins" as any)
         .insert({
           work_order_id: workOrderId,
-          provider_id: session.user.id,
+          business_id: bizProfile?.id || null,
+          user_id: session.user.id,
           boat_id: boatId,
           check_in_method: "manual_gps",
           gps_latitude: position.latitude,
