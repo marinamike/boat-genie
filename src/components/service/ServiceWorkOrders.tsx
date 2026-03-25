@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User, Pencil, PlusCircle } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
-import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
+import { WorkTimer } from "@/components/provider/WorkTimer";
 import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
@@ -170,6 +170,31 @@ export function ServiceWorkOrders({
     setPhaseForm({ phase_name: "", description: "", estimated_hours: "", assigned_staff_id: "", requires_haul_out: false });
   };
 
+  const handleAddManualEntry = async () => {
+    if (!currentStaffId || !selectedWorkOrder || !manualTimeForm.date || !manualTimeForm.startTime || !manualTimeForm.endTime) return;
+    if (!business?.id) return;
+    const punchInStr = `${manualTimeForm.date}T${manualTimeForm.startTime}:00`;
+    const punchOutStr = `${manualTimeForm.date}T${manualTimeForm.endTime}:00`;
+    const { error } = await supabase
+      .from("time_entries")
+      .insert({
+        business_id: business.id,
+        service_staff_id: currentStaffId,
+        work_order_id: selectedWorkOrder.id,
+        punch_in: new Date(punchInStr).toISOString(),
+        punch_out: new Date(punchOutStr).toISOString(),
+        break_minutes: 0,
+        notes: manualTimeForm.notes || null,
+      });
+    if (error) {
+      console.error("Error adding manual time entry:", error);
+      return;
+    }
+    setShowManualTimeSheet(false);
+    setManualTimeForm({ date: "", startTime: "", endTime: "", notes: "" });
+    await fetchTimeEntries(selectedWorkOrder.id);
+  };
+
   const handlePunchIn = async () => {
     if (!currentStaffId || !selectedWorkOrder) return;
     await punchIn(currentStaffId, selectedWorkOrder.id);
@@ -268,26 +293,6 @@ export function ServiceWorkOrders({
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
-                {/* Check In & Work Timer for active work orders */}
-                {(wo.status === "assigned" || wo.status === "in_progress") && (
-                  <div className="mt-2 flex items-center gap-2 pt-2 border-t">
-                    {wo.provider_checked_in_at ? (
-                      <WorkTimer startTime={wo.provider_checked_in_at} isRunning={wo.status === "in_progress"} />
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCheckInWorkOrder(wo);
-                        }}
-                      >
-                        <MapPin className="w-4 h-4 mr-1" />
-                        Check In
-                      </Button>
-                    )}
-                  </div>
-                )}
               </div>
             ))
           )}
@@ -336,40 +341,41 @@ export function ServiceWorkOrders({
               </CardContent>
             </Card>
 
-            {/* Time Clock */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Time Clock</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {currentStaffId ? (
-                  <div className="flex items-center gap-4">
-                    {activeTimeEntry && activeTimeEntry.work_order_id === selectedWorkOrder.id ? (
-                      <>
-                        <div className="flex items-center gap-2 text-lg font-mono">
-                          <Clock className="w-5 h-5 text-green-500 animate-pulse" />
-                          {calculateElapsedTime()}
-                        </div>
-                        <Button variant="destructive" onClick={handlePunchOut}>
-                          <Pause className="w-4 h-4 mr-2" />
-                          Punch Out
-                        </Button>
-                      </>
-                    ) : (
-                      <Button onClick={handlePunchIn} disabled={!!activeTimeEntry}>
-                        <Play className="w-4 h-4 mr-2" />
-                        Punch In
-                      </Button>
-                    )}
-                    {activeTimeEntry && activeTimeEntry.work_order_id !== selectedWorkOrder.id && (
-                      <p className="text-sm text-amber-600">Currently punched in on another job</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">You are not registered as service staff</p>
-                )}
-              </CardContent>
-            </Card>
+            {/* Time Clock - only when slips module is NOT enabled */}
+            {!hasSlipsModule && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Time Clock</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {currentStaffId ? (
+                    <div className="flex items-center gap-4">
+                      {activeTimeEntry && activeTimeEntry.work_order_id === selectedWorkOrder.id ? (
+                        <>
+                          <WorkTimer startTime={activeTimeEntry.punch_in} isRunning={true} />
+                          <Button variant="destructive" onClick={handlePunchOut}>
+                            <Pause className="w-4 h-4 mr-2" />
+                            Check Out
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button onClick={handlePunchIn} disabled={!!activeTimeEntry}>
+                            <Play className="w-4 h-4 mr-2" />
+                            Check In
+                          </Button>
+                          {activeTimeEntry && activeTimeEntry.work_order_id !== selectedWorkOrder.id && (
+                            <p className="text-sm text-amber-600">Currently checked in on another job</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">You are not registered as service staff</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Phases */}
             <Card>
@@ -461,7 +467,65 @@ export function ServiceWorkOrders({
             {/* Recent Time Entries */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Time Log</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Time Log</CardTitle>
+                  {currentStaffId && (
+                    <Sheet open={showManualTimeSheet} onOpenChange={setShowManualTimeSheet}>
+                      <SheetTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          <PlusCircle className="w-4 h-4 mr-1" />
+                          Add Entry
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent>
+                        <SheetHeader>
+                          <SheetTitle>Add Manual Time Entry</SheetTitle>
+                        </SheetHeader>
+                        <div className="space-y-4 mt-4">
+                          <div>
+                            <Label>Date</Label>
+                            <Input
+                              type="date"
+                              value={manualTimeForm.date}
+                              onChange={(e) => setManualTimeForm({ ...manualTimeForm, date: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>Start Time</Label>
+                            <Input
+                              type="time"
+                              value={manualTimeForm.startTime}
+                              onChange={(e) => setManualTimeForm({ ...manualTimeForm, startTime: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>End Time</Label>
+                            <Input
+                              type="time"
+                              value={manualTimeForm.endTime}
+                              onChange={(e) => setManualTimeForm({ ...manualTimeForm, endTime: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>Notes (optional)</Label>
+                            <Textarea
+                              value={manualTimeForm.notes}
+                              onChange={(e) => setManualTimeForm({ ...manualTimeForm, notes: e.target.value })}
+                              placeholder="What was worked on..."
+                            />
+                          </div>
+                          <Button
+                            onClick={handleAddManualEntry}
+                            disabled={!manualTimeForm.date || !manualTimeForm.startTime || !manualTimeForm.endTime}
+                            className="w-full"
+                          >
+                            Add Entry
+                          </Button>
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {timeEntries.filter(e => e.work_order_id === selectedWorkOrder.id).length === 0 ? (
@@ -500,17 +564,6 @@ export function ServiceWorkOrders({
       </div>
     </div>
 
-      {checkInWorkOrder && (
-        <ManualCheckInDialog
-          open={!!checkInWorkOrder}
-          onClose={() => setCheckInWorkOrder(null)}
-          workOrderId={checkInWorkOrder.id}
-          boatId={checkInWorkOrder.boat_id}
-          marinaLat={null}
-          marinaLng={null}
-          onSuccess={fetchWorkOrders}
-        />
-      )}
 
       {selectedWorkOrder && (
         <EditWorkOrderSheet
