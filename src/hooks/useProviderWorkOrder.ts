@@ -310,7 +310,7 @@ export function useProviderWorkOrder() {
       if (!service) throw new Error("Service not found");
 
       // 1. Create guest customer record
-      const { data: guest, error: guestError } = await supabase
+      const { data: guest, error: guestError } = await (supabase
         .from("guest_customers" as any)
         .insert({
           business_id: providerProfile.id,
@@ -318,11 +318,11 @@ export function useProviderWorkOrder() {
           owner_email: newCustomer.ownerEmail || null,
           boat_name: newCustomer.boatName,
           boat_length_ft: newCustomer.boatLengthFt,
-        })
+        }) as any)
         .select()
-        .single();
+        .single() as { data: { id: string } | null; error: any };
 
-      if (guestError) throw guestError;
+      if (guestError || !guest) throw guestError || new Error("Failed to create guest customer");
 
       // 2. Create a boat record linked to a placeholder owner (the business owner acts as proxy)
       const { data: boat, error: boatError } = await supabase
