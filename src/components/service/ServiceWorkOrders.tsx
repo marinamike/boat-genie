@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User, Pencil } from "lucide-react";
+import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User, Pencil, PlusCircle } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
@@ -46,7 +46,8 @@ export function ServiceWorkOrders({
   punchOut,
   getActiveEntry,
 }: ServiceManagementProps) {
-  const { business } = useBusiness();
+  const { business, enabledModules } = useBusiness();
+  const hasSlipsModule = enabledModules.includes("slips" as any);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,8 +61,14 @@ export function ServiceWorkOrders({
   });
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [checkInWorkOrder, setCheckInWorkOrder] = useState<WorkOrder | null>(null);
   const [showEditSheet, setShowEditSheet] = useState(false);
+  const [showManualTimeSheet, setShowManualTimeSheet] = useState(false);
+  const [manualTimeForm, setManualTimeForm] = useState({
+    date: "",
+    startTime: "",
+    endTime: "",
+    notes: "",
+  });
 
   useEffect(() => {
     fetchWorkOrders();
