@@ -90,41 +90,38 @@ export function useProviderWorkOrder() {
         ? [...new Set(workOrders.map(wo => (wo.boats as any)?.owner_id).filter(Boolean))]
         : [];
 
-      // Get unique owner IDs
-      const ownerIds = [...new Set(workOrders.map(wo => (wo.boats as any)?.owner_id).filter(Boolean))];
-      
-      if (ownerIds.length === 0) return;
+      // Fetch real user customers if we have work order history
+      if (ownerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", ownerIds);
 
-      // Fetch owner profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", ownerIds);
+        const { data: allBoats } = await supabase
+          .from("boats")
+          .select("id, name, length_ft, make, model, owner_id")
+          .in("owner_id", ownerIds);
 
-      if (!profiles) return;
-
-      // Fetch all boats for these owners
-      const { data: allBoats } = await supabase
-        .from("boats")
-        .select("id, name, length_ft, make, model, owner_id")
-        .in("owner_id", ownerIds);
-
-      // Build customer list with their boats (real users)
-      const customers: ExistingCustomer[] = profiles.map(profile => ({
-        ownerId: profile.id,
-        ownerName: profile.full_name || profile.email || "Unknown",
-        ownerEmail: profile.email || "",
-        isGuest: false,
-        boats: (allBoats || [])
-          .filter(boat => boat.owner_id === profile.id)
-          .map(boat => ({
-            id: boat.id,
-            name: boat.name,
-            lengthFt: boat.length_ft ? Number(boat.length_ft) : null,
-            make: boat.make,
-            model: boat.model,
-          })),
-      }));
+        if (profiles) {
+          for (const p of profiles) {
+            customers.push({
+              ownerId: p.id,
+              ownerName: p.full_name || p.email || "Unknown",
+              ownerEmail: p.email || "",
+              isGuest: false,
+              boats: (allBoats || [])
+                .filter(boat => boat.owner_id === p.id)
+                .map(boat => ({
+                  id: boat.id,
+                  name: boat.name,
+                  lengthFt: boat.length_ft ? Number(boat.length_ft) : null,
+                  make: boat.make,
+                  model: boat.model,
+                })),
+            });
+          }
+        }
+      }
 
       // Also fetch guest customers for this business
       const { data: guestCustomers } = await (supabase
