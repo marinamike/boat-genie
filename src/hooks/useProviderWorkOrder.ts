@@ -7,6 +7,8 @@ export interface ExistingCustomer {
   ownerId: string;
   ownerName: string;
   ownerEmail: string;
+  isGuest: boolean;
+  guestCustomerId?: string;
   boats: {
     id: string;
     name: string;
