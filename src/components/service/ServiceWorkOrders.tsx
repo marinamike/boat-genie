@@ -345,31 +345,27 @@ export function ServiceWorkOrders({
                   <CardTitle className="text-lg">Time Clock</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {currentStaffId ? (
-                    <div className="flex items-center gap-4">
-                      {activeTimeEntry && activeTimeEntry.work_order_id === selectedWorkOrder.id ? (
-                        <>
-                          <WorkTimer startTime={activeTimeEntry.punch_in} isRunning={true} />
-                          <Button variant="destructive" onClick={handlePunchOut}>
-                            <Pause className="w-4 h-4 mr-2" />
-                            Check Out
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button onClick={handlePunchIn} disabled={!!activeTimeEntry}>
-                            <Play className="w-4 h-4 mr-2" />
-                            Check In
-                          </Button>
-                          {activeTimeEntry && activeTimeEntry.work_order_id !== selectedWorkOrder.id && (
-                            <p className="text-sm text-amber-600">Currently checked in on another job</p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">You are not registered as service staff</p>
-                  )}
+                  <div className="flex items-center gap-4">
+                    {activeTimeEntry && activeTimeEntry.work_order_id === selectedWorkOrder.id ? (
+                      <>
+                        <WorkTimer startTime={activeTimeEntry.punch_in} isRunning={true} />
+                        <Button variant="destructive" onClick={handlePunchOut}>
+                          <Pause className="w-4 h-4 mr-2" />
+                          Check Out
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button onClick={handlePunchIn} disabled={!!activeTimeEntry}>
+                          <Play className="w-4 h-4 mr-2" />
+                          Check In
+                        </Button>
+                        {activeTimeEntry && activeTimeEntry.work_order_id !== selectedWorkOrder.id && (
+                          <p className="text-sm text-amber-600">Currently checked in on another job</p>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 
