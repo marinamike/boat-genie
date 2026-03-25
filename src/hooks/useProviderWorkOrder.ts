@@ -356,7 +356,7 @@ export function useProviderWorkOrder() {
           scheduled_date: scheduledDate || null,
           service_type: "genie_service",
           guest_customer_id: guest.id,
-        })
+        } as any)
         .select()
         .single();
 
