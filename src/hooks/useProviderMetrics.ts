@@ -81,15 +81,22 @@ export function useProviderMetrics() {
         .eq("owner_id", userId)
         .maybeSingle();
 
-      // Fetch provider's services
+      // Fetch business services from service menu
       if (providerProfile?.id) {
         const { data: services } = await supabase
-          .from("provider_services")
-          .select("id, service_name, price, pricing_model, is_locked")
-          .eq("provider_id", providerProfile.id)
+          .from("business_service_menu")
+          .select("id, name, default_price, pricing_model, category, is_active")
+          .eq("business_id", providerProfile.id)
           .eq("is_active", true);
         
-        setProviderServices((services || []) as ProviderService[]);
+        setProviderServices((services || []).map((s: any) => ({
+          id: s.id,
+          service_name: s.name,
+          price: s.default_price,
+          pricing_model: s.pricing_model,
+          is_locked: false,
+          category: s.category,
+        })) as ProviderService[]);
       }
 
       // Fetch active work orders (assigned or in_progress)
