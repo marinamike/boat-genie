@@ -571,7 +571,7 @@ export function ServiceWorkOrders({
                             </p>
                           </div>
                           <Badge variant="outline">
-                            {entry.totalHours ? `${entry.totalHours.toFixed(1)}h` : "Active"}
+                            {entry.totalHours != null ? `${entry.totalHours.toFixed(1)}h` : "Active"}
                           </Badge>
                         </div>
                       ))}
