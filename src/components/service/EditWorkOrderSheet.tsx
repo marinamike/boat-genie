@@ -17,6 +17,7 @@ interface EditWorkOrderSheetProps {
     id: string;
     title: string;
     description: string | null;
+    status: string;
     guest_customer_id: string | null;
     guest_customers?: { owner_name: string; owner_email: string | null } | null;
     owner_profile?: { full_name: string | null; email: string | null } | null;
@@ -272,14 +273,17 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
           <Separator />
 
           <div className="flex flex-col gap-2">
-            <Button onClick={handleSaveAndResend} disabled={isBusy || depositExceedsPrice || !title}>
-              {resending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-              Save & Resend Approval
-            </Button>
-            <Button variant="outline" onClick={handleSaveOnly} disabled={isBusy || depositExceedsPrice || !title}>
-              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Save Only
-            </Button>
+            {["pending", "pending_approval"].includes(workOrder.status) ? (
+              <Button onClick={handleSaveAndResend} disabled={isBusy || depositExceedsPrice || !title}>
+                {resending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                Save & Resend Approval
+              </Button>
+            ) : (
+              <Button onClick={handleSaveOnly} disabled={isBusy || depositExceedsPrice || !title}>
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Save Changes
+              </Button>
+            )}
           </div>
         </div>
       </SheetContent>
