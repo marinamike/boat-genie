@@ -243,7 +243,7 @@ export function useProviderOnboarding() {
       const contentType = contentTypeMap[fileExt || ""] || file.type || "application/octet-stream";
 
       const { error: uploadError } = await supabase.storage
-        .from("provider-documents")
+        .from("business-documents")
         .upload(fileName, file, { 
           upsert: true,
           contentType: contentType,
