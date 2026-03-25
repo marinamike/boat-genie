@@ -194,8 +194,41 @@ export function ServiceWorkOrders({
   };
 
   const handlePunchIn = async () => {
-    if (!currentStaffId || !selectedWorkOrder) return;
-    await punchIn(currentStaffId, selectedWorkOrder.id);
+    if (!selectedWorkOrder || !business?.id) return;
+    let staffId = currentStaffId;
+    // Auto-create service_staff record if user isn't registered yet
+    if (!staffId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // Fetch user profile for name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+      const staffName = profile?.full_name || profile?.email || "Staff";
+      const { data: newStaff, error } = await supabase
+        .from("service_staff")
+        .insert({
+          business_id: business.id,
+          user_id: user.id,
+          staff_name: staffName,
+          specialties: ["general"],
+          internal_hourly_rate: 0,
+          billable_hourly_rate: 0,
+          is_active: true,
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error("Error creating staff record:", error);
+        toast.error("Failed to check in");
+        return;
+      }
+      staffId = newStaff.id;
+      setCurrentStaffId(staffId);
+    }
+    await punchIn(staffId, selectedWorkOrder.id);
   };
 
   const handlePunchOut = async () => {
