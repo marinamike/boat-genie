@@ -1461,6 +1461,53 @@ export type Database = {
           },
         ]
       }
+      guest_customers: {
+        Row: {
+          boat_length_ft: number | null
+          boat_make: string | null
+          boat_model: string | null
+          boat_name: string
+          business_id: string
+          created_at: string
+          id: string
+          owner_email: string | null
+          owner_name: string
+          phone: string | null
+        }
+        Insert: {
+          boat_length_ft?: number | null
+          boat_make?: string | null
+          boat_model?: string | null
+          boat_name: string
+          business_id: string
+          created_at?: string
+          id?: string
+          owner_email?: string | null
+          owner_name: string
+          phone?: string | null
+        }
+        Update: {
+          boat_length_ft?: number | null
+          boat_make?: string | null
+          boat_model?: string | null
+          boat_name?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          owner_email?: string | null
+          owner_name?: string
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_customers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       haul_out_bays: {
         Row: {
           bay_name: string
@@ -4964,6 +5011,7 @@ export type Database = {
           escrow_status: Database["public"]["Enums"]["escrow_status"]
           estimated_arrival_time: string | null
           funds_released_at: string | null
+          guest_customer_id: string | null
           id: string
           is_emergency: boolean
           lead_fee: number | null
@@ -5011,6 +5059,7 @@ export type Database = {
           escrow_status?: Database["public"]["Enums"]["escrow_status"]
           estimated_arrival_time?: string | null
           funds_released_at?: string | null
+          guest_customer_id?: string | null
           id?: string
           is_emergency?: boolean
           lead_fee?: number | null
@@ -5058,6 +5107,7 @@ export type Database = {
           escrow_status?: Database["public"]["Enums"]["escrow_status"]
           estimated_arrival_time?: string | null
           funds_released_at?: string | null
+          guest_customer_id?: string | null
           id?: string
           is_emergency?: boolean
           lead_fee?: number | null
@@ -5109,6 +5159,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_guest_customer_id_fkey"
+            columns: ["guest_customer_id"]
+            isOneToOne: false
+            referencedRelation: "guest_customers"
             referencedColumns: ["id"]
           },
           {
