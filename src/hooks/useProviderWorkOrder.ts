@@ -67,6 +67,8 @@ export function useProviderWorkOrder() {
       if (!profile) return;
       setProviderProfile(profile);
 
+      const customers: ExistingCustomer[] = [];
+
       // Get all work orders for this provider to find previous customers
       const { data: workOrders } = await supabase
         .from("work_orders")
@@ -83,7 +85,10 @@ export function useProviderWorkOrder() {
         `)
         .eq("provider_id", session.user.id);
 
-      if (!workOrders || workOrders.length === 0) return;
+      // Get unique owner IDs from work orders
+      const ownerIds = workOrders
+        ? [...new Set(workOrders.map(wo => (wo.boats as any)?.owner_id).filter(Boolean))]
+        : [];
 
       // Get unique owner IDs
       const ownerIds = [...new Set(workOrders.map(wo => (wo.boats as any)?.owner_id).filter(Boolean))];
