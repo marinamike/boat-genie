@@ -179,13 +179,15 @@ export function CreateWorkOrderDialog({
 
     let success: boolean;
     if (customerType === "existing" && selectedBoatId && selectedCustomerId) {
+      const guestId = selectedCustomer?.isGuest ? selectedCustomer.guestCustomerId : undefined;
       success = await createWorkOrderForExisting(
         selectedBoatId,
         selectedCustomerId,
         selectedServiceId,
         quote,
         notes,
-        scheduledDate
+        scheduledDate,
+        guestId
       );
     } else {
       success = await createWorkOrderForNew(
@@ -333,7 +335,14 @@ export function CreateWorkOrderDialog({
                             <SelectContent>
                               {existingCustomers.map(customer => (
                                 <SelectItem key={customer.ownerId} value={customer.ownerId}>
-                                  {customer.ownerName}
+                                  <span className="flex items-center gap-2">
+                                    {customer.ownerName}
+                                    {customer.isGuest && (
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-600">
+                                        Guest
+                                      </Badge>
+                                    )}
+                                  </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>

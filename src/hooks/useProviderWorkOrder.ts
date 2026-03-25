@@ -7,6 +7,8 @@ export interface ExistingCustomer {
   ownerId: string;
   ownerName: string;
   ownerEmail: string;
+  isGuest: boolean;
+  guestCustomerId?: string;
   boats: {
     id: string;
     name: string;
@@ -65,6 +67,8 @@ export function useProviderWorkOrder() {
       if (!profile) return;
       setProviderProfile(profile);
 
+      const customers: ExistingCustomer[] = [];
+
       // Get all work orders for this provider to find previous customers
       const { data: workOrders } = await supabase
         .from("work_orders")
@@ -81,42 +85,89 @@ export function useProviderWorkOrder() {
         `)
         .eq("provider_id", session.user.id);
 
-      if (!workOrders || workOrders.length === 0) return;
+      // Get unique owner IDs from work orders
+      const ownerIds = workOrders
+        ? [...new Set(workOrders.map(wo => (wo.boats as any)?.owner_id).filter(Boolean))]
+        : [];
 
-      // Get unique owner IDs
-      const ownerIds = [...new Set(workOrders.map(wo => (wo.boats as any)?.owner_id).filter(Boolean))];
-      
-      if (ownerIds.length === 0) return;
+      // Fetch real user customers if we have work order history
+      if (ownerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", ownerIds);
 
-      // Fetch owner profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", ownerIds);
+        const { data: allBoats } = await supabase
+          .from("boats")
+          .select("id, name, length_ft, make, model, owner_id")
+          .in("owner_id", ownerIds);
 
-      if (!profiles) return;
+        if (profiles) {
+          for (const p of profiles) {
+            customers.push({
+              ownerId: p.id,
+              ownerName: p.full_name || p.email || "Unknown",
+              ownerEmail: p.email || "",
+              isGuest: false,
+              boats: (allBoats || [])
+                .filter(boat => boat.owner_id === p.id)
+                .map(boat => ({
+                  id: boat.id,
+                  name: boat.name,
+                  lengthFt: boat.length_ft ? Number(boat.length_ft) : null,
+                  make: boat.make,
+                  model: boat.model,
+                })),
+            });
+          }
+        }
+      }
 
-      // Fetch all boats for these owners
-      const { data: allBoats } = await supabase
-        .from("boats")
-        .select("id, name, length_ft, make, model, owner_id")
-        .in("owner_id", ownerIds);
+      // Also fetch guest customers for this business
+      const { data: guestCustomers } = await (supabase
+        .from("guest_customers" as any)
+        .select("*")
+        .eq("business_id", profile.id) as any) as { data: any[] | null };
 
-      // Build customer list with their boats
-      const customers: ExistingCustomer[] = profiles.map(profile => ({
-        ownerId: profile.id,
-        ownerName: profile.full_name || profile.email || "Unknown",
-        ownerEmail: profile.email || "",
-        boats: (allBoats || [])
-          .filter(boat => boat.owner_id === profile.id)
-          .map(boat => ({
-            id: boat.id,
-            name: boat.name,
-            lengthFt: boat.length_ft ? Number(boat.length_ft) : null,
-            make: boat.make,
-            model: boat.model,
-          })),
-      }));
+      if (guestCustomers && guestCustomers.length > 0) {
+        // Find boats owned by this business user that correspond to guest customers
+        // Guest boats were created with owner_id = session.user.id
+        const { data: guestBoats } = await supabase
+          .from("boats")
+          .select("id, name, length_ft, make, model, owner_id")
+          .eq("owner_id", session.user.id);
+
+        for (const gc of guestCustomers) {
+          // Match guest boat by name and length
+          const matchingBoat = (guestBoats || []).find(
+            b => b.name === gc.boat_name &&
+              (gc.boat_length_ft == null || Number(b.length_ft) === Number(gc.boat_length_ft))
+          );
+
+          customers.push({
+            ownerId: gc.id, // use guest_customer id as the owner identifier
+            ownerName: gc.owner_name,
+            ownerEmail: gc.owner_email || "",
+            isGuest: true,
+            guestCustomerId: gc.id,
+            boats: matchingBoat
+              ? [{
+                  id: matchingBoat.id,
+                  name: matchingBoat.name,
+                  lengthFt: matchingBoat.length_ft ? Number(matchingBoat.length_ft) : null,
+                  make: matchingBoat.make,
+                  model: matchingBoat.model,
+                }]
+              : [{
+                  id: "",
+                  name: gc.boat_name,
+                  lengthFt: gc.boat_length_ft ? Number(gc.boat_length_ft) : null,
+                  make: gc.boat_make || null,
+                  model: gc.boat_model || null,
+                }],
+          });
+        }
+      }
 
       setExistingCustomers(customers);
     } catch (error) {
@@ -221,38 +272,42 @@ export function useProviderWorkOrder() {
     serviceId: string,
     quote: WorkOrderQuote,
     notes?: string,
-    scheduledDate?: string
+    scheduledDate?: string,
+    guestCustomerId?: string
   ): Promise<boolean> => {
     setSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // Get service details
       const service = providerServices.find(s => s.id === serviceId);
       if (!service) throw new Error("Service not found");
 
-      // Create work order with pending status (awaiting owner approval)
+      const insertData: any = {
+        boat_id: boatId,
+        provider_id: session.user.id,
+        business_id: providerProfile?.id,
+        title: service.serviceName,
+        description: notes || `${service.serviceName} service`,
+        status: guestCustomerId ? "pending_approval" : "pending",
+        provider_initiated: true,
+        provider_service_id: serviceId,
+        retail_price: quote.totalOwnerPrice,
+        wholesale_price: quote.basePrice,
+        service_fee: quote.serviceFee,
+        lead_fee: quote.leadFee,
+        materials_deposit: quote.materialsDeposit,
+        scheduled_date: scheduledDate || null,
+        service_type: "genie_service",
+      };
+      if (guestCustomerId) {
+        insertData.guest_customer_id = guestCustomerId;
+      }
+
       const { data: workOrder, error: woError } = await supabase
         .from("work_orders")
-        .insert({
-          boat_id: boatId,
-          provider_id: session.user.id,
-          business_id: providerProfile?.id,
-          title: service.serviceName,
-          description: notes || `${service.serviceName} service`,
-          status: "pending",
-          provider_initiated: true,
-          provider_service_id: serviceId,
-          retail_price: quote.totalOwnerPrice,
-          wholesale_price: quote.basePrice,
-          service_fee: quote.serviceFee,
-          lead_fee: quote.leadFee,
-          materials_deposit: quote.materialsDeposit,
-          scheduled_date: scheduledDate || null,
-          service_type: "genie_service",
-        } as any)
-        .select()
+        .insert(insertData)
+        .select("*, approval_token")
         .single();
 
       if (woError) throw woError;
@@ -275,9 +330,34 @@ export function useProviderWorkOrder() {
 
       if (quoteError) throw quoteError;
 
+      // Send approval email for guest customers
+      if (guestCustomerId && providerProfile) {
+        const guestCustomer = existingCustomers.find(c => c.guestCustomerId === guestCustomerId);
+        if (guestCustomer?.ownerEmail) {
+          const { error: emailError } = await supabase.functions.invoke("send-owner-invite", {
+            body: {
+              providerName: providerProfile.business_name || "Service Provider",
+              ownerName: guestCustomer.ownerName,
+              ownerEmail: guestCustomer.ownerEmail,
+              boatName: guestCustomer.boats[0]?.name || "your boat",
+              serviceName: service.serviceName,
+              basePrice: quote.basePrice,
+              materialsDeposit: quote.materialsDeposit,
+              totalPrice: quote.totalOwnerPrice,
+              scheduledDate: scheduledDate || undefined,
+              notes: notes || undefined,
+              approvalToken: (workOrder as any).approval_token,
+            },
+          });
+          if (emailError) console.warn("Email send warning:", emailError);
+        }
+      }
+
       toast({
-        title: "Work Order Sent!",
-        description: "The owner will be notified to approve and fund escrow.",
+        title: guestCustomerId ? "Work Order Created!" : "Work Order Sent!",
+        description: guestCustomerId
+          ? "Approval email sent to the customer."
+          : "The owner will be notified to approve.",
       });
 
       return true;
