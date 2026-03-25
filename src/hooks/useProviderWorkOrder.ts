@@ -343,6 +343,7 @@ export function useProviderWorkOrder() {
         .insert({
           boat_id: boat.id,
           provider_id: session.user.id,
+          business_id: providerProfile.id,
           title: service.serviceName,
           description: notes || `${service.serviceName} service`,
           status: "pending_approval",
