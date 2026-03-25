@@ -5585,9 +5585,12 @@ export type Database = {
         | "completed"
         | "blocked"
       work_order_status:
+        | "pending_approval"
         | "pending"
+        | "approved"
         | "assigned"
         | "in_progress"
+        | "qc_review"
         | "completed"
         | "cancelled"
       yard_asset_type: "wet_slip" | "dry_rack" | "yard_block" | "mooring"
@@ -5787,9 +5790,12 @@ export const Constants = {
         "blocked",
       ],
       work_order_status: [
+        "pending_approval",
         "pending",
+        "approved",
         "assigned",
         "in_progress",
+        "qc_review",
         "completed",
         "cancelled",
       ],
