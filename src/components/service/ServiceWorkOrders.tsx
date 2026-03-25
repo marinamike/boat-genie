@@ -90,7 +90,7 @@ export function ServiceWorkOrders({
       .from("work_orders")
       .select("id, title, description, status, boat_id, provider_checked_in_at, boats(name, make, model, owner_id)")
       .eq("business_id", business.id)
-      .in("status", ["pending", "assigned", "in_progress"])
+      .in("status", ["pending", "pending_approval", "approved", "assigned", "in_progress", "qc_review", "completed", "cancelled"] as any[])
       .order("created_at", { ascending: false });
     if (error) console.error("Error fetching work orders:", error);
     else setWorkOrders((data as any) || []);
@@ -121,15 +121,24 @@ export function ServiceWorkOrders({
     await punchOut(activeTimeEntry.id, selectedWorkOrder.id);
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-blue-100 text-blue-800",
-      in_progress: "bg-purple-100 text-purple-800",
-      ready_for_qc: "bg-orange-100 text-orange-800",
-      completed: "bg-green-100 text-green-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+  const statusConfig: Record<string, { label: string; className: string }> = {
+    pending_approval: { label: "Awaiting Approval", className: "bg-amber-100 text-amber-800 border-amber-300" },
+    pending: { label: "Pending", className: "bg-amber-100 text-amber-800 border-amber-300" },
+    approved: { label: "Approved", className: "bg-blue-100 text-blue-800 border-blue-300" },
+    assigned: { label: "Assigned", className: "bg-blue-100 text-blue-800 border-blue-300" },
+    in_progress: { label: "In Progress", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+    qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-800 border-violet-300" },
+    completed: { label: "Completed", className: "bg-gray-100 text-gray-600 border-gray-300" },
+    cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700 border-red-300" },
+  };
+
+  const getStatusBadge = (status: string) => {
+    const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800 border-gray-300" };
+    return (
+      <Badge className={`${config.className} border font-semibold text-xs px-2.5 py-1`}>
+        {config.label}
+      </Badge>
+    );
   };
 
   const calculateElapsedTime = () => {
@@ -185,12 +194,12 @@ export function ServiceWorkOrders({
                   onClick={() => setSelectedWorkOrder(wo)}
                   className="flex items-center justify-between cursor-pointer"
                 >
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium">{wo.title}</p>
                     <p className="text-sm text-muted-foreground">{wo.boats?.name || "Unknown Boat"}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getStatusColor(wo.status)}>{wo.status.replace("_", " ")}</Badge>
+                  <div className="flex items-center gap-2 ml-3 shrink-0">
+                    {getStatusBadge(wo.status)}
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
