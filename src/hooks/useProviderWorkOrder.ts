@@ -104,11 +104,12 @@ export function useProviderWorkOrder() {
         .select("id, name, length_ft, make, model, owner_id")
         .in("owner_id", ownerIds);
 
-      // Build customer list with their boats
+      // Build customer list with their boats (real users)
       const customers: ExistingCustomer[] = profiles.map(profile => ({
         ownerId: profile.id,
         ownerName: profile.full_name || profile.email || "Unknown",
         ownerEmail: profile.email || "",
+        isGuest: false,
         boats: (allBoats || [])
           .filter(boat => boat.owner_id === profile.id)
           .map(boat => ({
@@ -119,6 +120,52 @@ export function useProviderWorkOrder() {
             model: boat.model,
           })),
       }));
+
+      // Also fetch guest customers for this business
+      const { data: guestCustomers } = await (supabase
+        .from("guest_customers" as any)
+        .select("*")
+        .eq("business_id", profile.id) as any) as { data: any[] | null };
+
+      if (guestCustomers && guestCustomers.length > 0) {
+        // Find boats owned by this business user that correspond to guest customers
+        // Guest boats were created with owner_id = session.user.id
+        const { data: guestBoats } = await supabase
+          .from("boats")
+          .select("id, name, length_ft, make, model, owner_id")
+          .eq("owner_id", session.user.id);
+
+        for (const gc of guestCustomers) {
+          // Match guest boat by name and length
+          const matchingBoat = (guestBoats || []).find(
+            b => b.name === gc.boat_name &&
+              (gc.boat_length_ft == null || Number(b.length_ft) === Number(gc.boat_length_ft))
+          );
+
+          customers.push({
+            ownerId: gc.id, // use guest_customer id as the owner identifier
+            ownerName: gc.owner_name,
+            ownerEmail: gc.owner_email || "",
+            isGuest: true,
+            guestCustomerId: gc.id,
+            boats: matchingBoat
+              ? [{
+                  id: matchingBoat.id,
+                  name: matchingBoat.name,
+                  lengthFt: matchingBoat.length_ft ? Number(matchingBoat.length_ft) : null,
+                  make: matchingBoat.make,
+                  model: matchingBoat.model,
+                }]
+              : [{
+                  id: "",
+                  name: gc.boat_name,
+                  lengthFt: gc.boat_length_ft ? Number(gc.boat_length_ft) : null,
+                  make: gc.boat_make || null,
+                  model: gc.boat_model || null,
+                }],
+          });
+        }
+      }
 
       setExistingCustomers(customers);
     } catch (error) {
