@@ -283,6 +283,38 @@ export function ServiceWorkOrders({
       <div className="space-y-4">
         {selectedWorkOrder ? (
           <>
+            {/* Customer & Job Info */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {selectedWorkOrder.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {selectedWorkOrder.guest_customer_id
+                      ? selectedWorkOrder.guest_customers?.owner_name || "Unknown Guest"
+                      : selectedWorkOrder.owner_profile?.full_name || selectedWorkOrder.owner_profile?.email || "Unknown Owner"}
+                  </span>
+                  {selectedWorkOrder.guest_customer_id && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-600">
+                      Guest Customer
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {selectedWorkOrder.boats?.name || "Unknown Boat"}
+                  {selectedWorkOrder.boats?.make && ` · ${selectedWorkOrder.boats.make}`}
+                  {selectedWorkOrder.boats?.model && ` ${selectedWorkOrder.boats.model}`}
+                </div>
+                {selectedWorkOrder.description && (
+                  <p className="text-sm text-muted-foreground pt-1">{selectedWorkOrder.description}</p>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Time Clock */}
             <Card>
               <CardHeader className="pb-2">
