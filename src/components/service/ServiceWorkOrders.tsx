@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User } from "lucide-react";
+import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User, Pencil } from "lucide-react";
+import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
@@ -60,6 +61,7 @@ export function ServiceWorkOrders({
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [checkInWorkOrder, setCheckInWorkOrder] = useState<WorkOrder | null>(null);
+  const [showEditSheet, setShowEditSheet] = useState(false);
 
   useEffect(() => {
     fetchWorkOrders();
@@ -292,9 +294,15 @@ export function ServiceWorkOrders({
             {/* Customer & Job Info */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  {selectedWorkOrder.title}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {selectedWorkOrder.title}
+                  </CardTitle>
+                  <Button size="sm" variant="outline" onClick={() => setShowEditSheet(true)}>
+                    <Pencil className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
