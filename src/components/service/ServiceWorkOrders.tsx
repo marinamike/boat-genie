@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User } from "lucide-react";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { ManualCheckInDialog } from "@/components/provider/ManualCheckInDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
@@ -23,7 +24,10 @@ interface WorkOrder {
   status: string;
   boat_id: string;
   provider_checked_in_at: string | null;
+  guest_customer_id: string | null;
   boats?: { name: string; make: string | null; model: string | null; owner_id: string };
+  guest_customers?: { owner_name: string; owner_email: string | null } | null;
+  owner_profile?: { full_name: string | null; email: string | null } | null;
 }
 
 type ServiceManagementProps = ReturnType<typeof useServiceManagement>;
