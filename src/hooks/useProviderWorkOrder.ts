@@ -252,7 +252,9 @@ export function useProviderWorkOrder() {
     const serviceFee = 0;
     const leadFee = 0;
 
-    const totalOwnerPrice = basePrice + materialsDeposit;
+    // Deposit is a portion of base price collected upfront, not an additional charge
+    const clampedDeposit = Math.min(materialsDeposit, basePrice);
+    const totalOwnerPrice = basePrice;
     const totalProviderReceives = basePrice;
 
     return {
@@ -261,7 +263,7 @@ export function useProviderWorkOrder() {
       leadFee,
       totalOwnerPrice,
       totalProviderReceives,
-      materialsDeposit,
+      materialsDeposit: clampedDeposit,
     };
   };
 

@@ -567,8 +567,18 @@ export function CreateWorkOrderDialog({
                         onChange={e => setMaterialsDeposit(e.target.value)}
                         className="pl-8"
                         placeholder="0.00"
+                        max={quote?.basePrice ?? undefined}
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Portion of the base price collected upfront for materials. Cannot exceed the base price.
+                    </p>
+                    {quote && parseFloat(materialsDeposit) > quote.basePrice && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Deposit cannot exceed the base price ({formatPrice(quote.basePrice)})
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -596,21 +606,23 @@ export function CreateWorkOrderDialog({
                 {/* Price Breakdown */}
                 {quote && (
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Base Price</span>
-                      <span>{formatPrice(quote.basePrice)}</span>
-                    </div>
-                    {quote.materialsDeposit > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Materials Deposit</span>
-                        <span>{formatPrice(quote.materialsDeposit)}</span>
-                      </div>
-                    )}
-                    <Separator />
                     <div className="flex justify-between font-semibold">
-                      <span>Customer Pays</span>
+                      <span>Total Price</span>
                       <span className="text-primary">{formatPrice(quote.totalOwnerPrice)}</span>
                     </div>
+                    {quote.materialsDeposit > 0 && (
+                      <>
+                        <Separator />
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Due Now (Materials Deposit)</span>
+                          <span className="font-medium">{formatPrice(quote.materialsDeposit)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Remaining on Completion</span>
+                          <span className="font-medium">{formatPrice(quote.basePrice - quote.materialsDeposit)}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
