@@ -92,12 +92,58 @@ export function ServiceWorkOrders({
     setLoading(true);
     const { data, error } = await supabase
       .from("work_orders")
-      .select("id, title, description, status, boat_id, provider_checked_in_at, boats(name, make, model, owner_id)")
+      .select("id, title, description, status, boat_id, provider_checked_in_at, guest_customer_id, boats(name, make, model, owner_id)")
       .eq("business_id", business.id)
       .in("status", ["pending", "pending_approval", "approved", "assigned", "in_progress", "qc_review", "completed", "cancelled"] as any[])
       .order("created_at", { ascending: false });
-    if (error) console.error("Error fetching work orders:", error);
-    else setWorkOrders((data as any) || []);
+    if (error) {
+      console.error("Error fetching work orders:", error);
+      setLoading(false);
+      return;
+    }
+
+    const orders = (data as any[]) || [];
+
+    // Collect guest customer IDs and owner IDs to batch-fetch names
+    const guestIds = orders.map(o => o.guest_customer_id).filter(Boolean);
+    const ownerIds = orders.map(o => o.boats?.owner_id).filter(Boolean);
+
+    // Fetch guest customers
+    let guestMap: Record<string, { owner_name: string; owner_email: string | null }> = {};
+    if (guestIds.length > 0) {
+      const { data: guests } = await (supabase
+        .from("guest_customers" as any)
+        .select("id, owner_name, owner_email")
+        .in("id", guestIds) as any);
+      if (guests) {
+        for (const g of guests as any[]) {
+          guestMap[g.id] = { owner_name: g.owner_name, owner_email: g.owner_email };
+        }
+      }
+    }
+
+    // Fetch owner profiles
+    let profileMap: Record<string, { full_name: string | null; email: string | null }> = {};
+    if (ownerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ownerIds);
+      if (profiles) {
+        for (const p of profiles) {
+          profileMap[p.id] = { full_name: p.full_name, email: p.email };
+        }
+      }
+    }
+
+    // Merge data
+    const enriched: WorkOrder[] = orders.map(o => ({
+      ...o,
+      guest_customers: o.guest_customer_id ? guestMap[o.guest_customer_id] || null : null,
+      owner_profile: o.boats?.owner_id ? profileMap[o.boats.owner_id] || null : null,
+    }));
+
+    setWorkOrders(enriched);
     setLoading(false);
   };
 
