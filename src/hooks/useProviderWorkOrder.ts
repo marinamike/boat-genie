@@ -238,9 +238,10 @@ export function useProviderWorkOrder() {
         .insert({
           boat_id: boatId,
           provider_id: session.user.id,
+          business_id: providerProfile?.id,
           title: service.serviceName,
           description: notes || `${service.serviceName} service`,
-          status: "pending", // Awaiting owner approval
+          status: "pending",
           provider_initiated: true,
           provider_service_id: serviceId,
           retail_price: quote.totalOwnerPrice,
@@ -250,7 +251,7 @@ export function useProviderWorkOrder() {
           materials_deposit: quote.materialsDeposit,
           scheduled_date: scheduledDate || null,
           service_type: "genie_service",
-        })
+        } as any)
         .select()
         .single();
 
