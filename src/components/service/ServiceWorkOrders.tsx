@@ -12,7 +12,6 @@ import { Plus, Play, Pause, Clock, ChevronRight, FilePlus, MapPin, User, Pencil,
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
-import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { format, differenceInMinutes } from "date-fns";
