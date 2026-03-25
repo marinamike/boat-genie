@@ -560,6 +560,86 @@ export type Database = {
           },
         ]
       }
+      business_checkins: {
+        Row: {
+          boat_id: string
+          business_id: string
+          check_in_method: string
+          checked_in_at: string
+          created_at: string
+          distance_from_marina_ft: number | null
+          gps_accuracy_meters: number | null
+          gps_latitude: number | null
+          gps_longitude: number | null
+          id: string
+          manual_reason: string | null
+          qr_code_id: string | null
+          user_id: string
+          work_order_id: string
+        }
+        Insert: {
+          boat_id: string
+          business_id: string
+          check_in_method: string
+          checked_in_at?: string
+          created_at?: string
+          distance_from_marina_ft?: number | null
+          gps_accuracy_meters?: number | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
+          id?: string
+          manual_reason?: string | null
+          qr_code_id?: string | null
+          user_id: string
+          work_order_id: string
+        }
+        Update: {
+          boat_id?: string
+          business_id?: string
+          check_in_method?: string
+          checked_in_at?: string
+          created_at?: string
+          distance_from_marina_ft?: number | null
+          gps_accuracy_meters?: number | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
+          id?: string
+          manual_reason?: string | null
+          qr_code_id?: string | null
+          user_id?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_checkins_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_checkins_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_checkins_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "marina_qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_checkins_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_service_menu: {
         Row: {
           business_id: string
