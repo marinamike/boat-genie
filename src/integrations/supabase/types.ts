@@ -5004,6 +5004,44 @@ export type Database = {
           },
         ]
       }
+      work_order_line_items: {
+        Row: {
+          created_at: string
+          id: string
+          quantity: number
+          service_name: string
+          total: number
+          unit_price: number
+          work_order_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quantity?: number
+          service_name: string
+          total?: number
+          unit_price?: number
+          work_order_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quantity?: number
+          service_name?: string
+          total?: number
+          unit_price?: number
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_line_items_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_phases: {
         Row: {
           actual_hours: number | null

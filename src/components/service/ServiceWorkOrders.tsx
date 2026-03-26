@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2 } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
+import { useServiceMenu } from "@/hooks/useServiceMenu";
 import { format, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";
+import { formatPrice } from "@/lib/pricing";
 import type { useServiceManagement } from "@/hooks/useServiceManagement";
 
 interface WorkOrder {
@@ -29,6 +35,16 @@ interface WorkOrder {
   boats?: { name: string; make: string | null; model: string | null; owner_id: string };
   guest_customers?: { owner_name: string; owner_email: string | null } | null;
   owner_profile?: { full_name: string | null; email: string | null } | null;
+}
+
+interface LineItem {
+  id: string;
+  work_order_id: string;
+  service_name: string;
+  unit_price: number;
+  quantity: number;
+  total: number;
+  created_at: string;
 }
 
 type ServiceManagementProps = ReturnType<typeof useServiceManagement>;
@@ -47,6 +63,7 @@ export function ServiceWorkOrders({
   getActiveEntry,
 }: ServiceManagementProps) {
   const { business } = useBusiness();
+  const { activeMenuItems } = useServiceMenu();
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +86,13 @@ export function ServiceWorkOrders({
     notes: "",
   });
 
+  // Line items state
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [showAddServiceSheet, setShowAddServiceSheet] = useState(false);
+  const [addServiceForm, setAddServiceForm] = useState({ menuItemId: "", quantity: "1", unitPrice: "" });
+  const [addingService, setAddingService] = useState(false);
+  const [showReapprovalDialog, setShowReapprovalDialog] = useState(false);
+
   useEffect(() => {
     fetchWorkOrders();
   }, [business?.id]);
@@ -77,11 +101,11 @@ export function ServiceWorkOrders({
     if (selectedWorkOrder) {
       fetchPhases(selectedWorkOrder.id);
       fetchTimeEntries(selectedWorkOrder.id);
+      fetchLineItems(selectedWorkOrder.id);
     }
   }, [selectedWorkOrder?.id]);
 
   useEffect(() => {
-    // Get current staff id based on logged-in user
     const findStaff = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -94,6 +118,27 @@ export function ServiceWorkOrders({
     };
     findStaff();
   }, [serviceStaff]);
+
+  const fetchLineItems = useCallback(async (workOrderId: string) => {
+    const { data, error } = await supabase
+      .from("work_order_line_items" as any)
+      .select("*")
+      .eq("work_order_id", workOrderId)
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.error("Error fetching line items:", error);
+      return;
+    }
+    setLineItems((data as any[] || []).map((d: any) => ({
+      id: d.id,
+      work_order_id: d.work_order_id,
+      service_name: d.service_name,
+      unit_price: Number(d.unit_price),
+      quantity: Number(d.quantity),
+      total: Number(d.total),
+      created_at: d.created_at,
+    })));
+  }, []);
 
   const fetchWorkOrders = async () => {
     if (!business?.id) return;
@@ -112,11 +157,9 @@ export function ServiceWorkOrders({
 
     const orders = (data as any[]) || [];
 
-    // Collect guest customer IDs and owner IDs to batch-fetch names
     const guestIds = orders.map(o => o.guest_customer_id).filter(Boolean);
     const ownerIds = orders.map(o => o.boats?.owner_id).filter(Boolean);
 
-    // Fetch guest customers
     let guestMap: Record<string, { owner_name: string; owner_email: string | null }> = {};
     if (guestIds.length > 0) {
       const { data: guests } = await (supabase
@@ -130,7 +173,6 @@ export function ServiceWorkOrders({
       }
     }
 
-    // Fetch owner profiles
     let profileMap: Record<string, { full_name: string | null; email: string | null }> = {};
     if (ownerIds.length > 0) {
       const { data: profiles } = await supabase
@@ -144,7 +186,6 @@ export function ServiceWorkOrders({
       }
     }
 
-    // Merge data
     const enriched: WorkOrder[] = orders.map(o => ({
       ...o,
       guest_customers: o.guest_customer_id ? guestMap[o.guest_customer_id] || null : null,
@@ -153,6 +194,154 @@ export function ServiceWorkOrders({
 
     setWorkOrders(enriched);
     setLoading(false);
+  };
+
+  const resendApprovalEmail = async (wo: WorkOrder) => {
+    const { data: woData } = await supabase
+      .from("work_orders")
+      .select("approval_token, business_id, retail_price, materials_deposit, scheduled_date, title")
+      .eq("id", wo.id)
+      .single();
+
+    if (!woData?.approval_token) {
+      toast.error("No approval token found for this work order.");
+      return;
+    }
+
+    let providerName = "Service Provider";
+    if (woData.business_id) {
+      const { data: biz } = await supabase
+        .from("businesses")
+        .select("business_name")
+        .eq("id", woData.business_id)
+        .single();
+      if (biz) providerName = biz.business_name;
+    }
+
+    const recipientEmail = wo.guest_customer_id
+      ? wo.guest_customers?.owner_email
+      : wo.owner_profile?.email;
+    const recipientName = wo.guest_customer_id
+      ? wo.guest_customers?.owner_name || "Customer"
+      : wo.owner_profile?.full_name || "Customer";
+
+    if (!recipientEmail) {
+      toast.error("No email address found for this customer.");
+      return;
+    }
+
+    await supabase.functions.invoke("send-owner-invite", {
+      body: {
+        providerName,
+        ownerName: recipientName,
+        ownerEmail: recipientEmail,
+        boatName: wo.boats?.name || "your boat",
+        serviceName: woData.title,
+        basePrice: woData.retail_price,
+        materialsDeposit: woData.materials_deposit || 0,
+        totalPrice: woData.retail_price,
+        scheduledDate: woData.scheduled_date || undefined,
+        approvalToken: woData.approval_token,
+      },
+    });
+  };
+
+  const handleAddServiceConfirmed = async () => {
+    if (!selectedWorkOrder) return;
+    setAddingService(true);
+    try {
+      const menuItem = activeMenuItems.find(m => m.id === addServiceForm.menuItemId);
+      const serviceName = menuItem?.name || "Service";
+      const unitPrice = parseFloat(addServiceForm.unitPrice) || 0;
+      const quantity = parseInt(addServiceForm.quantity) || 1;
+      const lineTotal = unitPrice * quantity;
+
+      // Insert line item
+      const { error: insertErr } = await supabase
+        .from("work_order_line_items" as any)
+        .insert({
+          work_order_id: selectedWorkOrder.id,
+          service_name: serviceName,
+          unit_price: unitPrice,
+          quantity,
+          total: lineTotal,
+        } as any);
+
+      if (insertErr) {
+        toast.error("Failed to add service: " + insertErr.message);
+        return;
+      }
+
+      // Recalculate total from all line items
+      await fetchLineItems(selectedWorkOrder.id);
+      const { data: allItems } = await supabase
+        .from("work_order_line_items" as any)
+        .select("total")
+        .eq("work_order_id", selectedWorkOrder.id);
+      const newTotal = (allItems as any[] || []).reduce((sum: number, item: any) => sum + Number(item.total), 0);
+
+      // Update work order price and status
+      const needsReapproval = !["pending", "pending_approval"].includes(selectedWorkOrder.status);
+      
+      await supabase
+        .from("work_orders")
+        .update({
+          retail_price: newTotal,
+          wholesale_price: newTotal,
+          status: "pending_approval",
+          approved_at: null,
+        } as any)
+        .eq("id", selectedWorkOrder.id);
+
+      // Also update the quote record
+      await supabase
+        .from("quotes")
+        .update({
+          base_price: newTotal,
+          total_owner_price: newTotal,
+          total_provider_receives: newTotal,
+        } as any)
+        .eq("work_order_id", selectedWorkOrder.id);
+
+      // Resend approval email
+      await resendApprovalEmail(selectedWorkOrder);
+
+      toast.success("Service added and approval email sent.");
+      setShowAddServiceSheet(false);
+      setAddServiceForm({ menuItemId: "", quantity: "1", unitPrice: "" });
+      await fetchLineItems(selectedWorkOrder.id);
+      await fetchWorkOrders();
+      // Re-select the work order with fresh data
+      setWorkOrders(prev => {
+        const updated = prev.find(wo => wo.id === selectedWorkOrder.id);
+        if (updated) setSelectedWorkOrder(updated);
+        return prev;
+      });
+    } catch (err: any) {
+      toast.error("Error adding service: " + err.message);
+    } finally {
+      setAddingService(false);
+      setShowReapprovalDialog(false);
+    }
+  };
+
+  const handleAddServiceClick = () => {
+    if (!selectedWorkOrder) return;
+    // If status is approved or later, show confirmation dialog
+    if (!["pending", "pending_approval"].includes(selectedWorkOrder.status)) {
+      setShowReapprovalDialog(true);
+    } else {
+      handleAddServiceConfirmed();
+    }
+  };
+
+  const handleMenuItemSelect = (menuItemId: string) => {
+    const item = activeMenuItems.find(m => m.id === menuItemId);
+    setAddServiceForm({
+      menuItemId,
+      quantity: "1",
+      unitPrice: item ? item.default_price.toString() : "",
+    });
   };
 
   const handleAddPhase = async () => {
@@ -197,11 +386,9 @@ export function ServiceWorkOrders({
   const handlePunchIn = async () => {
     if (!selectedWorkOrder || !business?.id) return;
     let staffId = currentStaffId;
-    // Auto-create service_staff record if user isn't registered yet
     if (!staffId) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      // Fetch user profile for name
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name, email")
@@ -264,6 +451,9 @@ export function ServiceWorkOrders({
     const minutes = mins % 60;
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   };
+
+  const lineItemsSubtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+  const computedAddTotal = (parseFloat(addServiceForm.unitPrice) || 0) * (parseInt(addServiceForm.quantity) || 1);
 
   if (loading) {
     return <div className="flex items-center justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
@@ -369,6 +559,106 @@ export function ServiceWorkOrders({
                 </div>
                 {selectedWorkOrder.description && (
                   <p className="text-sm text-muted-foreground pt-1">{selectedWorkOrder.description}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Services / Line Items */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Services
+                  </CardTitle>
+                  <Sheet open={showAddServiceSheet} onOpenChange={setShowAddServiceSheet}>
+                    <SheetTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Service
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Add Service</SheetTitle>
+                      </SheetHeader>
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <Label>Service</Label>
+                          <Select
+                            value={addServiceForm.menuItemId}
+                            onValueChange={handleMenuItemSelect}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
+                            <SelectContent>
+                              {activeMenuItems.map((item) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.name} — {formatPrice(item.default_price)}
+                                  {item.pricing_model === "hourly" ? "/hr" : item.pricing_model === "per_foot" ? "/ft" : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Unit Price ($)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={addServiceForm.unitPrice}
+                            onChange={e => setAddServiceForm(f => ({ ...f, unitPrice: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label>Quantity</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={addServiceForm.quantity}
+                            onChange={e => setAddServiceForm(f => ({ ...f, quantity: e.target.value }))}
+                          />
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between text-sm font-medium">
+                          <span>Line Total</span>
+                          <span>{formatPrice(computedAddTotal)}</span>
+                        </div>
+                        <Button
+                          onClick={handleAddServiceClick}
+                          disabled={!addServiceForm.menuItemId || addingService}
+                          className="w-full"
+                        >
+                          {addingService && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Add to Work Order
+                        </Button>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {lineItems.length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">No services added</p>
+                ) : (
+                  <div className="space-y-2">
+                    {lineItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                        <div>
+                          <p className="font-medium">{item.service_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatPrice(item.unit_price)} × {item.quantity}
+                          </p>
+                        </div>
+                        <span className="font-medium">{formatPrice(item.total)}</span>
+                      </div>
+                    ))}
+                    <Separator />
+                    <div className="flex justify-between text-sm font-semibold pt-1">
+                      <span>Subtotal</span>
+                      <span>{formatPrice(lineItemsSubtotal)}</span>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -590,7 +880,6 @@ export function ServiceWorkOrders({
       </div>
     </div>
 
-
       {selectedWorkOrder && (
         <EditWorkOrderSheet
           open={showEditSheet}
@@ -599,7 +888,6 @@ export function ServiceWorkOrders({
           onSaved={async () => {
             const prevId = selectedWorkOrder.id;
             await fetchWorkOrders();
-            // fetchWorkOrders updates workOrders state; re-select from fresh data
             setWorkOrders(prev => {
               const updated = prev.find(wo => wo.id === prevId);
               if (updated) setSelectedWorkOrder(updated);
@@ -608,6 +896,25 @@ export function ServiceWorkOrders({
           }}
         />
       )}
+
+      {/* Re-approval confirmation dialog */}
+      <AlertDialog open={showReapprovalDialog} onOpenChange={setShowReapprovalDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Re-approval Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              This work order has already been approved. Adding a service will change the price and require the customer to re-approve. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAddServiceConfirmed} disabled={addingService}>
+              {addingService && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
