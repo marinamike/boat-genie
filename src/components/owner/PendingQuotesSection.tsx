@@ -259,9 +259,18 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
       if (woError) throw woError;
 
+      // Permanently close the wish so it never reappears as a lead
+      if (quote.work_order?.boat?.id) {
+        await supabase
+          .from("wish_forms")
+          .update({ status: "rejected" })
+          .eq("boat_id", quote.work_order.boat.id)
+          .in("status", ["submitted", "reviewed", "approved"]);
+      }
+
       toast({
         title: "Quote declined",
-        description: "The provider has been notified.",
+        description: "Quote declined. Create a new request if you'd like to try a different provider.",
       });
 
       await fetchPendingQuotes();
