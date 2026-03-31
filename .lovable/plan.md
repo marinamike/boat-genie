@@ -1,53 +1,30 @@
 
 
-## Plan: Add Services Section to Work Order Detail Panel
+## Plan: Fix Wish Form Submission — Foreign Key Mismatch
 
-### Overview
-Add a "Services" section showing line items on a work order, with ability to add services from the business service menu. When services are added, handle re-approval logic based on work order status.
+### Problem
+The `wish_forms.provider_id` column has a foreign key constraint referencing the `profiles` table. However, the code passes `selectedProvider?.id` which is a `businesses.id` — not a user profile ID. This causes the FK violation: `"Key is not present in table 'profiles'"`.
 
-### Step 1: Create `work_order_line_items` Table
-Database migration to create the table:
-- `id` (uuid, PK, default gen_random_uuid())
-- `work_order_id` (uuid, FK to work_orders.id, ON DELETE CASCADE, NOT NULL)
-- `service_name` (text, NOT NULL)
-- `unit_price` (numeric, NOT NULL, default 0)
-- `quantity` (integer, NOT NULL, default 1)
-- `total` (numeric, NOT NULL, default 0)
-- `created_at` (timestamptz, default now())
+### Solution
+Run a database migration to change the foreign key on `wish_forms.provider_id` from referencing `profiles(id)` to referencing `businesses(id)`, since the provider selection UI picks a business, not a user profile.
 
-Enable RLS with policies allowing authenticated users who own the business or are staff to read/write line items (using `get_user_business_id()` joined through work_orders).
+### Steps
 
-### Step 2: Update `ServiceWorkOrders.tsx`
-Add a new "Services" card section between the Customer Info card and the Time Clock card:
+1. **Database migration**: Drop the existing `wish_forms_provider_id_fkey` constraint and add a new one referencing `businesses(id)`.
 
-**Display**: List all line items for the selected work order (service name, qty, unit price, line total). Show a subtotal at the bottom.
+```sql
+ALTER TABLE public.wish_forms
+  DROP CONSTRAINT wish_forms_provider_id_fkey;
 
-**"Add Service" button**: Opens a Sheet with:
-- A Select dropdown populated from `useServiceMenu().activeMenuItems`
-- Pre-fills unit price from the selected menu item's `default_price`
-- Quantity input (default 1)
-- Computed total (unit_price * quantity)
-- Save button
+ALTER TABLE public.wish_forms
+  ADD CONSTRAINT wish_forms_provider_id_fkey
+  FOREIGN KEY (provider_id) REFERENCES public.businesses(id);
+```
 
-**On save logic**:
-1. Insert the line item into `work_order_line_items`
-2. Recalculate total from all line items and update `work_orders.retail_price`
-3. **If status is `pending` or `pending_approval`**: Update status to `pending_approval`, clear `approved_at`, and resend the approval email via `send-owner-invite` edge function (reuse the pattern from `EditWorkOrderSheet`)
-4. **If status is `approved` or later** (`assigned`, `in_progress`, etc.): Show a confirmation dialog "This will require customer re-approval. Continue?" before proceeding. If confirmed, set status back to `pending_approval`, clear `approved_at`, and resend approval email.
-
-**State management**: 
-- New state: `lineItems`, `showAddServiceSheet`, `addServiceForm` (selected menu item, quantity)
-- New function: `fetchLineItems(workOrderId)` — queries `work_order_line_items` for the selected work order
-- New function: `handleAddService()` — inserts line item, updates work order price/status, conditionally resends email
-- Import and use `useServiceMenu` hook for the service menu dropdown
+2. **No code changes needed** — `useWishForm.ts` line 176 already passes `formData.providerId` correctly as a business ID.
 
 ### Technical Details
-
-**New imports needed**: `useServiceMenu` hook, `AlertDialog` components for the re-approval confirmation.
-
-**Approval email resend**: Reuse the same pattern as `EditWorkOrderSheet.handleSaveAndResend()` — fetch `approval_token`, `business_id`, build recipient info from the work order's guest/owner data, invoke `send-owner-invite`.
-
-**Files modified**:
-- `src/components/service/ServiceWorkOrders.tsx` — add Services section UI, line item CRUD, re-approval logic
-- Database migration — create `work_order_line_items` table with RLS
+- The `ProviderSearchResults` component returns `ServiceProvider` objects whose `.id` comes from the `businesses` table
+- The `WishFormSheet` passes `selectedProvider?.id` (a business ID) as `providerId`
+- Only the FK target is wrong — the data flow is correct
 
