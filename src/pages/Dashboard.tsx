@@ -120,24 +120,27 @@ const Dashboard = () => {
       .order("created_at", { ascending: false });
 
     if (wishData && wishData.length > 0) {
-      // Get wish IDs to fetch related work orders by wish_form_id
-      const wishIds = wishData.map(w => w.id);
-      
-      // Fetch work orders linked to these wishes via wish_form_id
-      const { data: workOrders } = await supabase
-        .from("work_orders")
-        .select("id, wish_form_id, status")
-        .in("wish_form_id", wishIds);
-      
-      // Map work order status to wishes by wish_form_id
-      const wishesWithStatus = wishData.map(wish => {
-        const relatedWorkOrder = workOrders?.find(wo => wo.wish_form_id === wish.id);
-        return {
-          ...wish,
-          work_order_status: relatedWorkOrder?.status || null,
-        };
-      });
-      
+      // Get work_order_ids from wishes that have been converted
+      const woIds = wishData
+        .map((w: any) => w.work_order_id)
+        .filter(Boolean) as string[];
+
+      let woStatusMap = new Map<string, string>();
+      if (woIds.length > 0) {
+        const { data: workOrders } = await supabase
+          .from("work_orders")
+          .select("id, status")
+          .in("id", woIds);
+        for (const wo of workOrders || []) {
+          woStatusMap.set(wo.id, wo.status);
+        }
+      }
+
+      const wishesWithStatus = wishData.map((wish: any) => ({
+        ...wish,
+        work_order_status: wish.work_order_id ? woStatusMap.get(wish.work_order_id) || null : null,
+      }));
+
       setWishes(wishesWithStatus as unknown as Wish[]);
     } else {
       setWishes([]);
