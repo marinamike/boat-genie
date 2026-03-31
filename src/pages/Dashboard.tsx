@@ -45,8 +45,9 @@ interface Wish {
   is_emergency: boolean;
   calculated_price: number | null;
   preferred_date: string | null;
-  created_at: string;
-  boat: {
+    created_at: string;
+    work_order_id?: string | null;
+    boat: {
     name: string;
   } | null;
   work_order_status?: string | null;
