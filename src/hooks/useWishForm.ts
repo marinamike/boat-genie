@@ -145,20 +145,52 @@ export function useWishForm() {
         }
 
         // Server-side price verification: fetch actual membership tier and boat length
-        const [profileRes, boatRes, ratesRes] = await Promise.all([
+        const [profileRes, boatRes] = await Promise.all([
           supabase.from("profiles").select("membership_tier").eq("id", user.id).single(),
           supabase.from("boats").select("length_ft").eq("id", formData.boatId).single(),
-          supabase.from("service_rates").select("*").eq("service_name", formData.serviceType).eq("is_active", true).single(),
         ]);
 
         let verifiedPrice = formData.calculatedPrice || null;
 
-        if (profileRes.data && boatRes.data?.length_ft && ratesRes.data) {
+        if (profileRes.data && boatRes.data?.length_ft) {
           const tier = profileRes.data.membership_tier as MembershipTier;
           const boatLength = boatRes.data.length_ft;
-          const rate = ratesRes.data as ServiceRate;
-          const { totalPrice } = calculatePrice(rate, boatLength, tier, formData.isEmergency);
-          verifiedPrice = totalPrice;
+
+          // If a provider was selected, verify against their business_service_menu
+          if (formData.providerId) {
+            const { data: menuItem } = await supabase
+              .from("business_service_menu")
+              .select("default_price, pricing_model")
+              .eq("business_id", formData.providerId)
+              .eq("name", formData.serviceType)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (menuItem) {
+              const basePrice = menuItem.pricing_model === "per_foot"
+                ? menuItem.default_price * boatLength
+                : menuItem.default_price;
+              const serviceFee = tier === "genie" ? 0 : basePrice * SERVICE_FEE_RATE;
+              const emergencyFee = formData.isEmergency
+                ? (tier === "genie" ? EMERGENCY_FEE_MEMBER : EMERGENCY_FEE_STANDARD)
+                : 0;
+              verifiedPrice = basePrice + serviceFee + emergencyFee;
+            }
+          } else {
+            // Fallback to platform service_rates for unassigned wishes
+            const { data: rateData } = await supabase
+              .from("service_rates")
+              .select("*")
+              .eq("service_name", formData.serviceType)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (rateData) {
+              const rate = rateData as ServiceRate;
+              const { totalPrice } = calculatePrice(rate, boatLength, tier, formData.isEmergency);
+              verifiedPrice = totalPrice;
+            }
+          }
         }
 
         // Create the wish form record
