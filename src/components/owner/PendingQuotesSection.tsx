@@ -161,6 +161,15 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
       if (woError) throw woError;
 
+      // Update the associated wish_form status so it no longer appears as a lead
+      if (quote.work_order?.boat?.id) {
+        await supabase
+          .from("wish_forms")
+          .update({ status: "accepted" })
+          .eq("boat_id", quote.work_order.boat.id)
+          .in("status", ["submitted", "reviewed", "approved"]);
+      }
+
       toast({
         title: "Quote accepted!",
         description: "The service provider has been notified and will begin work soon.",
