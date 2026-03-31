@@ -32,19 +32,22 @@ const statusConfig: Record<string, { label: string; icon: typeof Clock; variant:
   submitted: { label: "Seeking Quotes", icon: Clock, variant: "secondary" },
   reviewed: { label: "Quote Received", icon: MessageSquare, variant: "default" },
   approved: { label: "Work in Progress", icon: Wrench, variant: "outline" },
-  in_progress: { label: "Work in Progress", icon: Wrench, variant: "outline" },
+  assigned: { label: "Assigned", icon: Wrench, variant: "outline" },
+  in_progress: { label: "In Progress", icon: Wrench, variant: "default" },
+  pending_qc: { label: "QC Review", icon: Clock, variant: "secondary" },
   completed: { label: "Completed", icon: CheckCircle2, variant: "default" },
-  converted: { label: "Completed", icon: CheckCircle2, variant: "default" },
   rejected: { label: "Cancelled", icon: Clock, variant: "destructive" },
 };
 
 function getEffectiveStatus(wish: Wish): string {
   if (wish.work_order_status) {
-    if (wish.work_order_status === "completed") return "completed";
+    if (wish.work_order_status === "completed" || wish.work_order_status === "qc_passed") return "completed";
+    if (wish.work_order_status === "pending_qc") return "pending_qc";
     if (wish.work_order_status === "in_progress") return "in_progress";
-    if (wish.work_order_status === "pending_qc") return "in_progress";
-    if (wish.work_order_status === "qc_passed") return "completed";
+    if (wish.work_order_status === "assigned") return "assigned";
   }
+  // For converted wishes without a mapped work order status, show assigned
+  if (wish.status === "converted") return "assigned";
   return wish.status;
 }
 
