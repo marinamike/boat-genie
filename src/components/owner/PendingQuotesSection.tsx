@@ -212,12 +212,18 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
       if (woError) throw woError;
 
-      if (quote.work_order?.boat?.id) {
+      // Fetch the work order's wish_form_id and update that specific wish_form
+      const { data: woData } = await supabase
+        .from("work_orders")
+        .select("wish_form_id")
+        .eq("id", quote.work_order_id)
+        .single();
+
+      if (woData?.wish_form_id) {
         await supabase
           .from("wish_forms")
           .update({ status: "converted", work_order_id: quote.work_order_id } as any)
-          .eq("boat_id", quote.work_order.boat.id)
-          .in("status", ["submitted", "reviewed", "approved"]);
+          .eq("id", woData.wish_form_id);
       }
 
       toast({
