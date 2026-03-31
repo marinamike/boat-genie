@@ -288,6 +288,7 @@ export function useJobBoard() {
           boat_id: wish.boat_id,
           provider_id: session.user.id,
           business_id: bizId,
+          wish_form_id: wishId,
           title: `${wish.service_type} Service`,
           description: wish.description,
           status: "pending",
