@@ -120,19 +120,18 @@ const Dashboard = () => {
       .order("created_at", { ascending: false });
 
     if (wishData && wishData.length > 0) {
-      // Get boat IDs to fetch related work orders
-      const boatIds = wishData.map(w => w.boat_id).filter(Boolean);
+      // Get wish IDs to fetch related work orders by wish_form_id
+      const wishIds = wishData.map(w => w.id);
       
-      // Fetch work orders for these boats to get actual status
+      // Fetch work orders linked to these wishes via wish_form_id
       const { data: workOrders } = await supabase
         .from("work_orders")
-        .select("id, boat_id, status, title")
-        .in("boat_id", boatIds);
+        .select("id, wish_form_id, status")
+        .in("wish_form_id", wishIds);
       
-      // Map work order status to wishes
+      // Map work order status to wishes by wish_form_id
       const wishesWithStatus = wishData.map(wish => {
-        // Find matching work order (most recent one for this boat)
-        const relatedWorkOrder = workOrders?.find(wo => wo.boat_id === wish.boat_id);
+        const relatedWorkOrder = workOrders?.find(wo => wo.wish_form_id === wish.id);
         return {
           ...wish,
           work_order_status: relatedWorkOrder?.status || null,

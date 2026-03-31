@@ -31,8 +31,8 @@ interface WishStatusCardProps {
 const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   submitted: { label: "Seeking Quotes", icon: Clock, variant: "secondary" },
   reviewed: { label: "Quote Received", icon: MessageSquare, variant: "default" },
-  approved: { label: "Work in Progress", icon: Wrench, variant: "outline" },
-  assigned: { label: "Assigned", icon: Wrench, variant: "outline" },
+  approved: { label: "Quote Accepted", icon: Wrench, variant: "outline" },
+  assigned: { label: "Assigned — Work Scheduled", icon: Wrench, variant: "outline" },
   in_progress: { label: "In Progress", icon: Wrench, variant: "default" },
   pending_qc: { label: "QC Review", icon: Clock, variant: "secondary" },
   completed: { label: "Completed", icon: CheckCircle2, variant: "default" },
@@ -40,13 +40,16 @@ const statusConfig: Record<string, { label: string; icon: typeof Clock; variant:
 };
 
 function getEffectiveStatus(wish: Wish): string {
+  // When a wish has a linked work order, always show the work order status
   if (wish.work_order_status) {
     if (wish.work_order_status === "completed" || wish.work_order_status === "qc_passed") return "completed";
     if (wish.work_order_status === "pending_qc") return "pending_qc";
     if (wish.work_order_status === "in_progress") return "in_progress";
     if (wish.work_order_status === "assigned") return "assigned";
+    if (wish.work_order_status === "approved") return "approved";
+    if (wish.work_order_status === "pending" || wish.work_order_status === "pending_approval") return "reviewed";
   }
-  // For converted wishes without a mapped work order status, show assigned
+  // Converted wishes without a linked work order status default to assigned
   if (wish.status === "converted") return "assigned";
   return wish.status;
 }
