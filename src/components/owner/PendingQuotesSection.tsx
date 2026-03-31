@@ -215,7 +215,7 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
       if (quote.work_order?.boat?.id) {
         await supabase
           .from("wish_forms")
-          .update({ status: "converted" })
+          .update({ status: "converted", work_order_id: quote.work_order_id } as any)
           .eq("boat_id", quote.work_order.boat.id)
           .in("status", ["submitted", "reviewed", "approved"]);
       }

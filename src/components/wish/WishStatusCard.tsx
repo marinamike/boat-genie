@@ -43,7 +43,7 @@ function getEffectiveStatus(wish: Wish): string {
   // When a wish has a linked work order, always show the work order status
   if (wish.work_order_status) {
     if (wish.work_order_status === "completed" || wish.work_order_status === "qc_passed") return "completed";
-    if (wish.work_order_status === "pending_qc") return "pending_qc";
+    if (wish.work_order_status === "qc_review" || wish.work_order_status === "pending_qc") return "qc_review";
     if (wish.work_order_status === "in_progress") return "in_progress";
     if (wish.work_order_status === "assigned") return "assigned";
     if (wish.work_order_status === "approved") return "approved";

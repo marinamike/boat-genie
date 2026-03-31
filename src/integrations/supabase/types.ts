@@ -4952,6 +4952,7 @@ export type Database = {
           status: Database["public"]["Enums"]["wish_form_status"]
           updated_at: string
           urgency: string | null
+          work_order_id: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -4969,6 +4970,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["wish_form_status"]
           updated_at?: string
           urgency?: string | null
+          work_order_id?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -4986,6 +4988,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["wish_form_status"]
           updated_at?: string
           urgency?: string | null
+          work_order_id?: string | null
         }
         Relationships: [
           {
@@ -5000,6 +5003,13 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wish_forms_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]
