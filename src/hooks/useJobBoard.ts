@@ -312,6 +312,7 @@ export function useJobBoard() {
         .insert({
           work_order_id: workOrder.id,
           provider_id: session.user.id,
+          business_id: bizId,
           base_price: basePrice,
           service_fee: serviceFee,
           lead_fee: basePrice * 0.03,
@@ -321,9 +322,9 @@ export function useJobBoard() {
           notes: quoteData.notes || null,
           status: "pending",
           is_emergency: wish.urgency === "urgent",
-          provider_hourly_rate: businessProfile.hourly_rate,
-          provider_rate_per_foot: businessProfile.rate_per_foot,
-          provider_diagnostic_fee: businessProfile.diagnostic_fee,
+          provider_hourly_rate: businessProfileForQuote.hourly_rate,
+          provider_rate_per_foot: businessProfileForQuote.rate_per_foot,
+          provider_diagnostic_fee: businessProfileForQuote.diagnostic_fee,
         });
 
       if (quoteError) throw quoteError;
