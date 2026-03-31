@@ -8,7 +8,6 @@ import {
   Check, 
   X, 
   Calendar,
-  DollarSign,
   Clock,
   AlertTriangle,
   Ship
@@ -27,6 +26,7 @@ interface PendingQuote {
   materials_deposit: number | null;
   notes: string | null;
   created_at: string;
+  business_id: string | null;
   work_order: {
     id: string;
     title: string;
@@ -57,7 +57,7 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
   const fetchPendingQuotes = useCallback(async () => {
     try {
-      // First get user's boats
+      // 1. Get user's boat IDs
       const { data: boats } = await supabase
         .from("boats")
         .select("id")
@@ -70,8 +70,32 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
       const boatIds = boats.map(b => b.id);
 
-      // Fetch pending quotes for work orders on user's boats
-      const { data: quotes, error } = await supabase
+      // 2. Get work orders for those boats
+      const { data: workOrders, error: woError } = await supabase
+        .from("work_orders")
+        .select(`
+          id,
+          title,
+          description,
+          scheduled_date,
+          estimated_arrival_time,
+          is_emergency,
+          business_id,
+          boat:boats(id, name)
+        `)
+        .in("boat_id", boatIds);
+
+      if (woError) throw woError;
+      if (!workOrders || workOrders.length === 0) {
+        setPendingQuotes([]);
+        return;
+      }
+
+      const workOrderIds = workOrders.map(wo => wo.id);
+      const workOrderMap = new Map(workOrders.map(wo => [wo.id, wo]));
+
+      // 3. Get pending quotes for those work orders
+      const { data: quotes, error: qError } = await supabase
         .from("quotes")
         .select(`
           id,
@@ -82,49 +106,56 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
           materials_deposit,
           notes,
           created_at,
-          provider_id
+          business_id
         `)
+        .in("work_order_id", workOrderIds)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (qError) throw qError;
+      if (!quotes || quotes.length === 0) {
+        setPendingQuotes([]);
+        return;
+      }
 
-      // For each quote, fetch work order details
-      const quotesWithDetails: PendingQuote[] = [];
-      
-      for (const quote of quotes || []) {
-        const { data: workOrder } = await supabase
-          .from("work_orders")
-          .select(`
-            id,
-            title,
-            description,
-            scheduled_date,
-            estimated_arrival_time,
-            is_emergency,
-            boat:boats(id, name)
-          `)
-          .eq("id", quote.work_order_id)
-          .in("boat_id", boatIds)
-          .maybeSingle();
+      // 4. Collect unique business IDs and fetch business names
+      const bizIds = [...new Set(
+        quotes.map(q => q.business_id).filter(Boolean) as string[]
+      )];
 
-        if (workOrder) {
-          // Get provider info from businesses table
-          const { data: provider } = await supabase
-            .from("businesses")
-            .select("business_name")
-            .eq("owner_id", quote.provider_id)
-            .maybeSingle();
+      let bizMap = new Map<string, string | null>();
+      if (bizIds.length > 0) {
+        const { data: businesses } = await supabase
+          .from("businesses")
+          .select("id, business_name")
+          .in("id", bizIds);
 
-          quotesWithDetails.push({
-            ...quote,
-            work_order: workOrder as PendingQuote["work_order"],
-            provider: provider,
-          });
+        for (const b of businesses || []) {
+          bizMap.set(b.id, b.business_name);
         }
       }
 
-      setPendingQuotes(quotesWithDetails);
+      // 5. Assemble results
+      const result: PendingQuote[] = quotes.map(quote => {
+        const wo = workOrderMap.get(quote.work_order_id);
+        return {
+          ...quote,
+          work_order: wo ? {
+            id: wo.id,
+            title: wo.title,
+            description: wo.description,
+            scheduled_date: wo.scheduled_date,
+            estimated_arrival_time: wo.estimated_arrival_time,
+            is_emergency: wo.is_emergency,
+            boat: wo.boat as PendingQuote["work_order"] extends null ? never : NonNullable<PendingQuote["work_order"]>["boat"],
+          } : null,
+          provider: quote.business_id
+            ? { business_name: bizMap.get(quote.business_id) || null }
+            : null,
+        };
+      });
+
+      setPendingQuotes(result);
     } catch (error) {
       console.error("Error fetching pending quotes:", error);
     } finally {
@@ -136,10 +167,31 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
     fetchPendingQuotes();
   }, [fetchPendingQuotes]);
 
+  // Realtime subscription for instant quote updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('pending-quotes-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'quotes',
+        },
+        () => {
+          fetchPendingQuotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPendingQuotes]);
+
   const handleAcceptQuote = async (quote: PendingQuote) => {
     setActionLoading(quote.id);
     try {
-      // Update quote status to accepted
       const { error: quoteError } = await supabase
         .from("quotes")
         .update({ status: "accepted" })
@@ -147,7 +199,6 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
       if (quoteError) throw quoteError;
 
-      // Update work order with accepted quote and change status
       const { error: woError } = await supabase
         .from("work_orders")
         .update({ 
@@ -161,7 +212,6 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
       if (woError) throw woError;
 
-      // Update the associated wish_form status so it no longer appears as a lead
       if (quote.work_order?.boat?.id) {
         await supabase
           .from("wish_forms")
@@ -192,7 +242,6 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
   const handleDeclineQuote = async (quote: PendingQuote) => {
     setActionLoading(quote.id);
     try {
-      // Update quote status to rejected
       const { error: quoteError } = await supabase
         .from("quotes")
         .update({ status: "rejected" })
@@ -200,7 +249,6 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
 
       if (quoteError) throw quoteError;
 
-      // Update work order status back to pending for other providers
       const { error: woError } = await supabase
         .from("work_orders")
         .update({ 
@@ -286,7 +334,6 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
                 </p>
               )}
 
-              {/* Price Breakdown */}
               <div className="bg-muted/50 rounded-lg p-4 mb-4">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -311,7 +358,6 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
                 </div>
               </div>
 
-              {/* Meta Info */}
               <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-4">
                 {quote.work_order?.scheduled_date && (
                   <span className="flex items-center gap-1">
@@ -342,7 +388,6 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="flex gap-3">
                 <Button
                   className="flex-1"
