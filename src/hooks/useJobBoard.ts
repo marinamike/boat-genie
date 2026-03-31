@@ -287,6 +287,7 @@ export function useJobBoard() {
         .insert({
           boat_id: wish.boat_id,
           provider_id: session.user.id,
+          business_id: bizId,
           title: `${wish.service_type} Service`,
           description: wish.description,
           status: "pending",
@@ -297,9 +298,9 @@ export function useJobBoard() {
           wholesale_price: basePrice,
           retail_price: totalOwnerPrice,
           escrow_status: "pending_quote",
-          provider_hourly_rate: businessProfile.hourly_rate,
-          provider_rate_per_foot: businessProfile.rate_per_foot,
-          provider_diagnostic_fee: businessProfile.diagnostic_fee,
+          provider_hourly_rate: businessProfileForQuote.hourly_rate,
+          provider_rate_per_foot: businessProfileForQuote.rate_per_foot,
+          provider_diagnostic_fee: businessProfileForQuote.diagnostic_fee,
         })
         .select()
         .single();
