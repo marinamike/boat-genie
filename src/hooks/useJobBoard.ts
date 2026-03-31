@@ -268,11 +268,14 @@ export function useJobBoard() {
       if (wishError) throw wishError;
 
       // Get provider's current rates from businesses table
-      const { data: businessProfile, error: profileError } = await supabase
+      const { data: businessProfileForQuote, error: profileError } = await supabase
         .from("businesses")
-        .select("hourly_rate, rate_per_foot, diagnostic_fee")
+        .select("id, hourly_rate, rate_per_foot, diagnostic_fee")
         .eq("owner_id", session.user.id)
         .single();
+
+      if (profileError) throw profileError;
+      const bizId = businessProfileForQuote.id;
 
       if (profileError) throw profileError;
 
