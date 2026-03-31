@@ -172,7 +172,7 @@ export function useJobBoard() {
             boat_profiles(marina_name, slip_number)
           )
         `)
-        .eq("provider_id", session.user.id)
+        .eq("provider_id", businessProfile?.id || "")
         .in("status", ["submitted", "reviewed", "approved"])
         .order("created_at", { ascending: false });
 
