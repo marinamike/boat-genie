@@ -5168,6 +5168,7 @@ export type Database = {
           title: string
           updated_at: string
           wholesale_price: number | null
+          wish_form_id: string | null
         }
         Insert: {
           accepted_quote_id?: string | null
@@ -5218,6 +5219,7 @@ export type Database = {
           title: string
           updated_at?: string
           wholesale_price?: number | null
+          wish_form_id?: string | null
         }
         Update: {
           accepted_quote_id?: string | null
@@ -5268,6 +5270,7 @@ export type Database = {
           title?: string
           updated_at?: string
           wholesale_price?: number | null
+          wish_form_id?: string | null
         }
         Relationships: [
           {
@@ -5310,6 +5313,13 @@ export type Database = {
             columns: ["provider_service_id"]
             isOneToOne: false
             referencedRelation: "provider_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_wish_form_id_fkey"
+            columns: ["wish_form_id"]
+            isOneToOne: false
+            referencedRelation: "wish_forms"
             referencedColumns: ["id"]
           },
         ]

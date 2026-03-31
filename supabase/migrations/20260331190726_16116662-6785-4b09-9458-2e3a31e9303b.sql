@@ -1,0 +1,1 @@
+ALTER TABLE public.work_orders ADD COLUMN wish_form_id UUID REFERENCES public.wish_forms(id) ON DELETE SET NULL;
