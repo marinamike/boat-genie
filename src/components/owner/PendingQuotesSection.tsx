@@ -196,12 +196,11 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
         .from("quotes")
         .update({ status: "accepted" })
         .eq("id", quote.id);
-
       if (quoteError) throw quoteError;
 
       const { error: woError } = await supabase
         .from("work_orders")
-        .update({ 
+        .update({
           accepted_quote_id: quote.id,
           status: "assigned",
           escrow_status: "work_started",
@@ -209,21 +208,19 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
           owner_approved_at: new Date().toISOString(),
         })
         .eq("id", quote.work_order_id);
-
       if (woError) throw woError;
 
-      // Fetch the work order's wish_form_id and update that specific wish_form
-      const { data: woData } = await supabase
+      const { data: workOrder } = await supabase
         .from("work_orders")
         .select("wish_form_id")
         .eq("id", quote.work_order_id)
         .single();
 
-      if (woData?.wish_form_id) {
+      if (workOrder?.wish_form_id) {
         await supabase
           .from("wish_forms")
-          .update({ status: "converted", work_order_id: quote.work_order_id } as any)
-          .eq("id", woData.wish_form_id);
+          .update({ status: "converted", work_order_id: quote.work_order_id })
+          .eq("id", workOrder.wish_form_id);
       }
 
       toast({
