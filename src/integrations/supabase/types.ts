@@ -4999,7 +4999,7 @@ export type Database = {
             foreignKeyName: "wish_forms_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]

@@ -1,0 +1,2 @@
+ALTER TABLE public.wish_forms DROP CONSTRAINT wish_forms_provider_id_fkey;
+ALTER TABLE public.wish_forms ADD CONSTRAINT wish_forms_provider_id_fkey FOREIGN KEY (provider_id) REFERENCES public.businesses(id);
