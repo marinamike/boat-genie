@@ -277,8 +277,6 @@ export function useJobBoard() {
       if (profileError) throw profileError;
       const bizId = businessProfileForQuote.id;
 
-      if (profileError) throw profileError;
-
       const basePrice = quoteData.laborCost + quoteData.materialsCost;
       const serviceFee = basePrice * 0.10;
       const totalOwnerPrice = basePrice + serviceFee;
