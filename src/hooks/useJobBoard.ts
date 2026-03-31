@@ -268,13 +268,14 @@ export function useJobBoard() {
       if (wishError) throw wishError;
 
       // Get provider's current rates from businesses table
-      const { data: businessProfile, error: profileError } = await supabase
+      const { data: businessProfileForQuote, error: profileError } = await supabase
         .from("businesses")
-        .select("hourly_rate, rate_per_foot, diagnostic_fee")
+        .select("id, hourly_rate, rate_per_foot, diagnostic_fee")
         .eq("owner_id", session.user.id)
         .single();
 
       if (profileError) throw profileError;
+      const bizId = businessProfileForQuote.id;
 
       const basePrice = quoteData.laborCost + quoteData.materialsCost;
       const serviceFee = basePrice * 0.10;
@@ -286,6 +287,7 @@ export function useJobBoard() {
         .insert({
           boat_id: wish.boat_id,
           provider_id: session.user.id,
+          business_id: bizId,
           title: `${wish.service_type} Service`,
           description: wish.description,
           status: "pending",
@@ -296,9 +298,9 @@ export function useJobBoard() {
           wholesale_price: basePrice,
           retail_price: totalOwnerPrice,
           escrow_status: "pending_quote",
-          provider_hourly_rate: businessProfile.hourly_rate,
-          provider_rate_per_foot: businessProfile.rate_per_foot,
-          provider_diagnostic_fee: businessProfile.diagnostic_fee,
+          provider_hourly_rate: businessProfileForQuote.hourly_rate,
+          provider_rate_per_foot: businessProfileForQuote.rate_per_foot,
+          provider_diagnostic_fee: businessProfileForQuote.diagnostic_fee,
         })
         .select()
         .single();
@@ -310,6 +312,7 @@ export function useJobBoard() {
         .insert({
           work_order_id: workOrder.id,
           provider_id: session.user.id,
+          business_id: bizId,
           base_price: basePrice,
           service_fee: serviceFee,
           lead_fee: basePrice * 0.03,
@@ -319,9 +322,9 @@ export function useJobBoard() {
           notes: quoteData.notes || null,
           status: "pending",
           is_emergency: wish.urgency === "urgent",
-          provider_hourly_rate: businessProfile.hourly_rate,
-          provider_rate_per_foot: businessProfile.rate_per_foot,
-          provider_diagnostic_fee: businessProfile.diagnostic_fee,
+          provider_hourly_rate: businessProfileForQuote.hourly_rate,
+          provider_rate_per_foot: businessProfileForQuote.rate_per_foot,
+          provider_diagnostic_fee: businessProfileForQuote.diagnostic_fee,
         });
 
       if (quoteError) throw quoteError;
