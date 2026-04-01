@@ -49,7 +49,6 @@ interface Wish {
   boat: {
     name: string;
   } | null;
-  work_order_status?: string | null;
 }
 
 interface Profile {

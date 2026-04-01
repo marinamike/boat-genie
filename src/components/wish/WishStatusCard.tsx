@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, MessageSquare, Wrench, CheckCircle2 } from "lucide-react";
+import { Sparkles, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { formatPrice } from "@/lib/pricing";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ interface Wish {
   boat?: {
     name: string;
   } | null;
-  work_order_status?: string | null;
 }
 
 interface WishStatusCardProps {
@@ -28,26 +27,11 @@ interface WishStatusCardProps {
   onUpdated?: () => void;
 }
 
-const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" }> = {
   open: { label: "Seeking Quotes", icon: Clock, variant: "secondary" },
-  accepted: { label: "Accepted", icon: CheckCircle2, variant: "default" },
-  closed: { label: "Cancelled", icon: Clock, variant: "destructive" },
-  assigned: { label: "Assigned — Work Scheduled", icon: Wrench, variant: "outline" },
-  in_progress: { label: "In Progress", icon: Wrench, variant: "default" },
-  qc_review: { label: "QC Review", icon: Clock, variant: "secondary" },
-  completed: { label: "Completed", icon: CheckCircle2, variant: "default" },
+  accepted: { label: "Quote Accepted", icon: CheckCircle2, variant: "default" },
+  closed: { label: "Closed", icon: XCircle, variant: "destructive" },
 };
-
-function getEffectiveStatus(wish: Wish): string {
-  // When a wish has a linked work order, always show the work order status
-  if (wish.work_order_status) {
-    if (wish.work_order_status === "completed" || wish.work_order_status === "qc_passed") return "completed";
-    if (wish.work_order_status === "qc_review" || wish.work_order_status === "pending_qc") return "qc_review";
-    if (wish.work_order_status === "in_progress") return "in_progress";
-    if (wish.work_order_status === "assigned") return "assigned";
-  }
-  return wish.status;
-}
 
 export function WishStatusCard({ wish, onUpdated }: WishStatusCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
