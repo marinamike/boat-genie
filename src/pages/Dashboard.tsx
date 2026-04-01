@@ -118,32 +118,7 @@ const Dashboard = () => {
       .not("status", "eq", "closed")
       .order("created_at", { ascending: false });
 
-    if (wishData && wishData.length > 0) {
-      // Look up work order statuses via wish_form_id on work_orders table
-      const wishIds = wishData.map((w: any) => w.id);
-
-      let woStatusMap = new Map<string, string>();
-      if (wishIds.length > 0) {
-        const { data: workOrders } = await supabase
-          .from("work_orders")
-          .select("wish_form_id, status")
-          .in("wish_form_id", wishIds);
-        for (const wo of workOrders || []) {
-          if (wo.wish_form_id) {
-            woStatusMap.set(wo.wish_form_id, wo.status);
-          }
-        }
-      }
-
-      const wishesWithStatus = wishData.map((wish: any) => ({
-        ...wish,
-        work_order_status: woStatusMap.get(wish.id) || null,
-      }));
-
-      setWishes(wishesWithStatus as unknown as Wish[]);
-    } else {
-      setWishes([]);
-    }
+    setWishes((wishData as unknown as Wish[]) || []);
   }, [user]);
 
   useEffect(() => {

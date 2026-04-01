@@ -35,8 +35,7 @@ const statusConfig: Record<string, { label: string; icon: typeof Clock; variant:
 
 export function WishStatusCard({ wish, onUpdated }: WishStatusCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
-  const effectiveStatus = getEffectiveStatus(wish);
-  const status = statusConfig[effectiveStatus] || statusConfig.submitted;
+  const status = statusConfig[wish.status] || statusConfig.open;
   const StatusIcon = status.icon;
 
   const formatServiceType = (type: string) => {
