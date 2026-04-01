@@ -17,7 +17,6 @@ export interface WishFormData {
   preferredDate?: string;
   calculatedPrice?: number;
   photos?: string[];
-  providerId?: string;
 }
 
 export interface ServiceRate {
