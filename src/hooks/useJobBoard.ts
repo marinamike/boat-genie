@@ -189,7 +189,10 @@ export function useJobBoard() {
             boat: boat ? { ...boat, boat_profiles: undefined } : null,
             boat_profile: boatProfile || null,
           };
-        });
+        })
+        .filter((wish) =>
+          matchesProviderService(wish.service_type, serviceNames, menuCategories)
+        );
 
       // Fetch active work orders assigned to this provider
       const { data: workOrdersRaw, error: woError } = await supabase
