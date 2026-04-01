@@ -4946,13 +4946,11 @@ export type Database = {
           is_emergency: boolean
           photos: string[] | null
           preferred_date: string | null
-          provider_id: string | null
           requester_id: string
           service_type: string
           status: Database["public"]["Enums"]["wish_form_status"]
           updated_at: string
           urgency: string | null
-          work_order_id: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -4964,13 +4962,11 @@ export type Database = {
           is_emergency?: boolean
           photos?: string[] | null
           preferred_date?: string | null
-          provider_id?: string | null
           requester_id: string
           service_type: string
           status?: Database["public"]["Enums"]["wish_form_status"]
           updated_at?: string
           urgency?: string | null
-          work_order_id?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -4982,13 +4978,11 @@ export type Database = {
           is_emergency?: boolean
           photos?: string[] | null
           preferred_date?: string | null
-          provider_id?: string | null
           requester_id?: string
           service_type?: string
           status?: Database["public"]["Enums"]["wish_form_status"]
           updated_at?: string
           urgency?: string | null
-          work_order_id?: string | null
         }
         Relationships: [
           {
@@ -4996,20 +4990,6 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wish_forms_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wish_forms_work_order_id_fkey"
-            columns: ["work_order_id"]
-            isOneToOne: false
-            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -5692,7 +5672,7 @@ export type Database = {
       marina_module: "dry_stack" | "ship_store" | "fuel_dock" | "service_yard"
       membership_tier: "standard" | "genie"
       pricing_model: "per_foot" | "flat_rate" | "per_hour"
-      quote_status: "pending" | "accepted" | "rejected" | "expired"
+      quote_status: "pending" | "accepted" | "declined"
       service_specialty:
         | "diesel_mechanic"
         | "outboard_mechanic"
@@ -5711,12 +5691,7 @@ export type Database = {
       store_item_category: "parts" | "retail" | "consumables"
       utility_meter_type: "power" | "water"
       verification_status: "pending" | "verified" | "rejected" | "suspended"
-      wish_form_status:
-        | "submitted"
-        | "reviewed"
-        | "approved"
-        | "rejected"
-        | "converted"
+      wish_form_status: "open" | "accepted" | "closed"
       work_order_phase_status:
         | "pending"
         | "in_progress"
@@ -5894,7 +5869,7 @@ export const Constants = {
       marina_module: ["dry_stack", "ship_store", "fuel_dock", "service_yard"],
       membership_tier: ["standard", "genie"],
       pricing_model: ["per_foot", "flat_rate", "per_hour"],
-      quote_status: ["pending", "accepted", "rejected", "expired"],
+      quote_status: ["pending", "accepted", "declined"],
       service_specialty: [
         "diesel_mechanic",
         "outboard_mechanic",
@@ -5914,13 +5889,7 @@ export const Constants = {
       store_item_category: ["parts", "retail", "consumables"],
       utility_meter_type: ["power", "water"],
       verification_status: ["pending", "verified", "rejected", "suspended"],
-      wish_form_status: [
-        "submitted",
-        "reviewed",
-        "approved",
-        "rejected",
-        "converted",
-      ],
+      wish_form_status: ["open", "accepted", "closed"],
       work_order_phase_status: [
         "pending",
         "in_progress",
