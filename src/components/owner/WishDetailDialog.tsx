@@ -53,14 +53,13 @@ interface WishDetailDialogProps {
 }
 
 const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  submitted: { label: "Seeking Quotes", icon: Clock, variant: "secondary" },
-  reviewed: { label: "Quote Received", icon: MessageSquare, variant: "default" },
-  approved: { label: "Work in Progress", icon: Wrench, variant: "outline" },
+  open: { label: "Seeking Quotes", icon: Clock, variant: "secondary" },
+  accepted: { label: "Accepted", icon: CheckCircle2, variant: "default" },
+  closed: { label: "Cancelled", icon: Clock, variant: "destructive" },
   assigned: { label: "Assigned", icon: Wrench, variant: "outline" },
   in_progress: { label: "In Progress", icon: Wrench, variant: "default" },
   pending_qc: { label: "QC Review", icon: Clock, variant: "secondary" },
   completed: { label: "Completed", icon: CheckCircle2, variant: "default" },
-  rejected: { label: "Cancelled", icon: Clock, variant: "destructive" },
 };
 
 function getEffectiveStatus(wish: Wish): string {
