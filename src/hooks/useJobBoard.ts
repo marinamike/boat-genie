@@ -211,7 +211,7 @@ export function useJobBoard() {
           boat:boats(id, name, make, model, length_ft),
           quotes:quotes!quotes_work_order_id_fkey(id, status, base_price, total_owner_price)
         `)
-        .eq("provider_id", session.user.id)
+        .eq("business_id", businessProfile?.id ?? "")
         .not("status", "eq", "completed")
         .not("status", "eq", "cancelled")
         .order("priority", { ascending: false })
