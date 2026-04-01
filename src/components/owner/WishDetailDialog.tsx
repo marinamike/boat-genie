@@ -69,7 +69,6 @@ function getEffectiveStatus(wish: Wish): string {
     if (wish.work_order_status === "in_progress") return "in_progress";
     if (wish.work_order_status === "assigned") return "assigned";
   }
-  if (wish.status === "converted") return "assigned";
   return wish.status;
 }
 
