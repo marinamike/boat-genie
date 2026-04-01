@@ -173,7 +173,7 @@ export function LeadStream({ wishes, pendingWishes = [], providerServices, onSub
           <Briefcase className="w-12 h-12 text-muted-foreground mb-4" />
           <h3 className="font-semibold text-lg">No Leads</h3>
           <p className="text-muted-foreground text-center">
-            New leads matching your services will appear here.
+            No leads matching your service menu right now.
           </p>
         </CardContent>
       </Card>
