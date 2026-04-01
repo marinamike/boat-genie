@@ -228,7 +228,7 @@ export function useJobBoard() {
       const { data: quotedOrders } = await supabase
         .from("work_orders")
         .select("boat_id, title")
-        .eq("provider_id", session.user.id)
+        .eq("business_id", businessProfile?.id ?? "")
         .eq("status", "pending");
 
       const quotedBoatIds = new Set((quotedOrders || []).map(wo => wo.boat_id));
