@@ -1,14 +1,34 @@
 
 
-## Plan: Update useJobBoard.ts filtering logic
+## Plan: Rewrite PendingQuotesSection fetch and action logic
 
-### Changes (single file: `src/hooks/useJobBoard.ts`)
+### Summary
+Rewrite the fetch to go boats → work_orders → quotes with business names. Simplify price display to base price + materials deposit only. Fix accept to decline sibling quotes via wish_form_id. Fix decline to only update the quote (wish stays open).
 
-1. **Filter wishes by service menu categories** (after line 192): Apply the existing `matchesProviderService` function to `filteredWishes`, so only wishes matching the business's active `business_service_menu` categories appear in the leads feed. The matching logic and helper functions already exist in the file.
+### Changes (single file: `src/components/owner/PendingQuotesSection.tsx`)
 
-2. **Work orders: filter by `business_id`** (line 211): Change `.eq("provider_id", session.user.id)` to `.eq("business_id", businessProfile?.id)` — guard against null business profile.
+**1. Interface update**
+- Remove `service_fee` and `total_owner_price` from `PendingQuote`
+- Add `wish_form_id: string | null` to the work_order sub-interface
 
-3. **Quoted orders: filter by `business_id`** (line 228): Change `.eq("provider_id", session.user.id)` to `.eq("business_id", businessProfile?.id)` for the pending-quote lookup as well.
+**2. Fetch logic** (stays the same pattern: boats → work orders → quotes → businesses)
+- Add `wish_form_id` to the work_order select query
+- No functional change needed — already filters by boat_id on work_orders, then quotes by work_order_id with status "pending"
 
-No other changes — wish status filter already uses `["open"]`, and quote submission already leaves the wish as `"open"`.
+**3. Accept handler rewrite**
+- Update quote status to `"accepted"`
+- Update work order: `status: "assigned"`, `accepted_quote_id`, `owner_approved_at`, `escrow_status: "work_started"`, `escrow_amount: quote.base_price + (quote.materials_deposit || 0)`
+- Look up `wish_form_id` from work order → update wish to `"accepted"`
+- **Decline all other pending quotes on the same wish**: query work_orders with matching `wish_form_id`, get their IDs, update all quotes on those work orders (excluding the accepted one) to `"declined"`
+
+**4. Decline handler rewrite**
+- Update quote status to `"declined"` — **that's it**
+- Remove the work order cancellation and wish closure logic entirely
+- Update toast message to "The wish remains open for other providers"
+
+**5. Price display simplification**
+- Remove "Platform Fee (10%)" row
+- Remove "Service Cost" label → show "Base Price"
+- Total = `base_price + (materials_deposit || 0)` computed inline
+- Remove `Separator` import if unused
 
