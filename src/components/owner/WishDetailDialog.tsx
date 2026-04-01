@@ -187,7 +187,7 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
     if (workOrders && workOrders.length > 0) {
       await supabase.from("work_orders").update({ status: "cancelled" }).eq("id", workOrders[0].id);
     }
-    await supabase.from("wish_forms").update({ status: "rejected" }).eq("id", wish.id);
+    await supabase.from("wish_forms").update({ status: "closed" }).eq("id", wish.id);
 
     toast({ title: "Service Cancelled", description: "The accepted service has been cancelled." });
     onUpdated?.();
