@@ -53,14 +53,13 @@ interface WishDetailDialogProps {
 }
 
 const statusConfig: Record<string, { label: string; icon: typeof Clock; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  submitted: { label: "Seeking Quotes", icon: Clock, variant: "secondary" },
-  reviewed: { label: "Quote Received", icon: MessageSquare, variant: "default" },
-  approved: { label: "Work in Progress", icon: Wrench, variant: "outline" },
+  open: { label: "Seeking Quotes", icon: Clock, variant: "secondary" },
+  accepted: { label: "Accepted", icon: CheckCircle2, variant: "default" },
+  closed: { label: "Cancelled", icon: Clock, variant: "destructive" },
   assigned: { label: "Assigned", icon: Wrench, variant: "outline" },
   in_progress: { label: "In Progress", icon: Wrench, variant: "default" },
   pending_qc: { label: "QC Review", icon: Clock, variant: "secondary" },
   completed: { label: "Completed", icon: CheckCircle2, variant: "default" },
-  rejected: { label: "Cancelled", icon: Clock, variant: "destructive" },
 };
 
 function getEffectiveStatus(wish: Wish): string {
@@ -70,7 +69,6 @@ function getEffectiveStatus(wish: Wish): string {
     if (wish.work_order_status === "in_progress") return "in_progress";
     if (wish.work_order_status === "assigned") return "assigned";
   }
-  if (wish.status === "converted") return "assigned";
   return wish.status;
 }
 
@@ -140,11 +138,11 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
   if (!wish) return null;
 
   const effectiveStatus = getEffectiveStatus(wish);
-  const status = statusConfig[effectiveStatus] || statusConfig.submitted;
+  const status = statusConfig[effectiveStatus] || statusConfig.open;
   const StatusIcon = status.icon;
   const isCompleted = effectiveStatus === "completed";
-  const isPending = effectiveStatus === "submitted" || effectiveStatus === "reviewed";
-  const isAccepted = effectiveStatus === "approved" || effectiveStatus === "in_progress";
+  const isPending = effectiveStatus === "open";
+  const isAccepted = effectiveStatus === "accepted" || effectiveStatus === "in_progress";
 
   const handleCancelAccepted = async () => {
     // Fetch provider's cancellation policy from the work order's provider business
@@ -189,7 +187,7 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
     if (workOrders && workOrders.length > 0) {
       await supabase.from("work_orders").update({ status: "cancelled" }).eq("id", workOrders[0].id);
     }
-    await supabase.from("wish_forms").update({ status: "rejected" }).eq("id", wish.id);
+    await supabase.from("wish_forms").update({ status: "closed" }).eq("id", wish.id);
 
     toast({ title: "Service Cancelled", description: "The accepted service has been cancelled." });
     onUpdated?.();
@@ -231,7 +229,7 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
   const handleDelete = async () => {
     const { error } = await supabase
       .from("wish_forms")
-      .update({ status: "rejected" })
+      .update({ status: "closed" })
       .eq("id", wish.id);
 
     if (error) {

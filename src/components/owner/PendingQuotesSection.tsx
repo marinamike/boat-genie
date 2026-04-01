@@ -219,7 +219,7 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
       if (workOrder?.wish_form_id) {
         await supabase
           .from("wish_forms")
-          .update({ status: "converted", work_order_id: quote.work_order_id })
+          .update({ status: "accepted" })
           .eq("id", workOrder.wish_form_id);
       }
 
@@ -247,7 +247,7 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
     try {
       const { error: quoteError } = await supabase
         .from("quotes")
-        .update({ status: "rejected" })
+        .update({ status: "declined" })
         .eq("id", quote.id);
 
       if (quoteError) throw quoteError;
@@ -266,9 +266,9 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
       if (quote.work_order?.boat?.id) {
         await supabase
           .from("wish_forms")
-          .update({ status: "rejected" })
+          .update({ status: "closed" })
           .eq("boat_id", quote.work_order.boat.id)
-          .in("status", ["submitted", "reviewed", "approved"]);
+          .in("status", ["open"]);
       }
 
       toast({

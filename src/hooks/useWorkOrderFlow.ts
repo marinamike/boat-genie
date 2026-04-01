@@ -182,10 +182,10 @@ export function useWorkOrderFlow() {
         .update({ status: "accepted" })
         .eq("id", quoteId);
 
-      // Reject other quotes for this work order
+      // Decline other quotes for this work order
       await supabase
         .from("quotes")
-        .update({ status: "rejected" })
+        .update({ status: "declined" })
         .eq("work_order_id", workOrderId)
         .neq("id", quoteId);
 

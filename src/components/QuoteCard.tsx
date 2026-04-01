@@ -37,13 +37,9 @@ const statusConfig: Record<QuoteStatus, { label: string; className: string }> = 
     label: "Accepted",
     className: "bg-green-100 text-green-800",
   },
-  rejected: {
-    label: "Rejected",
+  declined: {
+    label: "Declined",
     className: "bg-red-100 text-red-800",
-  },
-  expired: {
-    label: "Expired",
-    className: "bg-gray-100 text-gray-800",
   },
 };
 
