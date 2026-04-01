@@ -1,30 +1,51 @@
 
 
-## Plan: Fix Wish Form Submission — Foreign Key Mismatch
+## Plan: Simplify wish_forms schema and enums
 
-### Problem
-The `wish_forms.provider_id` column has a foreign key constraint referencing the `profiles` table. However, the code passes `selectedProvider?.id` which is a `businesses.id` — not a user profile ID. This causes the FK violation: `"Key is not present in table 'profiles'"`.
+### Summary
+Remove `provider_id` and `work_order_id` columns from `wish_forms`, and simplify both the `wish_form_status` and `quote_status` enums to three values each.
 
-### Solution
-Run a database migration to change the foreign key on `wish_forms.provider_id` from referencing `profiles(id)` to referencing `businesses(id)`, since the provider selection UI picks a business, not a user profile.
+### Migration
 
-### Steps
+Create a single SQL migration that:
 
-1. **Database migration**: Drop the existing `wish_forms_provider_id_fkey` constraint and add a new one referencing `businesses(id)`.
+1. **Drop `provider_id` column** from `wish_forms` (includes dropping the foreign key constraint)
+2. **Drop `work_order_id` column** from `wish_forms` (includes dropping the foreign key constraint)
+3. **Replace `wish_form_status` enum** with exactly: `open`, `accepted`, `closed`
+   - Map existing data: `submitted`/`reviewed` → `open`, `approved`/`converted` → `accepted`, `rejected` → `closed`
+   - Recreate the enum type and update the column default to `'open'`
+4. **Replace `quote_status` enum** with exactly: `pending`, `accepted`, `declined`
+   - Map existing data: `rejected` → `declined`, `expired` → `declined`
+   - Recreate the enum type
 
+### Code changes (6 files)
+
+1. **`src/hooks/useWishForm.ts`** — Remove `provider_id` from the insert payload; change `status: "submitted"` to `status: "open"`
+
+2. **`src/hooks/useJobBoard.ts`** — Update `.in("status", ["submitted", "reviewed", "approved"])` to `.in("status", ["open"])` (only open wishes should appear on job board); remove `"reviewed"` status update call (line ~335)
+
+3. **`src/components/wish/WishStatusCard.tsx`** — Update `statusConfig` keys to use `open`, `accepted`, `closed` for wish-level statuses; update `getEffectiveStatus` to map from new enum values; keep work order status passthrough logic
+
+4. **`src/components/owner/WishDetailDialog.tsx`** — Update status references from old enum values to new ones
+
+5. **`src/components/owner/PendingQuotesSection.tsx`** — Change wish_forms update from `status: "converted"` to `status: "accepted"`; remove `work_order_id` from the update payload; update rejection filter from `["submitted", "reviewed", "approved"]` to `["open"]`
+
+6. **`src/pages/Dashboard.tsx`** — Update status filter from `"rejected"` to `"closed"`; remove `work_order_id` from the Wish interface and select query
+
+### Technical detail: Enum replacement strategy
+
+Postgres doesn't allow removing values from enums, so the migration will:
 ```sql
-ALTER TABLE public.wish_forms
-  DROP CONSTRAINT wish_forms_provider_id_fkey;
-
-ALTER TABLE public.wish_forms
-  ADD CONSTRAINT wish_forms_provider_id_fkey
-  FOREIGN KEY (provider_id) REFERENCES public.businesses(id);
+-- Update existing data to new values (using text cast)
+ALTER TABLE wish_forms ALTER COLUMN status TYPE text;
+UPDATE wish_forms SET status = 'open' WHERE status IN ('submitted','reviewed');
+UPDATE wish_forms SET status = 'accepted' WHERE status IN ('approved','converted');
+UPDATE wish_forms SET status = 'closed' WHERE status = 'rejected';
+DROP TYPE wish_form_status;
+CREATE TYPE wish_form_status AS ENUM ('open','accepted','closed');
+ALTER TABLE wish_forms ALTER COLUMN status TYPE wish_form_status USING status::wish_form_status;
+ALTER TABLE wish_forms ALTER COLUMN status SET DEFAULT 'open';
 ```
 
-2. **No code changes needed** — `useWishForm.ts` line 176 already passes `formData.providerId` correctly as a business ID.
-
-### Technical Details
-- The `ProviderSearchResults` component returns `ServiceProvider` objects whose `.id` comes from the `businesses` table
-- The `WishFormSheet` passes `selectedProvider?.id` (a business ID) as `providerId`
-- Only the FK target is wrong — the data flow is correct
+Same pattern for `quote_status`.
 
