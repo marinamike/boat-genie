@@ -1,37 +1,14 @@
 
 
-## Plan: Remove provider selection step from WishFormSheet
+## Plan: Update useJobBoard.ts filtering logic
 
-### Summary
-Strip the provider selection step so the wish flow becomes: select-boat → select-category → form → submit. Owners describe what they need without picking a specific business.
+### Changes (single file: `src/hooks/useJobBoard.ts`)
 
-### Changes to `src/components/wish/WishFormSheet.tsx`
+1. **Filter wishes by service menu categories** (after line 192): Apply the existing `matchesProviderService` function to `filteredWishes`, so only wishes matching the business's active `business_service_menu` categories appear in the leads feed. The matching logic and helper functions already exist in the file.
 
-1. **Remove imports**: `useServiceProviders`, `useProviderServicesByBusiness`, `ServiceProvider` from `useServiceProviders`; `ProviderSearchResults` component; `ProviderService` from `useProviderServices`; `Loader2` icon (if unused elsewhere)
+2. **Work orders: filter by `business_id`** (line 211): Change `.eq("provider_id", session.user.id)` to `.eq("business_id", businessProfile?.id)` — guard against null business profile.
 
-2. **Remove `"select-provider"` from `Step` type** — becomes `"select-boat" | "select-category" | "form" | "find-marina"`
+3. **Quoted orders: filter by `business_id`** (line 228): Change `.eq("provider_id", session.user.id)` to `.eq("business_id", businessProfile?.id)` for the pending-quote lookup as well.
 
-3. **Remove state variables**: `selectedProvider`, `selectedProviderService`
-
-4. **Remove hook calls**: `useServiceProviders(...)` and `useProviderServicesByBusiness(...)`
-
-5. **Remove useEffect** that resets provider/service when category changes (lines 129-133) and useEffect that resets service when provider changes (lines 156-159)
-
-6. **Update category selection click handler** (line 332): change `setStep("select-provider")` → `setStep("form")`
-
-7. **Remove functions**: `handleProviderServiceSelect`, `handleSelectProvider`, `calculateProviderServicePrice`
-
-8. **Simplify `getPriceBreakdown`**: remove the `selectedProviderService` branch — only use platform `serviceRates` via `getMatchingServiceRate`
-
-9. **Simplify `renderForm`**:
-   - Remove `useProviderServicesDropdown` logic and the provider services dropdown
-   - Replace service selection with a simple dropdown of platform `serviceRates` filtered by category
-   - Remove provider name header variant — always show the simple badge header
-   - Back button always goes to `"select-category"`
-   - Remove provider name display in price breakdown card
-   - Remove `loadingServices` spinner
-
-10. **Remove from JSX render** (lines 624-632): the `step === "select-provider"` block rendering `ProviderSearchResults`
-
-11. **Reset state cleanup** (lines 110-120): remove `setSelectedProvider(null)` and `setSelectedProviderService(null)`
+No other changes — wish status filter already uses `["open"]`, and quote submission already leaves the wish as `"open"`.
 
