@@ -120,25 +120,25 @@ const Dashboard = () => {
       .order("created_at", { ascending: false });
 
     if (wishData && wishData.length > 0) {
-      // Get work_order_ids from wishes that have been converted
-      const woIds = wishData
-        .map((w: any) => w.work_order_id)
-        .filter(Boolean) as string[];
+      // Look up work order statuses via wish_form_id on work_orders table
+      const wishIds = wishData.map((w: any) => w.id);
 
       let woStatusMap = new Map<string, string>();
-      if (woIds.length > 0) {
+      if (wishIds.length > 0) {
         const { data: workOrders } = await supabase
           .from("work_orders")
-          .select("id, status")
-          .in("id", woIds);
+          .select("wish_form_id, status")
+          .in("wish_form_id", wishIds);
         for (const wo of workOrders || []) {
-          woStatusMap.set(wo.id, wo.status);
+          if (wo.wish_form_id) {
+            woStatusMap.set(wo.wish_form_id, wo.status);
+          }
         }
       }
 
       const wishesWithStatus = wishData.map((wish: any) => ({
         ...wish,
-        work_order_status: wish.work_order_id ? woStatusMap.get(wish.work_order_id) || null : null,
+        work_order_status: woStatusMap.get(wish.id) || null,
       }));
 
       setWishes(wishesWithStatus as unknown as Wish[]);
