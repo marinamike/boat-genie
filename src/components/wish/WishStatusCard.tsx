@@ -45,11 +45,7 @@ function getEffectiveStatus(wish: Wish): string {
     if (wish.work_order_status === "qc_review" || wish.work_order_status === "pending_qc") return "qc_review";
     if (wish.work_order_status === "in_progress") return "in_progress";
     if (wish.work_order_status === "assigned") return "assigned";
-    if (wish.work_order_status === "approved") return "approved";
-    if (wish.work_order_status === "pending" || wish.work_order_status === "pending_approval") return "reviewed";
   }
-  // Converted wishes without a linked work order status default to assigned
-  if (wish.status === "converted") return "assigned";
   return wish.status;
 }
 

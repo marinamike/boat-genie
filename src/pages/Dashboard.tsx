@@ -113,11 +113,10 @@ const Dashboard = () => {
         preferred_date,
         created_at,
         boat_id,
-        work_order_id,
         boat:boats(name)
       `)
       .eq("requester_id", user.id)
-      .not("status", "eq", "rejected")
+      .not("status", "eq", "closed")
       .order("created_at", { ascending: false });
 
     if (wishData && wishData.length > 0) {

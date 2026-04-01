@@ -204,8 +204,7 @@ export function useWishForm() {
           preferred_date: formData.preferredDate || null,
           calculated_price: verifiedPrice,
           photos: formData.photos || [],
-          status: "submitted",
-          provider_id: formData.providerId || null,
+          status: "open",
         });
 
         if (error) {

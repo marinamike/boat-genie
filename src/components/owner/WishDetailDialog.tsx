@@ -229,7 +229,7 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
   const handleDelete = async () => {
     const { error } = await supabase
       .from("wish_forms")
-      .update({ status: "rejected" })
+      .update({ status: "closed" })
       .eq("id", wish.id);
 
     if (error) {

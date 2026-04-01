@@ -329,12 +329,7 @@ export function useJobBoard() {
 
       if (quoteError) throw quoteError;
 
-      const { error: updateError } = await supabase
-        .from("wish_forms")
-        .update({ status: "reviewed" })
-        .eq("id", wishId);
-
-      if (updateError) throw updateError;
+      // Wish stays "open" until owner accepts a quote
 
       toast({ 
         title: "Quote submitted!", 
