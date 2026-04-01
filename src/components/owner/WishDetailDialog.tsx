@@ -138,11 +138,11 @@ export function WishDetailDialog({ wish, open, onOpenChange, onUpdated }: WishDe
   if (!wish) return null;
 
   const effectiveStatus = getEffectiveStatus(wish);
-  const status = statusConfig[effectiveStatus] || statusConfig.submitted;
+  const status = statusConfig[effectiveStatus] || statusConfig.open;
   const StatusIcon = status.icon;
   const isCompleted = effectiveStatus === "completed";
-  const isPending = effectiveStatus === "submitted" || effectiveStatus === "reviewed";
-  const isAccepted = effectiveStatus === "approved" || effectiveStatus === "in_progress";
+  const isPending = effectiveStatus === "open";
+  const isAccepted = effectiveStatus === "accepted" || effectiveStatus === "in_progress";
 
   const handleCancelAccepted = async () => {
     // Fetch provider's cancellation policy from the work order's provider business
