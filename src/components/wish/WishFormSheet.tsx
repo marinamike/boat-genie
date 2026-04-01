@@ -272,7 +272,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       preferredDate: earliestAvailability ? undefined : (preferredDate || undefined),
       calculatedPrice: priceBreakdown?.totalPrice,
       photos: uploadedPhotoUrls,
-      providerId: selectedProvider?.id,
+      
     });
 
     if (success) {
