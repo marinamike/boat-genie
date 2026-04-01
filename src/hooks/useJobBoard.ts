@@ -189,7 +189,10 @@ export function useJobBoard() {
             boat: boat ? { ...boat, boat_profiles: undefined } : null,
             boat_profile: boatProfile || null,
           };
-        });
+        })
+        .filter((wish) =>
+          matchesProviderService(wish.service_type, serviceNames, menuCategories)
+        );
 
       // Fetch active work orders assigned to this provider
       const { data: workOrdersRaw, error: woError } = await supabase
@@ -208,7 +211,7 @@ export function useJobBoard() {
           boat:boats(id, name, make, model, length_ft),
           quotes:quotes!quotes_work_order_id_fkey(id, status, base_price, total_owner_price)
         `)
-        .eq("provider_id", session.user.id)
+        .eq("business_id", businessProfile?.id ?? "")
         .not("status", "eq", "completed")
         .not("status", "eq", "cancelled")
         .order("priority", { ascending: false })
@@ -225,7 +228,7 @@ export function useJobBoard() {
       const { data: quotedOrders } = await supabase
         .from("work_orders")
         .select("boat_id, title")
-        .eq("provider_id", session.user.id)
+        .eq("business_id", businessProfile?.id ?? "")
         .eq("status", "pending");
 
       const quotedBoatIds = new Set((quotedOrders || []).map(wo => wo.boat_id));
