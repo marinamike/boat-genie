@@ -148,7 +148,7 @@ export function useJobBoard() {
       }
       setProviderServiceNames(serviceNames);
 
-      // Fetch wishes directed to this provider
+      // Fetch open wishes (available for any provider)
       const { data: wishes, error: wishError } = await supabase
         .from("wish_forms")
         .select(`
@@ -172,8 +172,7 @@ export function useJobBoard() {
             boat_profiles(marina_name, slip_number)
           )
         `)
-        .eq("provider_id", businessProfile?.id || "")
-        .in("status", ["submitted", "reviewed", "approved"])
+        .in("status", ["open"])
         .order("created_at", { ascending: false });
 
       if (wishError) throw wishError;
