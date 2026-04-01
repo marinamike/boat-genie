@@ -9,11 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, Loader2, MapPin, Zap, Scissors, Anchor, Settings } from "lucide-react";
+import { AlertTriangle, Sparkles, Wrench, Paintbrush, Upload, X, ChevronLeft, Info, MapPin, Zap, Scissors, Anchor, Settings } from "lucide-react";
 import { useWishForm, SERVICE_CATEGORIES, ServiceCategory, type ServiceRate } from "@/hooks/useWishForm";
-import { ProviderService } from "@/hooks/useProviderServices";
-import { useServiceProviders, useProviderServicesByBusiness, ServiceProvider } from "@/hooks/useServiceProviders";
-import { ProviderSearchResults } from "./ProviderSearchResults";
 import { formatPrice } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { ReservationRequestSheet } from "@/components/marina/ReservationRequestSheet";
@@ -36,7 +33,7 @@ interface WishFormSheetProps {
   onSuccess?: () => void;
 }
 
-type Step = "select-boat" | "select-category" | "select-provider" | "form" | "find-marina";
+type Step = "select-boat" | "select-category" | "form" | "find-marina";
 
 const categoryIcons: Record<string, typeof Sparkles> = {
   wash_detail: Sparkles,
@@ -53,9 +50,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   const [step, setStep] = useState<Step>("select-boat");
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
   const [selectedService, setSelectedService] = useState<string>("");
-  const [selectedProviderService, setSelectedProviderService] = useState<(ProviderService & { provider?: { business_name: string | null } }) | null>(null);
   const [description, setDescription] = useState("");
   const [isEmergency, setIsEmergency] = useState(false);
   const [preferredDate, setPreferredDate] = useState("");
@@ -66,15 +61,6 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   const [showMarinaReservation, setShowMarinaReservation] = useState(false);
 
   const { loading, serviceRates, fetchServiceRates, calculatePrice, uploadPhotos, submitWish } = useWishForm();
-  
-  // Fetch providers for the selected category
-  const { providers, loading: loadingProviders } = useServiceProviders(selectedCategory || undefined);
-  
-  // Fetch services for the selected provider
-  const { services: providerServices, loading: loadingServices } = useProviderServicesByBusiness(
-    selectedProvider?.id,
-    selectedCategory || undefined
-  );
 
   // Fetch boats if not provided
   useEffect(() => {
@@ -106,13 +92,10 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
 
   useEffect(() => {
     if (!open) {
-      // Reset form when closed
       setStep("select-boat");
       setSelectedBoat(null);
       setSelectedCategory(null);
-      setSelectedProvider(null);
       setSelectedService("");
-      setSelectedProviderService(null);
       setDescription("");
       setIsEmergency(false);
       setPreferredDate("");
@@ -120,22 +103,13 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       setPhotos([]);
       setPhotoUrls([]);
     } else if (prefilledDescription) {
-      // Pre-fill description if provided
       setDescription(prefilledDescription);
     }
   }, [open, prefilledDescription]);
 
-  // Reset provider and service when category changes
-  useEffect(() => {
-    setSelectedProvider(null);
-    setSelectedService("");
-    setSelectedProviderService(null);
-  }, [selectedCategory]);
-
   // Auto-select boat if only one, or use preselected boat
   useEffect(() => {
     if (open && step === "select-boat" && effectiveBoats.length > 0) {
-      // If a boat is preselected, use that
       if (preselectedBoatId) {
         const preselectedBoat = effectiveBoats.find((b) => b.id === preselectedBoatId);
         if (preselectedBoat) {
@@ -144,7 +118,6 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
           return;
         }
       }
-      // Otherwise auto-select if only one boat
       if (effectiveBoats.length === 1) {
         setSelectedBoat(effectiveBoats[0]);
         setStep("select-category");
@@ -152,71 +125,15 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
     }
   }, [open, effectiveBoats, step, preselectedBoatId]);
 
-  // Reset selected service when provider changes
-  useEffect(() => {
-    setSelectedService("");
-    setSelectedProviderService(null);
-  }, [selectedProvider]);
-
   const getMatchingServiceRate = (): ServiceRate | null => {
     if (!selectedService) return null;
     return serviceRates.find((r) => r.service_name === selectedService) || null;
   };
 
-  // Calculate price from provider service
-  const calculateProviderServicePrice = (): { basePrice: number; serviceFee: number; emergencyFee: number; totalPrice: number } | null => {
-    if (!selectedProviderService || !selectedBoat?.length_ft) return null;
-    
-    let basePrice = 0;
-    if (selectedProviderService.pricing_model === "per_foot") {
-      basePrice = selectedProviderService.price * selectedBoat.length_ft;
-    } else {
-      basePrice = selectedProviderService.price;
-    }
-
-    const serviceFee = membershipTier === "genie" ? 0 : basePrice * 0.05;
-    const emergencyFee = isEmergency ? (membershipTier === "genie" ? 50 : 150) : 0;
-    const totalPrice = basePrice + serviceFee + emergencyFee;
-
-    return { basePrice, serviceFee, emergencyFee, totalPrice };
-  };
-
   const getPriceBreakdown = () => {
-    // First try provider service pricing
-    if (selectedProviderService) {
-      return calculateProviderServicePrice();
-    }
-    
-    // Fallback to system service rates
     const rate = getMatchingServiceRate();
     if (!rate || !selectedBoat?.length_ft) return null;
     return calculatePrice(rate, selectedBoat.length_ft, membershipTier, isEmergency);
-  };
-
-  const handleProviderServiceSelect = (serviceId: string) => {
-    const service = providerServices.find(s => s.id === serviceId);
-    if (service) {
-      setSelectedProviderService({
-        ...service,
-        provider_id: selectedProvider?.id || "",
-        is_active: true,
-        is_locked: false,
-        locked_at: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        description: service.description || null,
-        provider: { business_name: selectedProvider?.business_name || null }
-      });
-      setSelectedService(service.service_name);
-    } else {
-      setSelectedProviderService(null);
-      setSelectedService("");
-    }
-  };
-
-  const handleSelectProvider = (provider: ServiceProvider) => {
-    setSelectedProvider(provider);
-    setStep("form");
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,8 +143,6 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       return;
     }
     setPhotos((prev) => [...prev, ...files]);
-    
-    // Create preview URLs
     files.forEach((file) => {
       const url = URL.createObjectURL(file);
       setPhotoUrls((prev) => [...prev, url]);
@@ -245,13 +160,11 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
   const handleSubmit = async () => {
     if (!selectedBoat || !selectedCategory || !description.trim()) return;
 
-    // Validate hull_bottom requires photos
     if (selectedCategory === "hull_bottom" && photos.length === 0) {
       alert("Please upload at least one photo for hull & bottom services");
       return;
     }
 
-    // Upload photos if any
     let uploadedPhotoUrls: string[] = [];
     if (photos.length > 0) {
       const { data: { user } } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
@@ -272,7 +185,6 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
       preferredDate: earliestAvailability ? undefined : (preferredDate || undefined),
       calculatedPrice: priceBreakdown?.totalPrice,
       photos: uploadedPhotoUrls,
-      
     });
 
     if (success) {
@@ -328,8 +240,8 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
                 )}
                 onClick={() => {
                   setSelectedCategory(key);
-                  // All categories go through provider selection
-                  setStep("select-provider");
+                  setSelectedService("");
+                  setStep("form");
                 }}
               >
                 <CardContent className="p-4 flex items-start gap-3">
@@ -370,75 +282,51 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
     const category = SERVICE_CATEGORIES[selectedCategory];
     const priceBreakdown = getPriceBreakdown();
 
-    // Use provider services when provider is selected
-    const useProviderServicesDropdown = selectedProvider && providerServices.length > 0;
-
-    // Determine back button behavior
-    const handleBackFromForm = () => {
-      if (selectedProvider) {
-        setStep("select-provider");
-      } else {
-        setStep("select-category");
-      }
-    };
+    // Filter service rates by category
+    const categoryRates = serviceRates.filter(
+      (r) => r.service_name.toLowerCase().includes(selectedCategory.replace("_", " "))
+        || selectedCategory === "general"
+    );
 
     return (
       <div className="space-y-5">
-        <Button variant="ghost" size="sm" onClick={handleBackFromForm} className="mb-2">
+        <Button variant="ghost" size="sm" onClick={() => setStep("select-category")} className="mb-2">
           <ChevronLeft className="w-4 h-4 mr-1" /> Back
         </Button>
 
-        {/* Header with provider context */}
-        {selectedProvider ? (
-          <div className="space-y-2 pb-2 border-b">
-            <h3 className="font-semibold text-lg">
-              Requesting {category.label} from {selectedProvider.business_name}
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{selectedBoat?.name}</Badge>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 pb-2 border-b">
-            <Badge variant="secondary">{selectedBoat?.name}</Badge>
-            <Badge variant="outline">{category.label}</Badge>
-          </div>
-        )}
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <Badge variant="secondary">{selectedBoat?.name}</Badge>
+          <Badge variant="outline">{category.label}</Badge>
+        </div>
 
-        {/* Service Selection - Provider Services */}
-        <div className="space-y-2">
-          <Label>Select Service</Label>
-          {loadingServices ? (
-            <div className="flex items-center gap-2 p-3 text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Loading available services...</span>
-            </div>
-          ) : useProviderServicesDropdown ? (
-            <Select value={selectedProviderService?.id || ""} onValueChange={handleProviderServiceSelect}>
+        {/* Service Selection */}
+        {categoryRates.length > 0 && (
+          <div className="space-y-2">
+            <Label>Select Service</Label>
+            <Select value={selectedService} onValueChange={setSelectedService}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a service..." />
               </SelectTrigger>
               <SelectContent>
-                {providerServices.map((service) => (
-                  <SelectItem key={service.id} value={service.id}>
+                {categoryRates.map((rate) => (
+                  <SelectItem key={rate.id} value={rate.service_name}>
                     <div className="flex items-center justify-between w-full gap-4">
-                      <span>{service.service_name}</span>
-                      <span className="text-muted-foreground">
-                        ${service.price.toFixed(2)}
-                        {service.pricing_model === "per_foot" ? "/ft" : ""}
-                      </span>
+                      <span>{rate.service_name}</span>
+                      {rate.rate_per_foot && (
+                        <span className="text-muted-foreground">
+                          ${rate.rate_per_foot.toFixed(2)}/ft
+                        </span>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          ) : (
-            <p className="text-sm text-muted-foreground">No services available for this provider in this category.</p>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Instant Price Display */}
-        {priceBreakdown && (selectedProviderService || getMatchingServiceRate()) && (
+        {priceBreakdown && getMatchingServiceRate() && (
           <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
@@ -449,17 +337,7 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
                   </div>
                 </div>
                 <div className="text-right text-sm text-muted-foreground">
-                  {selectedProviderService ? (
-                    <>
-                      {selectedProviderService.pricing_model === "per_foot" ? (
-                        <div>{selectedBoat?.length_ft}ft × {formatPrice(selectedProviderService.price)}/ft</div>
-                      ) : (
-                        <div>Flat rate: {formatPrice(selectedProviderService.price)}</div>
-                      )}
-                    </>
-                  ) : (
-                    <div>{selectedBoat?.length_ft}ft × {formatPrice(getMatchingServiceRate()?.rate_per_foot || 0)}/ft</div>
-                  )}
+                  <div>{selectedBoat?.length_ft}ft × {formatPrice(getMatchingServiceRate()?.rate_per_foot || 0)}/ft</div>
                   {priceBreakdown.serviceFee > 0 && (
                     <div>+ {formatPrice(priceBreakdown.serviceFee)} service fee</div>
                   )}
@@ -468,13 +346,6 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
                   )}
                 </div>
               </div>
-              {selectedProviderService?.provider && (
-                <div className="mt-2 pt-2 border-t border-primary/20">
-                  <span className="text-xs text-muted-foreground">
-                    Provider: {selectedProviderService.provider.business_name || "Service Provider"}
-                  </span>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
@@ -621,15 +492,6 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
           <div className="mt-6">
             {step === "select-boat" && renderBoatSelection()}
             {step === "select-category" && renderCategorySelection()}
-            {step === "select-provider" && selectedCategory && (
-              <ProviderSearchResults
-                providers={providers}
-                loading={loadingProviders}
-                categoryLabel={SERVICE_CATEGORIES[selectedCategory].label}
-                onBack={() => setStep("select-category")}
-                onSelectProvider={handleSelectProvider}
-              />
-            )}
             {step === "form" && renderForm()}
           </div>
         </SheetContent>
@@ -640,9 +502,6 @@ export function WishFormSheet({ open, onOpenChange, boats = [], membershipTier =
         open={showMarinaReservation}
         onOpenChange={(open) => {
           setShowMarinaReservation(open);
-          if (!open) {
-            // Close main sheet when reservation is done
-          }
         }}
         boats={effectiveBoats}
         onSuccess={() => {
