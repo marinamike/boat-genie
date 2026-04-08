@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Anchor, Ship, Plus, Sparkles, LogOut, Pencil, Lock, ChevronDown, MapPin, ChevronRight } from "lucide-react";
+import { Anchor, Ship, Plus, Sparkles, LogOut, Pencil, Lock, ChevronDown, MapPin, ChevronRight, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ import { MarineWeatherWidget } from "@/components/weather/MarineWeatherWidget";
 import { TideChart } from "@/components/weather/TideChart";
 import { useMarineWeather } from "@/hooks/useMarineWeather";
 import { MarineLoadingScreen } from "@/components/ui/marine-loading";
+import { formatDistanceToNow } from "date-fns";
 
 interface Boat {
   id: string;
@@ -51,6 +52,16 @@ interface Wish {
   } | null;
 }
 
+interface ActiveJob {
+  id: string;
+  title: string;
+  status: string;
+  scheduled_date: string | null;
+  created_at: string;
+  boat: { name: string } | null;
+  business: { business_name: string } | null;
+}
+
 interface Profile {
   full_name: string | null;
   membership_tier: "standard" | "genie";
@@ -62,6 +73,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [boats, setBoats] = useState<Boat[]>([]);
   const [wishes, setWishes] = useState<Wish[]>([]);
+  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [expandedAccess, setExpandedAccess] = useState<Record<string, boolean>>({});
   const [showBoatForm, setShowBoatForm] = useState(false);
@@ -121,6 +133,27 @@ const Dashboard = () => {
     setWishes((wishData as unknown as Wish[]) || []);
   }, [user]);
 
+  const fetchActiveJobs = useCallback(async () => {
+    if (!user) return;
+    // Get owner's boat IDs
+    const { data: ownerBoats } = await supabase
+      .from("boats")
+      .select("id")
+      .eq("owner_id", user.id);
+    if (!ownerBoats || ownerBoats.length === 0) {
+      setActiveJobs([]);
+      return;
+    }
+    const boatIds = ownerBoats.map((b) => b.id);
+    const { data } = await supabase
+      .from("work_orders")
+      .select("id, title, status, scheduled_date, created_at, boat:boats(name), business:businesses!work_orders_business_id_fkey(business_name)")
+      .in("boat_id", boatIds)
+      .in("status", ["assigned", "in_progress", "qc_review"])
+      .order("created_at", { ascending: false });
+    setActiveJobs((data as unknown as ActiveJob[]) || []);
+  }, [user]);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -142,8 +175,8 @@ const Dashboard = () => {
           setProfile(profileData);
         }
 
-        // Fetch boats and wishes
-        await Promise.all([fetchBoats(), fetchWishes()]);
+        // Fetch boats, wishes, and active jobs
+        await Promise.all([fetchBoats(), fetchWishes(), fetchActiveJobs()]);
       } catch (err) {
         console.error("Dashboard: data fetch failed", err);
       } finally {
@@ -152,7 +185,21 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [user, authLoading, navigate, fetchBoats, fetchWishes]);
+  }, [user, authLoading, navigate, fetchBoats, fetchWishes, fetchActiveJobs]);
+
+  // Realtime subscription for work order status changes
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("owner-active-jobs")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "work_orders" },
+        () => { fetchActiveJobs(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchActiveJobs]);
 
   // Role-based redirects are now handled by App.tsx RoleBasedRoutes
 
@@ -393,6 +440,58 @@ const Dashboard = () => {
             userId={user.id} 
             onQuoteAction={fetchWishes}
           />
+        )}
+
+        {/* Active Jobs Section */}
+        {activeJobs.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-xl font-bold tracking-tight mb-4">Active Jobs</h2>
+            <div className="space-y-3">
+              {activeJobs.map((job) => {
+                const statusMap: Record<string, { label: string; className: string }> = {
+                  assigned: { label: "Scheduled", className: "bg-blue-100 text-blue-700 border-blue-200" },
+                  in_progress: { label: "In Progress", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+                  qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-700 border-violet-200" },
+                };
+                const badge = statusMap[job.status] || { label: job.status, className: "" };
+                return (
+                  <Card key={job.id}>
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                            <Wrench className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm truncate">{job.title}</p>
+                            {job.boat?.name && (
+                              <p className="text-xs text-muted-foreground">{job.boat.name}</p>
+                            )}
+                            {job.business?.business_name && (
+                              <p className="text-xs text-muted-foreground">{job.business.business_name}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              {job.scheduled_date && (
+                                <span className="text-xs text-muted-foreground">
+                                  Scheduled: {new Date(job.scheduled_date).toLocaleDateString()}
+                                </span>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={badge.className}>
+                          {badge.label}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* Reservations Section */}
