@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -295,10 +295,12 @@ function QuickQuoteDialog({
   submitting: boolean;
 }) {
   const [lineItems, setLineItems] = useState<LineItemState[]>([]);
+  const [menuPool, setMenuPool] = useState<LineItemState[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [estimatedDate, setEstimatedDate] = useState("");
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
 
   const boatLength = wish?.boat?.length_ft ?? null;
   const { category, name } = wish ? getServiceDisplay(wish) : { category: "", name: "" };
@@ -316,14 +318,13 @@ function QuickQuoteDialog({
           .eq("business_id", businessId)
           .eq("is_active", true);
 
-        // Filter by matching category if available
         if (category) {
           query = query.eq("category", category);
         }
 
         const { data } = await query.order("name");
 
-        const items: LineItemState[] = (data || []).map((item) => {
+        const pool: LineItemState[] = (data || []).map((item) => {
           const isPft = item.pricing_model === "per_foot";
           const qty = isPft && boatLength ? boatLength : 1;
           return {
@@ -332,14 +333,34 @@ function QuickQuoteDialog({
             pricingModel: item.pricing_model,
             quantity: qty,
             unitPrice: Number(item.default_price) || 0,
-            included: false,
+            included: true,
             isCustom: false,
           };
         });
 
-        setLineItems(items);
+        setMenuPool(pool);
+
+        // Find the requested service in the menu
+        const matchIdx = pool.findIndex((p) => p.name === name);
+        if (matchIdx >= 0) {
+          setLineItems([{ ...pool[matchIdx], id: nextId(), included: true }]);
+        } else {
+          // Not found — add as custom line item
+          setLineItems([
+            {
+              id: nextId(),
+              name: name,
+              pricingModel: "flat_rate",
+              quantity: 1,
+              unitPrice: 0,
+              included: true,
+              isCustom: true,
+            },
+          ]);
+        }
       } catch (err) {
         console.error("Error fetching menu items:", err);
+        setMenuPool([]);
         setLineItems([]);
       } finally {
         setLoadingMenu(false);
@@ -361,12 +382,6 @@ function QuickQuoteDialog({
   });
 
   // Mutations
-  const toggleIncluded = (id: string) => {
-    setLineItems((prev) =>
-      prev.map((li) => (li.id === id ? { ...li, included: !li.included } : li))
-    );
-  };
-
   const updateQuantity = (id: string, qty: number) => {
     setLineItems((prev) =>
       prev.map((li) => (li.id === id ? { ...li, quantity: Math.max(0, qty) } : li))
@@ -415,17 +430,30 @@ function QuickQuoteDialog({
     ]);
   };
 
+  const addFromMenu = (menuItemName: string) => {
+    const poolItem = menuPool.find((p) => p.name === menuItemName);
+    if (!poolItem) return;
+    setLineItems((prev) => [
+      ...prev,
+      { ...poolItem, id: nextId(), included: true },
+    ]);
+    setAddMenuOpen(false);
+  };
+
   const removeItem = (id: string) => {
     setLineItems((prev) => prev.filter((li) => li.id !== id));
   };
 
   // Computed
-  const includedItems = lineItems.filter((li) => li.included);
-  const runningTotal = includedItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+  const runningTotal = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+
+  // Menu items not yet added
+  const addedNames = new Set(lineItems.map((li) => li.name));
+  const availableMenuItems = menuPool.filter((p) => !addedNames.has(p.name));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const quoteLineItems: QuoteLineItem[] = includedItems.map((li) => ({
+    const quoteLineItems: QuoteLineItem[] = lineItems.map((li) => ({
       name: li.name,
       pricingModel: li.pricingModel,
       quantity: li.quantity,
@@ -484,26 +512,20 @@ function QuickQuoteDialog({
               {loadingMenu ? (
                 <div className="flex items-center justify-center py-6 text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Loading menu items...
+                  Loading...
                 </div>
               ) : lineItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-2">
-                  No menu items found for this category. Add custom items below.
+                  No items added yet. Add items below.
                 </p>
               ) : (
                 <div className="space-y-2">
                   {lineItems.map((li) => (
                     <div
                       key={li.id}
-                      className={`border rounded-lg p-3 space-y-2 transition-colors ${
-                        li.included ? "border-primary/40 bg-primary/5" : "opacity-60"
-                      }`}
+                      className="border rounded-lg p-3 space-y-2 border-primary/40 bg-primary/5"
                     >
                       <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={li.included}
-                          onCheckedChange={() => toggleIncluded(li.id)}
-                        />
                         {li.isCustom ? (
                           <Input
                             value={li.name}
@@ -517,19 +539,17 @@ function QuickQuoteDialog({
                         <Badge variant="secondary" className="text-[10px] h-5 shrink-0">
                           {pricingModelLabels[li.pricingModel] || li.pricingModel}
                         </Badge>
-                        {li.isCustom && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => removeItem(li.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => removeItem(li.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
-                      <div className="flex items-center gap-3 pl-7">
+                      <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
                           <Label className="text-[10px] text-muted-foreground">
                             {li.pricingModel === "per_foot" ? "Ft" : "Qty"}
@@ -563,7 +583,28 @@ function QuickQuoteDialog({
                 </div>
               )}
 
-              <div className="flex gap-2 pt-1">
+              {/* Add buttons */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {availableMenuItems.length > 0 && (
+                  <Select
+                    open={addMenuOpen}
+                    onOpenChange={setAddMenuOpen}
+                    onValueChange={addFromMenu}
+                    value=""
+                  >
+                    <SelectTrigger className="h-8 w-auto text-xs gap-1 px-3">
+                      <Plus className="w-3 h-3" />
+                      <span>Add Menu Item</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableMenuItems.map((mi) => (
+                        <SelectItem key={mi.name} value={mi.name}>
+                          {mi.name} — {formatPrice(mi.unitPrice)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -648,7 +689,7 @@ function QuickQuoteDialog({
           <Button
             type="submit"
             form="quote-form"
-            disabled={submitting || !estimatedDate || includedItems.length === 0 || runningTotal <= 0}
+            disabled={submitting || !estimatedDate || lineItems.length === 0 || runningTotal <= 0}
           >
             {submitting ? (
               <>
