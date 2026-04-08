@@ -5,7 +5,6 @@ import { Switch } from "@/components/ui/switch";
 import { Wrench, Calendar, ClipboardCheck, Anchor, Briefcase, DollarSign } from "lucide-react";
 import { useServiceManagement } from "@/hooks/useServiceManagement";
 import { useJobBoard } from "@/hooks/useJobBoard";
-import { useServiceMenu } from "@/hooks/useServiceMenu";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,14 +15,12 @@ import { BoatsOnBlocksList } from "@/components/service/BoatsOnBlocksList";
 import { LeadStream } from "@/components/provider/LeadStream";
 import { ProviderMetricsHeader } from "@/components/provider/ProviderMetricsHeader";
 import { EarningsTab } from "@/components/provider/EarningsTab";
-import type { ProviderService } from "@/hooks/useProviderMetrics";
 import type { CompletedJob } from "@/hooks/useProviderMetrics";
 
 export default function ServiceDashboard() {
   const [activeTab, setActiveTab] = useState("workorders");
   const serviceManagement = useServiceManagement();
   const { availableWishes, pendingQuotedWishes, submitQuote, submittingQuote } = useJobBoard();
-  const { activeMenuItems } = useServiceMenu();
   const { business, refreshBusiness } = useBusiness();
   const [togglingAvailability, setTogglingAvailability] = useState(false);
 
@@ -44,16 +41,6 @@ export default function ServiceDashboard() {
     }
     setTogglingAvailability(false);
   };
-
-  // Map business_service_menu items to ProviderService shape for LeadStream
-  const providerServices: ProviderService[] = activeMenuItems.map(item => ({
-    id: item.id,
-    service_name: item.name,
-    price: item.default_price,
-    pricing_model: item.pricing_model,
-    is_locked: true,
-    category: item.category,
-  }));
 
   // Map completed work orders to CompletedJob shape for EarningsTab
   const completedJobs: CompletedJob[] = serviceManagement.completedWorkOrders.map(wo => ({
@@ -134,7 +121,7 @@ export default function ServiceDashboard() {
           <LeadStream
             wishes={availableWishes}
             pendingWishes={pendingQuotedWishes}
-            providerServices={providerServices}
+            businessId={business?.id || ""}
             onSubmitQuote={submitQuote}
             submitting={submittingQuote}
           />

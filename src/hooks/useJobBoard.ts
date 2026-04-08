@@ -53,10 +53,18 @@ export interface WorkOrderItem {
   }[];
 }
 
+export interface QuoteLineItem {
+  name: string;
+  pricingModel: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  isCustom?: boolean;
+}
+
 export interface QuoteFormData {
-  laborCost: number;
-  materialsCost: number;
-  materialsDeposit: number;
+  lineItems: QuoteLineItem[];
+  totalAmount: number;
   estimatedCompletionDate: string;
   estimatedArrivalTime?: string;
   notes?: string;
@@ -271,10 +279,12 @@ export function useJobBoard() {
       if (profileError) throw profileError;
       const bizId = businessProfileForQuote.id;
 
-      const basePrice = quoteData.laborCost + quoteData.materialsCost;
-      const serviceFee = basePrice * 0.10;
-      const totalOwnerPrice = basePrice + serviceFee;
-      const totalProviderReceives = basePrice - (basePrice * 0.03);
+      const basePrice = quoteData.totalAmount;
+      const totalOwnerPrice = basePrice;
+      const totalProviderReceives = basePrice;
+
+      // Use service_name from wish if available, fall back to service_type
+      const wishTitle = (wish as any).service_name || wish.service_type;
 
       const { data: workOrder, error: woError } = await supabase
         .from("work_orders")
@@ -283,7 +293,7 @@ export function useJobBoard() {
           provider_id: session.user.id,
           business_id: bizId,
           wish_form_id: wishId,
-          title: `${wish.service_type} Service`,
+          title: wishTitle,
           description: wish.description,
           status: "pending",
           priority: wish.urgency === "urgent" ? 3 : wish.urgency === "high" ? 2 : 1,
@@ -309,11 +319,11 @@ export function useJobBoard() {
           provider_id: session.user.id,
           business_id: bizId,
           base_price: basePrice,
-          service_fee: serviceFee,
-          lead_fee: basePrice * 0.03,
+          service_fee: 0,
+          lead_fee: 0,
           total_owner_price: totalOwnerPrice,
           total_provider_receives: totalProviderReceives,
-          materials_deposit: quoteData.materialsDeposit || 0,
+          materials_deposit: 0,
           notes: quoteData.notes || null,
           status: "pending",
           is_emergency: wish.urgency === "urgent",
