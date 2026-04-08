@@ -4073,6 +4073,24 @@ export type Database = {
           },
         ]
       }
+      service_catalog: {
+        Row: {
+          category: string
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       service_invoices: {
         Row: {
           approved_at: string | null

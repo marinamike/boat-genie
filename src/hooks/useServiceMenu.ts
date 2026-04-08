@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { toast } from "sonner";
-import { SERVICE_CATEGORIES } from "@/hooks/useWishForm";
 
 export interface ServiceMenuItem {
   id: string;
@@ -17,12 +16,23 @@ export interface ServiceMenuItem {
   updated_at: string;
 }
 
-export const SERVICE_MENU_CATEGORIES = Object.values(SERVICE_CATEGORIES).map(c => c.label);
+export const SERVICE_MENU_CATEGORIES = [
+  "Detailing & Cleaning",
+  "Engines & Propulsion",
+  "Electrical & Electronics",
+  "Hull, Bottom & Deck",
+  "Plumbing & Water Systems",
+  "Canvas, Upholstery & Interior",
+  "Rigging & Sails",
+  "Stabilizers & Steering",
+  "Custom Request",
+];
 
 export const PRICING_MODELS = [
   { value: "fixed", label: "Fixed Price" },
   { value: "hourly", label: "Hourly Rate" },
   { value: "per_foot", label: "Per Foot" },
+  { value: "diagnostic_fee", label: "Diagnostic Fee" },
 ] as const;
 
 export function useServiceMenu() {
@@ -47,6 +57,19 @@ export function useServiceMenu() {
   useEffect(() => {
     fetchMenuItems();
   }, [fetchMenuItems]);
+
+  const fetchCatalogServices = async (category: string): Promise<string[]> => {
+    const { data, error } = await supabase
+      .from("service_catalog")
+      .select("name")
+      .eq("category", category)
+      .order("name");
+    if (error) {
+      console.error("Error fetching catalog services:", error);
+      return [];
+    }
+    return (data || []).map((d) => d.name);
+  };
 
   const createMenuItem = async (item: Partial<ServiceMenuItem>) => {
     if (!business?.id) return null;
@@ -102,5 +125,6 @@ export function useServiceMenu() {
     updateMenuItem,
     toggleActive,
     fetchMenuItems,
+    fetchCatalogServices,
   };
 }
