@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,22 +11,40 @@ import { Plus, Pencil, X, Check } from "lucide-react";
 import { useServiceMenu, SERVICE_MENU_CATEGORIES, PRICING_MODELS } from "@/hooks/useServiceMenu";
 
 export function ServiceMenuManager() {
-  const { menuItems, loading, createMenuItem, updateMenuItem, toggleActive } = useServiceMenu();
+  const { menuItems, loading, createMenuItem, updateMenuItem, toggleActive, fetchCatalogServices } = useServiceMenu();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [catalogServices, setCatalogServices] = useState<string[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    category: "General",
+    category: "Detailing & Cleaning",
     pricing_model: "fixed",
     default_price: "",
     description: "",
   });
 
   const resetForm = () => {
-    setForm({ name: "", category: "General", pricing_model: "fixed", default_price: "", description: "" });
+    setForm({ name: "", category: "Detailing & Cleaning", pricing_model: "fixed", default_price: "", description: "" });
+    setCatalogServices([]);
     setShowForm(false);
     setEditingId(null);
   };
+
+  // Fetch catalog services when category changes in create mode
+  useEffect(() => {
+    if (!showForm || editingId) return;
+    let cancelled = false;
+    setLoadingCatalog(true);
+    setForm((f) => ({ ...f, name: "" }));
+    fetchCatalogServices(form.category).then((names) => {
+      if (!cancelled) {
+        setCatalogServices(names);
+        setLoadingCatalog(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [form.category, showForm, editingId]);
 
   const handleSubmit = async () => {
     if (!form.name.trim()) return;
@@ -39,7 +57,8 @@ export function ServiceMenuManager() {
     };
 
     if (editingId) {
-      await updateMenuItem(editingId, payload);
+      const { name: _n, category: _c, ...editPayload } = payload;
+      await updateMenuItem(editingId, editPayload);
     } else {
       await createMenuItem(payload);
     }
@@ -104,23 +123,40 @@ export function ServiceMenuManager() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label>Name</Label>
-                  <Input
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="e.g., Bottom Job"
-                  />
+                  <Label>Category</Label>
+                  {editingId ? (
+                    <Input value={form.category} disabled className="bg-muted" />
+                  ) : (
+                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SERVICE_MENU_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div>
-                  <Label>Category</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {SERVICE_MENU_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Name</Label>
+                  {editingId ? (
+                    <Input value={form.name} disabled className="bg-muted" />
+                  ) : (
+                    <Select
+                      value={form.name}
+                      onValueChange={(v) => setForm({ ...form, name: v })}
+                      disabled={loadingCatalog || catalogServices.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingCatalog ? "Loading…" : "Select service"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {catalogServices.map((name) => (
+                          <SelectItem key={name} value={name}>{name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div>
                   <Label>Pricing Logic</Label>
