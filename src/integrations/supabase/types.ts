@@ -4965,6 +4965,8 @@ export type Database = {
           photos: string[] | null
           preferred_date: string | null
           requester_id: string
+          service_category: string | null
+          service_name: string | null
           service_type: string
           status: Database["public"]["Enums"]["wish_form_status"]
           updated_at: string
@@ -4981,6 +4983,8 @@ export type Database = {
           photos?: string[] | null
           preferred_date?: string | null
           requester_id: string
+          service_category?: string | null
+          service_name?: string | null
           service_type: string
           status?: Database["public"]["Enums"]["wish_form_status"]
           updated_at?: string
@@ -4997,6 +5001,8 @@ export type Database = {
           photos?: string[] | null
           preferred_date?: string | null
           requester_id?: string
+          service_category?: string | null
+          service_name?: string | null
           service_type?: string
           status?: Database["public"]["Enums"]["wish_form_status"]
           updated_at?: string
