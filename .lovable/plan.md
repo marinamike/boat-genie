@@ -1,31 +1,40 @@
 
 
-## Plan: Auto-populate quantity from boat length for per-foot line items
+## Plan: Pre-populate requested service and add "Add Menu Item" flow
 
-This is an addendum to the pending QuickQuoteDialog rewrite plan. When building line items from `business_service_menu`, any item with `pricing_model = "per_foot"` should have its `quantity` initialized to `wish.boat.length_ft` (if available), defaulting to 1 otherwise. The quantity field remains editable.
+### Summary
+Change QuickQuoteDialog so the requested service appears as the first included line item on open, instead of showing all menu items as unchecked checkboxes. Add an "Add Menu Item" button with a dropdown to pick additional items from the business menu.
 
-### Changes (within the QuickQuoteDialog rewrite)
+### Changes to `src/components/provider/LeadStream.tsx`
 
-**`src/components/provider/LeadStream.tsx` — QuickQuoteDialog line-item initialization**
+**1. Store fetched menu items separately from line items**
+- Add `menuPool` state (`LineItemState[]`) to hold the full list of fetched menu items for the category (used as the source for the "Add Menu Item" dropdown)
+- `lineItems` state now only holds items actually added to the quote
 
-When fetching menu items and mapping them to line items on dialog open:
+**2. Rewrite `fetchMenuItems` logic (useEffect)**
+- Fetch all active menu items for the category into `menuPool`
+- Find the item in `menuPool` matching `wish.service_name` exactly
+- If found: create one line item from it — `included: true`, quantity = boat length for per_foot else 1, price from menu
+- If not found: create a custom line item with `name = wish.service_name`, `unitPrice = 0`, `included: true`, `isCustom: true`
+- Set `lineItems` to just this one item (not the full menu list)
 
-```typescript
-const boatLength = wish?.boat?.length_ft ?? 1;
+**3. Replace the all-items checkbox list with included-items-only list**
+- Render only `lineItems` (all are included by default). Remove the checkbox toggle — each item is always included once added
+- Keep the existing row UI: name (editable if custom), pricing model badge, quantity, unit price, line total, remove button
+- All items get a remove button (not just custom ones)
 
-const items = (menuData || []).map(item => ({
-  name: item.name,
-  pricingModel: item.pricing_model,
-  quantity: item.pricing_model === "per_foot" ? boatLength : 1,
-  unitPrice: item.default_price ?? 0,
-  lineTotal: (item.default_price ?? 0) * (item.pricing_model === "per_foot" ? boatLength : 1),
-  included: false,
-}));
-```
+**4. Add "Add Menu Item" button with dropdown**
+- Below the line items, show three buttons: "Add Menu Item", "Add Diagnostic Fee", "Add Custom Item"
+- "Add Menu Item" uses a `<Select>` dropdown populated from `menuPool`, filtering out items already in `lineItems` by name
+- On select: add the chosen menu item as a new line item with `included: true`, pre-filled quantity/price (per_foot uses boat length)
+- If all menu items are already added, disable the button
 
-- Per-foot items get `quantity = boat.length_ft`, making the line total `price × length`
-- All other pricing models default to `quantity = 1`
-- The quantity input remains a standard editable number field — provider can override
+**5. Minor cleanup**
+- Remove `toggleIncluded` function (no longer needed)
+- Remove `Checkbox` import if unused elsewhere
+- Update `includedItems` computed — since all line items are now included, just use `lineItems` directly for total and submit
+- Update submit disabled check: `lineItems.length === 0` instead of `includedItems.length === 0`
 
-No additional file or schema changes needed beyond the existing rewrite plan.
+### Files changed
+- `src/components/provider/LeadStream.tsx` — QuickQuoteDialog rewrite
 
