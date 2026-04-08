@@ -62,46 +62,30 @@ export interface QuoteFormData {
   notes?: string;
 }
 
-// Category slug → label mapping for matching wishes to service menu categories
-const CATEGORY_LABELS: Record<string, string> = {
-  wash_detail: "wash & detail",
-  mechanical: "mechanical",
-  electrical: "electrical",
-  hull_bottom: "hull & bottom",
-  canvas_upholstery: "canvas & upholstery",
-  rigging: "rigging",
-  general: "general",
-};
-
-// Normalize service name for matching (case-insensitive, partial match)
-function normalizeServiceName(name: string): string {
-  return name.toLowerCase().trim();
-}
-
-// Check if a wish service type matches any provider service name or category
+// Check if a wish matches any provider service name or category
 function matchesProviderService(
+  wishServiceCategory: string | null,
   wishServiceType: string,
   providerServiceNames: string[],
   providerCategories: string[]
 ): boolean {
-  const normalizedWish = normalizeServiceName(wishServiceType);
-  
-  if (normalizedWish === "other" || !normalizedWish) {
+  // Match by service_category (new catalog-driven wishes)
+  if (wishServiceCategory) {
+    const normalizedWishCat = wishServiceCategory.toLowerCase().trim();
+    if (providerCategories.some(c => c.toLowerCase().trim() === normalizedWishCat)) {
+      return true;
+    }
+  }
+
+  // Fallback: match by service_type against service names (legacy wishes)
+  const normalizedWish = wishServiceType.toLowerCase().trim();
+  if (normalizedWish === "other" || normalizedWish === "custom request" || !normalizedWish) {
     return providerServiceNames.length > 0;
   }
 
-  // Check if the wish category slug maps to a category the provider offers
-  const wishCategoryLabel = CATEGORY_LABELS[normalizedWish];
-  if (wishCategoryLabel && providerCategories.some(c => normalizeServiceName(c) === wishCategoryLabel)) {
-    return true;
-  }
-  
-  // Also match against individual service names (partial/exact)
   return providerServiceNames.some(service => {
-    const normalizedService = normalizeServiceName(service);
-    return normalizedService === normalizedWish ||
-           normalizedService.includes(normalizedWish) ||
-           normalizedWish.includes(normalizedService);
+    const ns = service.toLowerCase().trim();
+    return ns === normalizedWish || ns.includes(normalizedWish) || normalizedWish.includes(ns);
   });
 }
 
@@ -154,6 +138,8 @@ export function useJobBoard() {
         .select(`
           id,
           service_type,
+          service_category,
+          service_name,
           description,
           urgency,
           preferred_date,
@@ -191,7 +177,7 @@ export function useJobBoard() {
           };
         })
         .filter((wish) =>
-          matchesProviderService(wish.service_type, serviceNames, menuCategories)
+          matchesProviderService(wish.service_category, wish.service_type, serviceNames, menuCategories)
         );
 
       // Fetch active work orders assigned to this provider
@@ -224,21 +210,27 @@ export function useJobBoard() {
         quotes: Array.isArray(wo.quotes) ? wo.quotes : wo.quotes ? [wo.quotes] : [],
       }));
 
-      // Fetch wish IDs that this provider has already quoted (pending work orders)
-      const { data: quotedOrders } = await supabase
-        .from("work_orders")
-        .select("boat_id, title")
-        .eq("business_id", businessProfile?.id ?? "")
-        .eq("status", "pending");
+      // Fetch wish IDs that this business has already quoted
+      const wishIds = (filteredWishes as WishFormItem[]).map(w => w.id);
+      let quotedWishIds = new Set<string>();
+      if (wishIds.length > 0) {
+        const { data: quotedOrders } = await supabase
+          .from("work_orders")
+          .select("wish_form_id")
+          .eq("business_id", businessProfile?.id ?? "")
+          .in("wish_form_id", wishIds);
 
-      const quotedBoatIds = new Set((quotedOrders || []).map(wo => wo.boat_id));
+        quotedWishIds = new Set(
+          (quotedOrders || []).map(wo => wo.wish_form_id).filter(Boolean) as string[]
+        );
+      }
 
       // Split into new leads vs pending quoted leads
       const newLeads = (filteredWishes as WishFormItem[]).filter(
-        w => !quotedBoatIds.has(w.boat?.id || "")
+        w => !quotedWishIds.has(w.id)
       );
       const pendingLeads = (filteredWishes as WishFormItem[]).filter(
-        w => quotedBoatIds.has(w.boat?.id || "")
+        w => quotedWishIds.has(w.id)
       );
 
       setAvailableWishes(newLeads);
