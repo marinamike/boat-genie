@@ -441,7 +441,6 @@ const Dashboard = () => {
           make: b.make,
           model: b.model,
         }))}
-        membershipTier={profile?.membership_tier || "standard"}
         onSuccess={fetchWishes}
       />
     </div>
