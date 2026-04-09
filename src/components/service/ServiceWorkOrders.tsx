@@ -121,15 +121,16 @@ export function ServiceWorkOrders({
   }, [serviceStaff]);
 
   const handleStatusProgression = useCallback(async (newStatus: string) => {
-    if (!selectedWorkOrder) return;
+    if (!selectedWorkOrder || !business?.id) return;
     setUpdatingStatus(true);
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from("work_orders")
       .update({ status: newStatus } as any)
-      .eq("id", selectedWorkOrder.id);
+      .eq("id", selectedWorkOrder.id)
+      .eq("business_id", business.id);
     if (error) {
       toast.error("Failed to update status");
-      console.error(error);
+      console.error("Status update error:", error, { workOrderId: selectedWorkOrder.id, businessId: business.id, newStatus });
     } else {
       const labels: Record<string, string> = {
         assigned: "Status set to Assigned",
