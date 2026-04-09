@@ -132,9 +132,11 @@ export function ServiceWorkOrders({
       console.error(error);
     } else {
       const labels: Record<string, string> = {
+        assigned: "Status set to Assigned",
         in_progress: "Work started",
         qc_review: "QC review requested",
         completed: "Work order completed",
+        paid: "Marked as paid",
       };
       toast.success(labels[newStatus] || "Status updated");
       setSelectedWorkOrder({ ...selectedWorkOrder, status: newStatus });
