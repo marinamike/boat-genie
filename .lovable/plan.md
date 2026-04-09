@@ -1,39 +1,49 @@
 
 
-## Plan: Add Status Progression Buttons to Work Order Detail Panel
+## Plan: Replace Status Buttons with Selector + Add "Paid" Status
 
-### Summary
-Add contextual action buttons below the work order title/status in the detail panel that let staff advance a work order through its lifecycle: Start Work → Request QC → Mark Complete. "Mark Complete" gets a confirmation dialog.
+### Database Migration
+Add `paid` to the `work_order_status` enum:
+```sql
+ALTER TYPE public.work_order_status ADD VALUE 'paid';
+```
 
 ### Changes — `src/components/service/ServiceWorkOrders.tsx`
 
-**1. Add state for confirmation dialog and updating**
-- `showCompleteDialog` boolean state
-- `updatingStatus` boolean state for loading indicator
+**1. Add "paid" to statusConfig**
+Add entry: `paid: { label: "Paid", className: "bg-green-100 text-green-800 border-green-300" }`.
 
-**2. Add `handleStatusProgression` function**
-- Takes a `newStatus` string parameter
-- Calls `supabase.from("work_orders").update({ status: newStatus }).eq("id", selectedWorkOrder.id)`
-- On success: toast, call `fetchWorkOrders()`, update `selectedWorkOrder` with new status
-- On error: toast error
+**2. Replace progression buttons (lines 589-619) with a status selector**
+Remove the three conditional `Button` blocks (Start Work, Request QC Review, Mark Complete). Replace with:
+- If status is `"paid"`: show only a green "Paid" badge, no selector, hide Edit button.
+- Otherwise: render a segmented control (row of 4 buttons: Assigned, In Progress, QC Review, Completed). The active status is highlighted with its color; others are outlined/muted. Clicking any button calls `handleStatusProgression(newStatus)` immediately. Disable while `updatingStatus` is true.
 
-**3. Render progression button after the status badge (line ~542, inside CardContent)**
-Insert below the existing customer/boat info block (after line 562), before the closing `</CardContent>`:
+**3. Update `handleStatusProgression`**
+Add `"paid"` to the labels map and update the toast for generic status changes. Remove `setShowCompleteDialog(false)` since the completion confirmation dialog is being removed.
 
-- `assigned` → Blue "Start Work" button (Play icon) → updates to `in_progress`
-- `in_progress` → Violet "Request QC Review" button (ClipboardCheck icon) → updates to `qc_review`  
-- `qc_review` → Green "Mark Complete" button (CheckCircle icon) → opens `showCompleteDialog`
-- Other statuses → nothing
+**4. Remove the "Mark Complete" AlertDialog (lines 976-993)**
+No longer needed — status changes are direct. Also remove `showCompleteDialog` state.
 
-**4. Add AlertDialog for "Mark Complete" confirmation**
-- Uses existing AlertDialog imports (already imported)
-- Controlled by `showCompleteDialog` state
-- On confirm: calls `handleStatusProgression("completed")`
-- Message: "This will mark the work order as completed. This action cannot be undone."
+**5. Auto-advance on Check In (handlePunchIn, line ~445)**
+After `await punchIn(...)`, add:
+```typescript
+if (selectedWorkOrder.status === "assigned") {
+  await handleStatusProgression("in_progress");
+}
+```
 
-**5. Imports to add**
-- `CheckCircle` from lucide-react (Play and ClipboardCheck already imported or available)
+**6. Update fetchWorkOrders status filter (line 176)**
+Add `"paid"` to the `.in("status", [...])` array.
+
+**7. Lock paid work orders**
+When `selectedWorkOrder.status === "paid"`, hide the Edit button and the status selector. Only the Paid badge is shown.
+
+### Technical Details
+- The segmented control is built from plain `Button` components in a flex row — no new dependencies needed.
+- Status options array: `[{value: "assigned", label: "Assigned", color: "blue"}, {value: "in_progress", label: "In Progress", color: "emerald"}, {value: "qc_review", label: "QC Review", color: "violet"}, {value: "completed", label: "Completed", color: "gray"}]`.
+- `"paid"` is never in the selector — it can only be set externally (e.g., billing system).
 
 ### Files changed
 - `src/components/service/ServiceWorkOrders.tsx`
+- Database migration: add `paid` to `work_order_status` enum
 
