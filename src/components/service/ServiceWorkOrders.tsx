@@ -462,9 +462,15 @@ export function ServiceWorkOrders({
     qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-800 border-violet-300" },
     completed: { label: "Completed", className: "bg-gray-100 text-gray-600 border-gray-300" },
     cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700 border-red-300" },
+    paid: { label: "Paid", className: "bg-green-100 text-green-800 border-green-300" },
   };
 
-  const getStatusBadge = (status: string) => {
+  const statusOptions = [
+    { value: "assigned", label: "Assigned", activeClass: "bg-blue-100 text-blue-800 border-blue-300" },
+    { value: "in_progress", label: "In Progress", activeClass: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+    { value: "qc_review", label: "QC Review", activeClass: "bg-violet-100 text-violet-800 border-violet-300" },
+    { value: "completed", label: "Completed", activeClass: "bg-gray-100 text-gray-600 border-gray-300" },
+  ];
     const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800 border-gray-300" };
     return (
       <Badge className={`${config.className} border font-semibold text-xs px-2.5 py-1`}>
