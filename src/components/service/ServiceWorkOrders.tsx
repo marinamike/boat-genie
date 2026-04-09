@@ -972,6 +972,25 @@ export function ServiceWorkOrders({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Mark Complete confirmation dialog */}
+      <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark Work Order Complete</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the work order as completed. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleStatusProgression("completed")} disabled={updatingStatus}>
+              {updatingStatus && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Confirm Complete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
