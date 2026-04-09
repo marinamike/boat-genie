@@ -92,7 +92,6 @@ export function ServiceWorkOrders({
   const [addServiceForm, setAddServiceForm] = useState({ menuItemId: "", quantity: "1", unitPrice: "" });
   const [addingService, setAddingService] = useState(false);
   const [showReapprovalDialog, setShowReapprovalDialog] = useState(false);
-  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
