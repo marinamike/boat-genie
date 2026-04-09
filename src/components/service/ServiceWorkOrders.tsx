@@ -12,7 +12,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2 } from "lucide-react";
+import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
@@ -92,6 +92,8 @@ export function ServiceWorkOrders({
   const [addServiceForm, setAddServiceForm] = useState({ menuItemId: "", quantity: "1", unitPrice: "" });
   const [addingService, setAddingService] = useState(false);
   const [showReapprovalDialog, setShowReapprovalDialog] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     fetchWorkOrders();
@@ -559,6 +561,37 @@ export function ServiceWorkOrders({
                 </div>
                 {selectedWorkOrder.description && (
                   <p className="text-sm text-muted-foreground pt-1">{selectedWorkOrder.description}</p>
+                )}
+                {/* Status Progression Button */}
+                {selectedWorkOrder.status === "assigned" && (
+                  <Button
+                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={updatingStatus}
+                    onClick={() => handleStatusProgression("in_progress")}
+                  >
+                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                    Start Work
+                  </Button>
+                )}
+                {selectedWorkOrder.status === "in_progress" && (
+                  <Button
+                    className="w-full mt-3 bg-violet-600 hover:bg-violet-700 text-white"
+                    disabled={updatingStatus}
+                    onClick={() => handleStatusProgression("qc_review")}
+                  >
+                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ClipboardCheck className="w-4 h-4 mr-2" />}
+                    Request QC Review
+                  </Button>
+                )}
+                {selectedWorkOrder.status === "qc_review" && (
+                  <Button
+                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={updatingStatus}
+                    onClick={() => setShowCompleteDialog(true)}
+                  >
+                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    Mark Complete
+                  </Button>
                 )}
               </CardContent>
             </Card>
