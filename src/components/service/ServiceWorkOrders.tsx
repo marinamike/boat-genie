@@ -121,15 +121,16 @@ export function ServiceWorkOrders({
   }, [serviceStaff]);
 
   const handleStatusProgression = useCallback(async (newStatus: string) => {
-    if (!selectedWorkOrder) return;
+    if (!selectedWorkOrder || !business?.id) return;
     setUpdatingStatus(true);
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from("work_orders")
       .update({ status: newStatus } as any)
-      .eq("id", selectedWorkOrder.id);
+      .eq("id", selectedWorkOrder.id)
+      .eq("business_id", business.id);
     if (error) {
       toast.error("Failed to update status");
-      console.error(error);
+      console.error("Status update error:", error, { workOrderId: selectedWorkOrder.id, businessId: business.id, newStatus });
     } else {
       const labels: Record<string, string> = {
         assigned: "Status set to Assigned",
@@ -143,7 +144,7 @@ export function ServiceWorkOrders({
       await fetchWorkOrders();
     }
     setUpdatingStatus(false);
-  }, [selectedWorkOrder]);
+  }, [selectedWorkOrder, business]);
 
   const fetchLineItems = useCallback(async (workOrderId: string) => {
     const { data, error } = await supabase
@@ -471,6 +472,8 @@ export function ServiceWorkOrders({
     { value: "qc_review", label: "QC Review", activeClass: "bg-violet-100 text-violet-800 border-violet-300" },
     { value: "completed", label: "Completed", activeClass: "bg-gray-100 text-gray-600 border-gray-300" },
   ];
+
+  const getStatusBadge = (status: string) => {
     const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800 border-gray-300" };
     return (
       <Badge className={`${config.className} border font-semibold text-xs px-2.5 py-1`}>
