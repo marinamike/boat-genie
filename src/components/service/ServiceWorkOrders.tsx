@@ -472,6 +472,8 @@ export function ServiceWorkOrders({
     { value: "qc_review", label: "QC Review", activeClass: "bg-violet-100 text-violet-800 border-violet-300" },
     { value: "completed", label: "Completed", activeClass: "bg-gray-100 text-gray-600 border-gray-300" },
   ];
+
+  const getStatusBadge = (status: string) => {
     const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800 border-gray-300" };
     return (
       <Badge className={`${config.className} border font-semibold text-xs px-2.5 py-1`}>
