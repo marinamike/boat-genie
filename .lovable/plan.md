@@ -1,53 +1,39 @@
 
 
-## Plan: Add Active Jobs Section to Owner Dashboard
+## Plan: Add Status Progression Buttons to Work Order Detail Panel
 
-### What
-Add a new section between "Pending Quotes" and "Reservations" on the owner dashboard showing work orders in progress (assigned, in_progress, qc_review). Includes realtime updates.
+### Summary
+Add contextual action buttons below the work order title/status in the detail panel that let staff advance a work order through its lifecycle: Start Work → Request QC → Mark Complete. "Mark Complete" gets a confirmation dialog.
 
-### Changes — `src/pages/Dashboard.tsx`
+### Changes — `src/components/service/ServiceWorkOrders.tsx`
 
-**1. Add ActiveJob interface**
-```typescript
-interface ActiveJob {
-  id: string;
-  title: string;
-  status: string;
-  scheduled_date: string | null;
-  created_at: string;
-  boat: { name: string } | null;
-  business: { business_name: string } | null;
-}
-```
+**1. Add state for confirmation dialog and updating**
+- `showCompleteDialog` boolean state
+- `updatingStatus` boolean state for loading indicator
 
-**2. Add state and fetch function**
-- `const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);`
-- `fetchActiveJobs` callback: query `work_orders` where `boat_id` is in the owner's boat IDs and `status` in `['assigned', 'in_progress', 'qc_review']`. Join `boats(name)` and `businesses:business_id(business_name)`. Order by `created_at desc`.
-- Two-step: first get boat IDs from `boats` state, then query work orders. If no boats, skip.
+**2. Add `handleStatusProgression` function**
+- Takes a `newStatus` string parameter
+- Calls `supabase.from("work_orders").update({ status: newStatus }).eq("id", selectedWorkOrder.id)`
+- On success: toast, call `fetchWorkOrders()`, update `selectedWorkOrder` with new status
+- On error: toast error
 
-**3. Call on initial load**
-- Add `fetchActiveJobs` to the `Promise.all([fetchBoats(), fetchWishes()])` call — but since it depends on boat IDs, call it after boats are fetched, or fetch boat IDs independently inside the function.
-- Approach: `fetchActiveJobs` will independently query the user's boat IDs from the `boats` table (same as fetchBoats does), then query work orders. This avoids dependency ordering.
+**3. Render progression button after the status badge (line ~542, inside CardContent)**
+Insert below the existing customer/boat info block (after line 562), before the closing `</CardContent>`:
 
-**4. Realtime subscription**
-- Subscribe to `postgres_changes` on `work_orders` table filtered by status changes.
-- On any INSERT/UPDATE event, re-call `fetchActiveJobs`.
-- Clean up subscription on unmount.
+- `assigned` → Blue "Start Work" button (Play icon) → updates to `in_progress`
+- `in_progress` → Violet "Request QC Review" button (ClipboardCheck icon) → updates to `qc_review`  
+- `qc_review` → Green "Mark Complete" button (CheckCircle icon) → opens `showCompleteDialog`
+- Other statuses → nothing
 
-**5. Render section**
-- Between `PendingQuotesSection` and `ReservationsSection` (lines 397-399).
-- Only render if `activeJobs.length > 0`.
-- Each card shows:
-  - Title, boat name, business name
-  - Status badge: assigned → blue "Scheduled", in_progress → green "In Progress", qc_review → purple "QC Review"
-  - Scheduled date (if set)
-  - Time since created_at (e.g. "3 days ago")
-- Uses existing `Card`, `Badge` components plus `formatDistanceToNow` from date-fns.
+**4. Add AlertDialog for "Mark Complete" confirmation**
+- Uses existing AlertDialog imports (already imported)
+- Controlled by `showCompleteDialog` state
+- On confirm: calls `handleStatusProgression("completed")`
+- Message: "This will mark the work order as completed. This action cannot be undone."
 
-**6. Imports to add**
-- `formatDistanceToNow` from `date-fns`
-- `Briefcase` or `Wrench` icon from lucide-react
+**5. Imports to add**
+- `CheckCircle` from lucide-react (Play and ClipboardCheck already imported or available)
 
 ### Files changed
-- `src/pages/Dashboard.tsx`
+- `src/components/service/ServiceWorkOrders.tsx`
 
