@@ -121,6 +121,30 @@ export function ServiceWorkOrders({
     findStaff();
   }, [serviceStaff]);
 
+  const handleStatusProgression = useCallback(async (newStatus: string) => {
+    if (!selectedWorkOrder) return;
+    setUpdatingStatus(true);
+    const { error } = await supabase
+      .from("work_orders")
+      .update({ status: newStatus } as any)
+      .eq("id", selectedWorkOrder.id);
+    if (error) {
+      toast.error("Failed to update status");
+      console.error(error);
+    } else {
+      const labels: Record<string, string> = {
+        in_progress: "Work started",
+        qc_review: "QC review requested",
+        completed: "Work order completed",
+      };
+      toast.success(labels[newStatus] || "Status updated");
+      setSelectedWorkOrder({ ...selectedWorkOrder, status: newStatus });
+      await fetchWorkOrders();
+    }
+    setUpdatingStatus(false);
+    setShowCompleteDialog(false);
+  }, [selectedWorkOrder]);
+
   const fetchLineItems = useCallback(async (workOrderId: string) => {
     const { data, error } = await supabase
       .from("work_order_line_items" as any)
