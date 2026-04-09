@@ -144,7 +144,7 @@ export function ServiceWorkOrders({
       await fetchWorkOrders();
     }
     setUpdatingStatus(false);
-  }, [selectedWorkOrder]);
+  }, [selectedWorkOrder, business]);
 
   const fetchLineItems = useCallback(async (workOrderId: string) => {
     const { data, error } = await supabase
