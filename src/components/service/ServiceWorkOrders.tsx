@@ -443,6 +443,9 @@ export function ServiceWorkOrders({
       setCurrentStaffId(staffId);
     }
     await punchIn(staffId, selectedWorkOrder.id);
+    if (selectedWorkOrder.status === "assigned") {
+      await handleStatusProgression("in_progress");
+    }
   };
 
   const handlePunchOut = async () => {
