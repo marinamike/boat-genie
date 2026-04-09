@@ -141,7 +141,6 @@ export function ServiceWorkOrders({
       await fetchWorkOrders();
     }
     setUpdatingStatus(false);
-    setShowCompleteDialog(false);
   }, [selectedWorkOrder]);
 
   const fetchLineItems = useCallback(async (workOrderId: string) => {
