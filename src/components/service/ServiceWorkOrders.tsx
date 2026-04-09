@@ -567,10 +567,12 @@ export function ServiceWorkOrders({
                   <CardTitle className="text-lg flex items-center gap-2">
                     {selectedWorkOrder.title}
                   </CardTitle>
-                  <Button size="sm" variant="outline" onClick={() => setShowEditSheet(true)}>
-                    <Pencil className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
+                  {selectedWorkOrder.status !== "paid" && (
+                    <Button size="sm" variant="outline" onClick={() => setShowEditSheet(true)}>
+                      <Pencil className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -595,36 +597,31 @@ export function ServiceWorkOrders({
                 {selectedWorkOrder.description && (
                   <p className="text-sm text-muted-foreground pt-1">{selectedWorkOrder.description}</p>
                 )}
-                {/* Status Progression Button */}
-                {selectedWorkOrder.status === "assigned" && (
-                  <Button
-                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={updatingStatus}
-                    onClick={() => handleStatusProgression("in_progress")}
-                  >
-                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                    Start Work
-                  </Button>
-                )}
-                {selectedWorkOrder.status === "in_progress" && (
-                  <Button
-                    className="w-full mt-3 bg-violet-600 hover:bg-violet-700 text-white"
-                    disabled={updatingStatus}
-                    onClick={() => handleStatusProgression("qc_review")}
-                  >
-                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ClipboardCheck className="w-4 h-4 mr-2" />}
-                    Request QC Review
-                  </Button>
-                )}
-                {selectedWorkOrder.status === "qc_review" && (
-                  <Button
-                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    disabled={updatingStatus}
-                    onClick={() => setShowCompleteDialog(true)}
-                  >
-                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                    Mark Complete
-                  </Button>
+                {/* Status Selector */}
+                {selectedWorkOrder.status === "paid" ? (
+                  <Badge className="bg-green-100 text-green-800 border-green-300 border font-semibold text-xs px-2.5 py-1 mt-2">
+                    Paid
+                  </Badge>
+                ) : (
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {statusOptions.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        size="sm"
+                        variant={selectedWorkOrder.status === opt.value ? "default" : "outline"}
+                        className={
+                          selectedWorkOrder.status === opt.value
+                            ? `${opt.activeClass} border font-semibold hover:opacity-90`
+                            : "text-muted-foreground"
+                        }
+                        disabled={updatingStatus || selectedWorkOrder.status === opt.value}
+                        onClick={() => handleStatusProgression(opt.value)}
+                      >
+                        {updatingStatus ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
