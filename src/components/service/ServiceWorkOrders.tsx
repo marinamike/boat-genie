@@ -92,7 +92,6 @@ export function ServiceWorkOrders({
   const [addServiceForm, setAddServiceForm] = useState({ menuItemId: "", quantity: "1", unitPrice: "" });
   const [addingService, setAddingService] = useState(false);
   const [showReapprovalDialog, setShowReapprovalDialog] = useState(false);
-  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
@@ -133,16 +132,17 @@ export function ServiceWorkOrders({
       console.error(error);
     } else {
       const labels: Record<string, string> = {
+        assigned: "Status set to Assigned",
         in_progress: "Work started",
         qc_review: "QC review requested",
         completed: "Work order completed",
+        paid: "Marked as paid",
       };
       toast.success(labels[newStatus] || "Status updated");
       setSelectedWorkOrder({ ...selectedWorkOrder, status: newStatus });
       await fetchWorkOrders();
     }
     setUpdatingStatus(false);
-    setShowCompleteDialog(false);
   }, [selectedWorkOrder]);
 
   const fetchLineItems = useCallback(async (workOrderId: string) => {
@@ -173,7 +173,7 @@ export function ServiceWorkOrders({
       .from("work_orders")
       .select("id, title, description, status, boat_id, provider_checked_in_at, guest_customer_id, boats(name, make, model, owner_id)")
       .eq("business_id", business.id)
-      .in("status", ["pending", "pending_approval", "approved", "assigned", "in_progress", "qc_review", "completed", "cancelled"] as any[])
+      .in("status", ["pending", "pending_approval", "approved", "assigned", "in_progress", "qc_review", "completed", "paid", "cancelled"] as any[])
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching work orders:", error);
@@ -443,6 +443,9 @@ export function ServiceWorkOrders({
       setCurrentStaffId(staffId);
     }
     await punchIn(staffId, selectedWorkOrder.id);
+    if (selectedWorkOrder.status === "assigned") {
+      await handleStatusProgression("in_progress");
+    }
   };
 
   const handlePunchOut = async () => {
@@ -459,9 +462,15 @@ export function ServiceWorkOrders({
     qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-800 border-violet-300" },
     completed: { label: "Completed", className: "bg-gray-100 text-gray-600 border-gray-300" },
     cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700 border-red-300" },
+    paid: { label: "Paid", className: "bg-green-100 text-green-800 border-green-300" },
   };
 
-  const getStatusBadge = (status: string) => {
+  const statusOptions = [
+    { value: "assigned", label: "Assigned", activeClass: "bg-blue-100 text-blue-800 border-blue-300" },
+    { value: "in_progress", label: "In Progress", activeClass: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+    { value: "qc_review", label: "QC Review", activeClass: "bg-violet-100 text-violet-800 border-violet-300" },
+    { value: "completed", label: "Completed", activeClass: "bg-gray-100 text-gray-600 border-gray-300" },
+  ];
     const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800 border-gray-300" };
     return (
       <Badge className={`${config.className} border font-semibold text-xs px-2.5 py-1`}>
@@ -558,10 +567,12 @@ export function ServiceWorkOrders({
                   <CardTitle className="text-lg flex items-center gap-2">
                     {selectedWorkOrder.title}
                   </CardTitle>
-                  <Button size="sm" variant="outline" onClick={() => setShowEditSheet(true)}>
-                    <Pencil className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
+                  {selectedWorkOrder.status !== "paid" && (
+                    <Button size="sm" variant="outline" onClick={() => setShowEditSheet(true)}>
+                      <Pencil className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -586,36 +597,31 @@ export function ServiceWorkOrders({
                 {selectedWorkOrder.description && (
                   <p className="text-sm text-muted-foreground pt-1">{selectedWorkOrder.description}</p>
                 )}
-                {/* Status Progression Button */}
-                {selectedWorkOrder.status === "assigned" && (
-                  <Button
-                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={updatingStatus}
-                    onClick={() => handleStatusProgression("in_progress")}
-                  >
-                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                    Start Work
-                  </Button>
-                )}
-                {selectedWorkOrder.status === "in_progress" && (
-                  <Button
-                    className="w-full mt-3 bg-violet-600 hover:bg-violet-700 text-white"
-                    disabled={updatingStatus}
-                    onClick={() => handleStatusProgression("qc_review")}
-                  >
-                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ClipboardCheck className="w-4 h-4 mr-2" />}
-                    Request QC Review
-                  </Button>
-                )}
-                {selectedWorkOrder.status === "qc_review" && (
-                  <Button
-                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    disabled={updatingStatus}
-                    onClick={() => setShowCompleteDialog(true)}
-                  >
-                    {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                    Mark Complete
-                  </Button>
+                {/* Status Selector */}
+                {selectedWorkOrder.status === "paid" ? (
+                  <Badge className="bg-green-100 text-green-800 border-green-300 border font-semibold text-xs px-2.5 py-1 mt-2">
+                    Paid
+                  </Badge>
+                ) : (
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {statusOptions.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        size="sm"
+                        variant={selectedWorkOrder.status === opt.value ? "default" : "outline"}
+                        className={
+                          selectedWorkOrder.status === opt.value
+                            ? `${opt.activeClass} border font-semibold hover:opacity-90`
+                            : "text-muted-foreground"
+                        }
+                        disabled={updatingStatus || selectedWorkOrder.status === opt.value}
+                        onClick={() => handleStatusProgression(opt.value)}
+                      >
+                        {updatingStatus ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -973,24 +979,6 @@ export function ServiceWorkOrders({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Mark Complete confirmation dialog */}
-      <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Mark Work Order Complete</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will mark the work order as completed. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleStatusProgression("completed")} disabled={updatingStatus}>
-              {updatingStatus && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Confirm Complete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

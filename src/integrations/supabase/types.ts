@@ -5730,6 +5730,7 @@ export type Database = {
         | "qc_review"
         | "completed"
         | "cancelled"
+        | "paid"
       yard_asset_type: "wet_slip" | "dry_rack" | "yard_block" | "mooring"
     }
     CompositeTypes: {
@@ -5929,6 +5930,7 @@ export const Constants = {
         "qc_review",
         "completed",
         "cancelled",
+        "paid",
       ],
       yard_asset_type: ["wet_slip", "dry_rack", "yard_block", "mooring"],
     },
