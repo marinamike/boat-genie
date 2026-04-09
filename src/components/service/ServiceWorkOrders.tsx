@@ -941,7 +941,6 @@ export function ServiceWorkOrders({
           </Card>
         )}
       </div>
-    </div>
 
       {selectedWorkOrder && (
         <EditWorkOrderSheet
@@ -978,7 +977,6 @@ export function ServiceWorkOrders({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   );
 }
