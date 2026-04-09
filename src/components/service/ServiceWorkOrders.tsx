@@ -944,6 +944,7 @@ export function ServiceWorkOrders({
           </Card>
         )}
       </div>
+      </div>
       {selectedWorkOrder && (
         <EditWorkOrderSheet
           open={showEditSheet}
