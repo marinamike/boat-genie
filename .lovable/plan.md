@@ -1,39 +1,33 @@
 
 
-## Plan: Invoice Review Component + Dashboard Integration (Revised)
+## Plan: Add "Mark as Paid" button + update completed filter
 
-### New File: `src/components/owner/InvoiceReview.tsx`
+### Changes
 
-Component receiving `invoiceId` prop and `onClose` callback.
+#### 1. `src/hooks/useServiceManagement.ts` (line 749)
+Change the `completedWorkOrders` filter to include both statuses:
+```typescript
+const completedWorkOrders = workOrders.filter(wo => ["completed", "paid"].includes(wo.status));
+```
 
-**Data fetching:**
-- Fetch invoice joined with `businesses(id, business_name, owner_id)`, `work_orders(id, title)`, and `invoice_line_items(*)`
+#### 2. `src/components/service/ServiceWorkOrders.tsx` (after line 697, before `</CardContent>`)
+Insert a "Mark as Paid" button that only renders when `selectedWorkOrder.status === "completed"`:
+```typescript
+{selectedWorkOrder.status === "completed" && (
+  <Button
+    className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold"
+    disabled={updatingStatus}
+    onClick={() => handleStatusProgression("paid")}
+  >
+    {updatingStatus ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+    Mark as Paid
+  </Button>
+)}
+```
 
-**UI layout:**
-- Header: business name, work order title, invoice date
-- Line items list: service_name, quantity, unit_price, total
-- Each row: green "Verified" button and red "Dispute" button
-- Verified → updates `invoice_line_items` set `verified: true`
-- Dispute → shows text input for note, then updates `disputed: true, dispute_note`
-
-**Dispute side-effects (revised):**
-1. Update `invoice_line_items`: `disputed: true`, `dispute_note`
-2. Update `work_orders` status to `"disputed"` via `invoice.work_order_id`
-3. Look up recipient from `invoice.businesses.owner_id` (the business owner) — NOT from any provider_id field
-4. Insert system message: `sender_id: auth.uid()`, `recipient_id: businesses.owner_id`, `work_order_id`, content: `"⚠️ Line item disputed: {service_name} — {note}"`
-
-**Approve logic:**
-- When all items verified → "Approve Payment" button updates `invoices` status to `"approved"`
-
-### Changes: `src/pages/Dashboard.tsx`
-
-1. Add `"completed"` to `fetchActiveJobs` status filter
-2. Add `completed` to `statusMap`
-3. For jobs with status `"completed"`, show "Review Invoice" button
-4. On click, fetch `invoiceId` from `invoices` table by `work_order_id`, open Sheet with `<InvoiceReview>`
-5. State: `reviewingInvoiceId: string | null`
+This sits right below the status selector buttons, inside the same Card, and is hidden for all other statuses including "paid" (which already shows the green Paid badge).
 
 ### Files changed
-- `src/components/owner/InvoiceReview.tsx` (new)
-- `src/pages/Dashboard.tsx` (modified)
+- `src/hooks/useServiceManagement.ts` — one-line filter update
+- `src/components/service/ServiceWorkOrders.tsx` — add conditional button block
 
