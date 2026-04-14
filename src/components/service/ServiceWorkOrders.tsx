@@ -141,6 +141,75 @@ export function ServiceWorkOrders({
       };
       toast.success(labels[newStatus] || "Status updated");
       setSelectedWorkOrder({ ...selectedWorkOrder, status: newStatus });
+
+      // Auto-generate invoice when completed
+      if (newStatus === "completed") {
+        try {
+          // Fetch work order line items
+          const { data: woLineItems, error: liError } = await supabase
+            .from("work_order_line_items" as any)
+            .select("*")
+            .eq("work_order_id", selectedWorkOrder.id);
+
+          if (liError) {
+            console.error("Error fetching line items for invoice:", liError);
+            throw liError;
+          }
+
+          const items = (woLineItems as any[]) || [];
+          const totalAmount = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
+
+          const ownerId = (selectedWorkOrder as any).boats?.owner_id || null;
+          const guestCustomerId = (selectedWorkOrder as any).guest_customer_id || null;
+
+          // Create invoice
+          const { data: invoice, error: invError } = await supabase
+            .from("invoices")
+            .insert({
+              work_order_id: selectedWorkOrder.id,
+              business_id: business.id,
+              boat_id: selectedWorkOrder.boat_id,
+              owner_id: ownerId,
+              guest_customer_id: guestCustomerId,
+              status: "pending_review",
+              total_amount: totalAmount,
+            })
+            .select("id")
+            .single();
+
+          if (invError) {
+            console.error("Error creating invoice:", invError);
+            throw invError;
+          }
+
+          // Insert invoice line items
+          if (items.length > 0 && invoice) {
+            const invoiceLines = items.map((item: any) => ({
+              invoice_id: invoice.id,
+              service_name: item.service_name,
+              quantity: Number(item.quantity),
+              unit_price: Number(item.unit_price),
+              total: Number(item.total),
+              verified: false,
+            }));
+
+            const { error: linesError } = await supabase
+              .from("invoice_line_items")
+              .insert(invoiceLines);
+
+            if (linesError) {
+              console.error("Error creating invoice line items:", linesError);
+              throw linesError;
+            }
+          }
+
+          toast.success("Invoice generated and sent to customer for review.");
+        } catch (invoiceErr) {
+          console.error("Invoice generation failed:", invoiceErr);
+          toast.error("Work order completed but invoice generation failed.");
+        }
+      }
+
       await fetchWorkOrders();
     }
     setUpdatingStatus(false);
