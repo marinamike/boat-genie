@@ -377,7 +377,7 @@ export function useStoreInventory() {
     const finalChargePrice = chargePrice ?? item.retail_price;
 
     // Log the parts pull
-    const { error: logError } = await supabase
+    const { data: logData, error: logError } = await supabase
       .from("parts_pull_log")
       .insert({
         work_order_id: workOrderId,
@@ -388,7 +388,9 @@ export function useStoreInventory() {
         charge_price: finalChargePrice,
         pulled_by: user.id,
         notes,
-      });
+      })
+      .select("id")
+      .single();
 
     if (logError) {
       toast({ title: "Error", description: logError.message, variant: "destructive" });
@@ -407,7 +409,7 @@ export function useStoreInventory() {
     });
     
     await fetchInventory();
-    return true;
+    return (logData as any)?.id || false;
   };
 
   // Get low stock items
