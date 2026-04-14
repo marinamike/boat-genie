@@ -1,37 +1,25 @@
 
 
-## Plan: Simplify EarningsTab for Beta (No Platform Fees)
+## Plan: Alter parts_pull_log table — add line_item_id and charge_price columns
 
-### 1. `src/components/provider/EarningsTab.tsx`
+### Migration SQL
 
-**Empty state:** Change "No Completed Jobs Yet" to "No Paid Jobs Yet" and update subtitle.
-
-**Summary text (line 44):** Change from "After 5% lead fee deduction • N completed jobs" to "Total earnings from paid jobs • N paid jobs".
-
-**Job list title (line 53):** Change "Completed Jobs" to "Paid Jobs".
-
-**Per-job card:** Remove `leadFee` and `netPayout` calculations. The earnings breakdown simplifies to a single line showing gross amount as the total earned. Remove the lead fee row and net payout row entirely. Keep badge logic: `isPaid` shows green "Paid", otherwise amber "Awaiting Payment".
-
-### 2. `src/pages/ServiceDashboard.tsx` (lines 45-54)
-
-Filter the `completedJobs` mapping to only include work orders with status `"paid"`:
-```typescript
-const completedJobs = serviceManagement.completedWorkOrders
-  .filter(wo => wo.status === "paid")
-  .map(wo => ({ ... }));
+```sql
+ALTER TABLE public.parts_pull_log
+  ADD COLUMN line_item_id uuid REFERENCES public.work_order_line_items(id) ON DELETE SET NULL,
+  ADD COLUMN charge_price numeric NOT NULL DEFAULT 0;
 ```
 
-### 3. `src/hooks/useServiceManagement.ts` (lines 750-754)
+### Code updates
 
-Update `totalEarnings` calculation to remove fee deduction — just sum `wholesale_price`:
-```typescript
-const totalEarnings = completedWorkOrders
-  .filter(wo => wo.status === "paid")
-  .reduce((sum, wo) => sum + (wo.wholesale_price || 0), 0);
-```
+#### `src/hooks/useStoreInventory.ts`
+Update the `PartsPullLog` interface to include the new fields:
+- `line_item_id: string | null`
+- `charge_price: number`
+
+Update the `pullPartForWorkOrder` function to accept an optional `chargePrice` parameter and include `charge_price` in the insert payload (defaulting to `item.retail_price` or the provided value).
 
 ### Files changed
-- `src/components/provider/EarningsTab.tsx`
-- `src/pages/ServiceDashboard.tsx`
-- `src/hooks/useServiceManagement.ts`
+- Database migration (new)
+- `src/hooks/useStoreInventory.ts` (modified)
 
