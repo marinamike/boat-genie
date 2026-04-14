@@ -81,6 +81,7 @@ const Dashboard = () => {
   const [showBoatForm, setShowBoatForm] = useState(false);
   const [showWishForm, setShowWishForm] = useState(false);
   const [boatToEdit, setBoatToEdit] = useState<BoatToEdit | null>(null);
+  const [reviewingInvoiceId, setReviewingInvoiceId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -151,7 +152,7 @@ const Dashboard = () => {
       .from("work_orders")
       .select("id, title, status, scheduled_date, created_at, boat:boats(name), business:businesses!work_orders_business_id_fkey(business_name)")
       .in("boat_id", boatIds)
-      .in("status", ["assigned", "in_progress", "qc_review"])
+      .in("status", ["assigned", "in_progress", "qc_review", "completed"])
       .order("created_at", { ascending: false });
     setActiveJobs((data as unknown as ActiveJob[]) || []);
   }, [user]);
@@ -454,8 +455,23 @@ const Dashboard = () => {
                   assigned: { label: "Scheduled", className: "bg-blue-100 text-blue-700 border-blue-200" },
                   in_progress: { label: "In Progress", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
                   qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-700 border-violet-200" },
+                  completed: { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200" },
                 };
                 const badge = statusMap[job.status] || { label: job.status, className: "" };
+
+                const handleReviewInvoice = async () => {
+                  const { data } = await supabase
+                    .from("invoices")
+                    .select("id")
+                    .eq("work_order_id", job.id)
+                    .maybeSingle();
+                  if (data) {
+                    setReviewingInvoiceId(data.id);
+                  } else {
+                    toast({ title: "No invoice found", description: "Invoice has not been generated yet.", variant: "destructive" });
+                  }
+                };
+
                 return (
                   <Card key={job.id}>
                     <CardContent className="py-4">
@@ -482,6 +498,15 @@ const Dashboard = () => {
                                 {formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
                               </span>
                             </div>
+                            {job.status === "completed" && (
+                              <Button
+                                size="sm"
+                                className="mt-2 bg-primary font-semibold"
+                                onClick={handleReviewInvoice}
+                              >
+                                Review Invoice
+                              </Button>
+                            )}
                           </div>
                         </div>
                         <Badge variant="outline" className={badge.className}>
