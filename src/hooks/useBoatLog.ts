@@ -206,7 +206,7 @@ export function useBoatLog(initialBoatId?: string) {
         .in("status", ["in_progress"])
         .order("created_at", { ascending: false });
 
-      // Fetch completed work orders
+      // Fetch paid/closed work orders (only fully paid jobs appear in service history)
       const { data: completedData } = await supabase
         .from("work_orders")
         .select(`
@@ -218,7 +218,7 @@ export function useBoatLog(initialBoatId?: string) {
           boat:boats!inner(id, name, make, model, length_ft)
         `)
         .eq("boat_id", selectedBoatId)
-        .eq("status", "completed")
+        .eq("status", "paid")
         .order("completed_at", { ascending: false });
 
       // Get provider names for work orders with providers
