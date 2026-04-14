@@ -312,6 +312,22 @@ export function useJobBoard() {
 
       if (woError) throw woError;
 
+      // Insert line items into work_order_line_items
+      if (quoteData.lineItems.length > 0) {
+        const { error: liError } = await supabase
+          .from("work_order_line_items")
+          .insert(
+            quoteData.lineItems.map((item) => ({
+              work_order_id: workOrder.id,
+              service_name: item.name,
+              quantity: item.quantity,
+              unit_price: item.unitPrice,
+              total: item.lineTotal,
+            }))
+          );
+        if (liError) console.error("Error inserting line items:", liError);
+      }
+
       const { error: quoteError } = await supabase
         .from("quotes")
         .insert({
