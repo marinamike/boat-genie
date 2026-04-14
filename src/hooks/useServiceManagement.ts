@@ -746,7 +746,7 @@ export function useServiceManagement() {
   // Computed metrics
   const activeJobsCount = workOrders.filter(wo => ["assigned", "in_progress"].includes(wo.status)).length;
   const pendingQuotesCount = workOrders.filter(wo => wo.status === "pending").length;
-  const completedWorkOrders = workOrders.filter(wo => wo.status === "completed");
+  const completedWorkOrders = workOrders.filter(wo => ["completed", "paid"].includes(wo.status));
   const totalEarnings = completedWorkOrders.reduce((sum, wo) => {
     const gross = wo.wholesale_price || 0;
     const fee = wo.lead_fee || gross * 0.05;

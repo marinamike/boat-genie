@@ -695,6 +695,16 @@ export function ServiceWorkOrders({
                     ))}
                   </div>
                 )}
+                {selectedWorkOrder.status === "completed" && (
+                  <Button
+                    className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                    disabled={updatingStatus}
+                    onClick={() => handleStatusProgression("paid")}
+                  >
+                    {updatingStatus ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    Mark as Paid
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
