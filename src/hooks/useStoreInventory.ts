@@ -81,6 +81,8 @@ export interface PartsPullLog {
   quantity: number;
   unit_cost: number;
   total_cost: number;
+  charge_price: number;
+  line_item_id: string | null;
   pulled_by: string;
   pulled_at: string;
   notes: string | null;
