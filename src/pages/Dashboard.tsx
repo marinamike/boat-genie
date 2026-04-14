@@ -569,6 +569,23 @@ const Dashboard = () => {
         }))}
         onSuccess={fetchWishes}
       />
+      {/* Invoice Review Sheet */}
+      <Sheet open={!!reviewingInvoiceId} onOpenChange={(open) => !open && setReviewingInvoiceId(null)}>
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Review Invoice</SheetTitle>
+          </SheetHeader>
+          {reviewingInvoiceId && (
+            <InvoiceReview
+              invoiceId={reviewingInvoiceId}
+              onClose={() => {
+                setReviewingInvoiceId(null);
+                fetchActiveJobs();
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
