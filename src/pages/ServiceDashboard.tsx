@@ -43,15 +43,17 @@ export default function ServiceDashboard() {
   };
 
   // Map completed work orders to CompletedJob shape for EarningsTab
-  const completedJobs: CompletedJob[] = serviceManagement.completedWorkOrders.map(wo => ({
-    id: wo.id,
-    title: wo.title,
-    completed_at: wo.completed_at,
-    wholesale_price: wo.wholesale_price,
-    lead_fee: wo.lead_fee,
-    funds_released_at: wo.funds_released_at,
-    boat_name: wo.boat_name,
-  }));
+  const completedJobs: CompletedJob[] = serviceManagement.completedWorkOrders
+    .filter(wo => wo.status === "paid")
+    .map(wo => ({
+      id: wo.id,
+      title: wo.title,
+      completed_at: wo.completed_at,
+      wholesale_price: wo.wholesale_price,
+      lead_fee: wo.lead_fee,
+      funds_released_at: wo.funds_released_at,
+      boat_name: wo.boat_name,
+    }));
 
   return (
     <div className="container max-w-6xl mx-auto p-4 space-y-6">
