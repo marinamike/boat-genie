@@ -1,25 +1,38 @@
 
 
-## Plan: Alter parts_pull_log table — add line_item_id and charge_price columns
+## Plan: Return inserted record ID from pullPartForWorkOrder
 
-### Migration SQL
+### 1. `src/hooks/useStoreInventory.ts`
 
-```sql
-ALTER TABLE public.parts_pull_log
-  ADD COLUMN line_item_id uuid REFERENCES public.work_order_line_items(id) ON DELETE SET NULL,
-  ADD COLUMN charge_price numeric NOT NULL DEFAULT 0;
+**Change return type** from `boolean` to `string | false` (returns the inserted record's ID on success, `false` on failure).
+
+**Update the insert call** (line 380) to add `.select("id").single()` so the inserted record's ID is returned.
+
+**Return the ID** instead of `true` on success (line 410).
+
+```typescript
+// Line 380: add .select().single()
+const { data: logData, error: logError } = await supabase
+  .from("parts_pull_log")
+  .insert({
+    work_order_id: workOrderId,
+    inventory_item_id: itemId,
+    quantity,
+    unit_cost: item.unit_cost,
+    total_cost: totalCost,
+    charge_price: finalChargePrice,
+    pulled_by: user.id,
+    notes,
+  })
+  .select("id")
+  .single();
+
+// Line 410: return the ID
+return (logData as any)?.id || true;
 ```
 
-### Code updates
-
-#### `src/hooks/useStoreInventory.ts`
-Update the `PartsPullLog` interface to include the new fields:
-- `line_item_id: string | null`
-- `charge_price: number`
-
-Update the `pullPartForWorkOrder` function to accept an optional `chargePrice` parameter and include `charge_price` in the insert payload (defaulting to `item.retail_price` or the provided value).
+This lets the ServiceWorkOrders "Add Part" flow use the returned ID directly to update `line_item_id` on that specific `parts_pull_log` record, eliminating race conditions.
 
 ### Files changed
-- Database migration (new)
-- `src/hooks/useStoreInventory.ts` (modified)
+- `src/hooks/useStoreInventory.ts` — modify insert to return ID, change return type
 
