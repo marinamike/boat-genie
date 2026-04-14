@@ -55,13 +55,14 @@ export function ServiceTimeline({
       in_progress: { variant: "default", icon: <Clock className="w-3 h-3" />, label: "In Progress" },
       qc_requested: { variant: "outline", icon: <Clock className="w-3 h-3" />, label: "QC Review" },
       completed: { variant: "default", icon: <CheckCircle2 className="w-3 h-3" />, label: "Completed" },
+      paid: { variant: "default", icon: <CheckCircle2 className="w-3 h-3" />, label: "Paid" },
       cancelled: { variant: "destructive", icon: <AlertTriangle className="w-3 h-3" />, label: "Cancelled" },
     };
 
     const config = statusConfig[status] || { variant: "secondary" as const, icon: null, label: status };
 
     return (
-      <Badge variant={config.variant} className={status === "completed" ? "bg-green-500" : ""}>
+      <Badge variant={config.variant} className={status === "completed" || status === "paid" ? "bg-green-500" : ""}>
         {config.icon}
         <span className="ml-1">{config.label}</span>
       </Badge>
