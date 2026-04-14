@@ -1,49 +1,53 @@
 
 
-## Plan: Replace Status Buttons with Selector + Add "Paid" Status
+## Plan: Create invoices & invoice_line_items tables + add "disputed" to work_order_status
 
 ### Database Migration
-Add `paid` to the `work_order_status` enum:
+
+Single migration with three parts:
+
+**1. Add "disputed" to work_order_status enum**
 ```sql
-ALTER TYPE public.work_order_status ADD VALUE 'paid';
+ALTER TYPE public.work_order_status ADD VALUE 'disputed';
 ```
 
-### Changes — `src/components/service/ServiceWorkOrders.tsx`
+**2. Create `invoices` table**
+- `id` uuid PK default `gen_random_uuid()`
+- `work_order_id` uuid FK → work_orders(id) NOT NULL
+- `business_id` uuid FK → businesses(id) NOT NULL
+- `boat_id` uuid FK → boats(id) NOT NULL
+- `owner_id` uuid nullable FK → profiles(id)
+- `guest_customer_id` uuid nullable FK → guest_customers(id)
+- `status` text default `'pending_review'` NOT NULL
+- `total_amount` numeric NOT NULL default 0
+- `created_at` timestamptz default now()
+- `updated_at` timestamptz default now()
+- Add `updated_at` trigger using existing `update_updated_at_column()` function
+- Enable RLS with policies for business owner/staff (full CRUD) and boat owner (select + update for approve/dispute)
 
-**1. Add "paid" to statusConfig**
-Add entry: `paid: { label: "Paid", className: "bg-green-100 text-green-800 border-green-300" }`.
+**3. Create `invoice_line_items` table**
+- `id` uuid PK default `gen_random_uuid()`
+- `invoice_id` uuid FK → invoices(id) ON DELETE CASCADE NOT NULL
+- `service_name` text NOT NULL
+- `quantity` numeric NOT NULL default 1
+- `unit_price` numeric NOT NULL default 0
+- `total` numeric NOT NULL default 0
+- `verified` boolean default false
+- `disputed` boolean default false
+- `dispute_note` text nullable
+- `created_at` timestamptz default now()
+- Enable RLS with policies mirroring the invoices table (join through invoice_id)
 
-**2. Replace progression buttons (lines 589-619) with a status selector**
-Remove the three conditional `Button` blocks (Start Work, Request QC Review, Mark Complete). Replace with:
-- If status is `"paid"`: show only a green "Paid" badge, no selector, hide Edit button.
-- Otherwise: render a segmented control (row of 4 buttons: Assigned, In Progress, QC Review, Completed). The active status is highlighted with its color; others are outlined/muted. Clicking any button calls `handleStatusProgression(newStatus)` immediately. Disable while `updatingStatus` is true.
+### RLS Policies
 
-**3. Update `handleStatusProgression`**
-Add `"paid"` to the labels map and update the toast for generic status changes. Remove `setShowCompleteDialog(false)` since the completion confirmation dialog is being removed.
+**invoices:**
+- Business owner or staff can SELECT, INSERT, UPDATE, DELETE where `is_business_owner(business_id) OR is_business_staff(business_id)`
+- Boat owner can SELECT and UPDATE (for approving/disputing) where `owner_id = auth.uid()`
 
-**4. Remove the "Mark Complete" AlertDialog (lines 976-993)**
-No longer needed — status changes are direct. Also remove `showCompleteDialog` state.
-
-**5. Auto-advance on Check In (handlePunchIn, line ~445)**
-After `await punchIn(...)`, add:
-```typescript
-if (selectedWorkOrder.status === "assigned") {
-  await handleStatusProgression("in_progress");
-}
-```
-
-**6. Update fetchWorkOrders status filter (line 176)**
-Add `"paid"` to the `.in("status", [...])` array.
-
-**7. Lock paid work orders**
-When `selectedWorkOrder.status === "paid"`, hide the Edit button and the status selector. Only the Paid badge is shown.
-
-### Technical Details
-- The segmented control is built from plain `Button` components in a flex row — no new dependencies needed.
-- Status options array: `[{value: "assigned", label: "Assigned", color: "blue"}, {value: "in_progress", label: "In Progress", color: "emerald"}, {value: "qc_review", label: "QC Review", color: "violet"}, {value: "completed", label: "Completed", color: "gray"}]`.
-- `"paid"` is never in the selector — it can only be set externally (e.g., billing system).
+**invoice_line_items:**
+- Business owner/staff: full access via join to invoices on business_id
+- Boat owner: SELECT + UPDATE (for disputing individual lines) via join to invoices on owner_id
 
 ### Files changed
-- `src/components/service/ServiceWorkOrders.tsx`
-- Database migration: add `paid` to `work_order_status` enum
+- Database migration only (no code changes needed yet)
 
