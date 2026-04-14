@@ -1,33 +1,37 @@
 
 
-## Plan: Add "Mark as Paid" button + update completed filter
+## Plan: Simplify EarningsTab for Beta (No Platform Fees)
 
-### Changes
+### 1. `src/components/provider/EarningsTab.tsx`
 
-#### 1. `src/hooks/useServiceManagement.ts` (line 749)
-Change the `completedWorkOrders` filter to include both statuses:
+**Empty state:** Change "No Completed Jobs Yet" to "No Paid Jobs Yet" and update subtitle.
+
+**Summary text (line 44):** Change from "After 5% lead fee deduction • N completed jobs" to "Total earnings from paid jobs • N paid jobs".
+
+**Job list title (line 53):** Change "Completed Jobs" to "Paid Jobs".
+
+**Per-job card:** Remove `leadFee` and `netPayout` calculations. The earnings breakdown simplifies to a single line showing gross amount as the total earned. Remove the lead fee row and net payout row entirely. Keep badge logic: `isPaid` shows green "Paid", otherwise amber "Awaiting Payment".
+
+### 2. `src/pages/ServiceDashboard.tsx` (lines 45-54)
+
+Filter the `completedJobs` mapping to only include work orders with status `"paid"`:
 ```typescript
-const completedWorkOrders = workOrders.filter(wo => ["completed", "paid"].includes(wo.status));
+const completedJobs = serviceManagement.completedWorkOrders
+  .filter(wo => wo.status === "paid")
+  .map(wo => ({ ... }));
 ```
 
-#### 2. `src/components/service/ServiceWorkOrders.tsx` (after line 697, before `</CardContent>`)
-Insert a "Mark as Paid" button that only renders when `selectedWorkOrder.status === "completed"`:
-```typescript
-{selectedWorkOrder.status === "completed" && (
-  <Button
-    className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold"
-    disabled={updatingStatus}
-    onClick={() => handleStatusProgression("paid")}
-  >
-    {updatingStatus ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-    Mark as Paid
-  </Button>
-)}
-```
+### 3. `src/hooks/useServiceManagement.ts` (lines 750-754)
 
-This sits right below the status selector buttons, inside the same Card, and is hidden for all other statuses including "paid" (which already shows the green Paid badge).
+Update `totalEarnings` calculation to remove fee deduction — just sum `wholesale_price`:
+```typescript
+const totalEarnings = completedWorkOrders
+  .filter(wo => wo.status === "paid")
+  .reduce((sum, wo) => sum + (wo.wholesale_price || 0), 0);
+```
 
 ### Files changed
-- `src/hooks/useServiceManagement.ts` — one-line filter update
-- `src/components/service/ServiceWorkOrders.tsx` — add conditional button block
+- `src/components/provider/EarningsTab.tsx`
+- `src/pages/ServiceDashboard.tsx`
+- `src/hooks/useServiceManagement.ts`
 
