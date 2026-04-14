@@ -136,11 +136,22 @@ export function InvoiceReview({ invoiceId, onClose }: InvoiceReviewProps) {
 
     if (error) {
       toast({ title: "Error", description: "Failed to approve invoice.", variant: "destructive" });
-    } else {
-      toast({ title: "Invoice Approved", description: "Payment has been approved." });
-      await fetchInvoice();
-      onClose?.();
+      setProcessing(false);
+      return;
     }
+
+    const { error: woError } = await supabase
+      .from("work_orders")
+      .update({ status: "paid" })
+      .eq("id", invoice.work_order_id);
+
+    if (woError) {
+      console.error("Error updating work order to paid:", woError);
+    }
+
+    toast({ title: "Invoice Approved", description: "Payment has been approved." });
+    await fetchInvoice();
+    onClose?.();
     setProcessing(false);
   };
 
