@@ -1638,6 +1638,128 @@ export type Database = {
           },
         ]
       }
+      invoice_line_items: {
+        Row: {
+          created_at: string
+          dispute_note: string | null
+          disputed: boolean
+          id: string
+          invoice_id: string
+          quantity: number
+          service_name: string
+          total: number
+          unit_price: number
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          dispute_note?: string | null
+          disputed?: boolean
+          id?: string
+          invoice_id: string
+          quantity?: number
+          service_name: string
+          total?: number
+          unit_price?: number
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          dispute_note?: string | null
+          disputed?: boolean
+          id?: string
+          invoice_id?: string
+          quantity?: number
+          service_name?: string
+          total?: number
+          unit_price?: number
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          boat_id: string
+          business_id: string
+          created_at: string
+          guest_customer_id: string | null
+          id: string
+          owner_id: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          boat_id: string
+          business_id: string
+          created_at?: string
+          guest_customer_id?: string | null
+          id?: string
+          owner_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          boat_id?: string
+          business_id?: string
+          created_at?: string
+          guest_customer_id?: string | null
+          id?: string
+          owner_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_guest_customer_id_fkey"
+            columns: ["guest_customer_id"]
+            isOneToOne: false
+            referencedRelation: "guest_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       launch_cards: {
         Row: {
           additional_notes: string | null
@@ -5731,6 +5853,7 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "paid"
+        | "disputed"
       yard_asset_type: "wet_slip" | "dry_rack" | "yard_block" | "mooring"
     }
     CompositeTypes: {
@@ -5931,6 +6054,7 @@ export const Constants = {
         "completed",
         "cancelled",
         "paid",
+        "disputed",
       ],
       yard_asset_type: ["wet_slip", "dry_rack", "yard_block", "mooring"],
     },
