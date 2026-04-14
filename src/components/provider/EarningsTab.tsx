@@ -15,9 +15,9 @@ export function EarningsTab({ completedJobs, totalEarnings }: EarningsTabProps) 
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <DollarSign className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="font-semibold text-lg">No Completed Jobs Yet</h3>
+          <h3 className="font-semibold text-lg">No Paid Jobs Yet</h3>
           <p className="text-muted-foreground text-center">
-            Your completed jobs and earnings will appear here.
+            Your paid jobs and earnings will appear here.
           </p>
         </CardContent>
       </Card>
@@ -41,7 +41,7 @@ export function EarningsTab({ completedJobs, totalEarnings }: EarningsTabProps) 
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            After 5% lead fee deduction • {completedJobs.length} completed job{completedJobs.length !== 1 ? "s" : ""}
+            Total earnings from paid jobs • {completedJobs.length} paid job{completedJobs.length !== 1 ? "s" : ""}
           </p>
         </CardContent>
       </Card>
@@ -50,13 +50,11 @@ export function EarningsTab({ completedJobs, totalEarnings }: EarningsTabProps) 
       <div className="space-y-3">
         <h3 className="font-semibold text-lg flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5" />
-          Completed Jobs
+          Paid Jobs
         </h3>
 
         {completedJobs.map((job) => {
           const grossAmount = job.wholesale_price || 0;
-          const leadFee = job.lead_fee || grossAmount * 0.05;
-          const netPayout = grossAmount - leadFee;
           const isPaid = !!job.funds_released_at;
 
           return (
@@ -87,25 +85,17 @@ export function EarningsTab({ completedJobs, totalEarnings }: EarningsTabProps) 
                     ) : (
                       <>
                         <Clock className="w-3 h-3 mr-1" />
-                        Processing
+                        Awaiting Payment
                       </>
                     )}
                   </Badge>
                 </div>
 
-                {/* Earnings Breakdown */}
-                <div className="mt-4 bg-muted rounded-lg p-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Gross Amount</span>
+                {/* Earnings */}
+                <div className="mt-4 bg-muted rounded-lg p-3 text-sm">
+                  <div className="flex justify-between font-semibold text-green-600">
+                    <span>Total Earned</span>
                     <span>${grossAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-destructive">
-                    <span>Lead Fee (5%)</span>
-                    <span>-${leadFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold pt-2 border-t text-green-600">
-                    <span>Net Payout</span>
-                    <span>${netPayout.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
