@@ -81,6 +81,8 @@ export interface PartsPullLog {
   quantity: number;
   unit_cost: number;
   total_cost: number;
+  charge_price: number;
+  line_item_id: string | null;
   pulled_by: string;
   pulled_at: string;
   notes: string | null;
@@ -355,7 +357,8 @@ export function useStoreInventory() {
     workOrderId: string,
     itemId: string,
     quantity: number,
-    notes?: string
+    notes?: string,
+    chargePrice?: number
   ) => {
     if (!user?.id) return false;
 
@@ -371,6 +374,7 @@ export function useStoreInventory() {
     }
 
     const totalCost = item.unit_cost * quantity;
+    const finalChargePrice = chargePrice ?? item.retail_price;
 
     // Log the parts pull
     const { error: logError } = await supabase
@@ -381,6 +385,7 @@ export function useStoreInventory() {
         quantity,
         unit_cost: item.unit_cost,
         total_cost: totalCost,
+        charge_price: finalChargePrice,
         pulled_by: user.id,
         notes,
       });

@@ -2855,9 +2855,11 @@ export type Database = {
       }
       parts_pull_log: {
         Row: {
+          charge_price: number
           created_at: string
           id: string
           inventory_item_id: string
+          line_item_id: string | null
           notes: string | null
           pulled_at: string
           pulled_by: string
@@ -2867,9 +2869,11 @@ export type Database = {
           work_order_id: string
         }
         Insert: {
+          charge_price?: number
           created_at?: string
           id?: string
           inventory_item_id: string
+          line_item_id?: string | null
           notes?: string | null
           pulled_at?: string
           pulled_by: string
@@ -2879,9 +2883,11 @@ export type Database = {
           work_order_id: string
         }
         Update: {
+          charge_price?: number
           created_at?: string
           id?: string
           inventory_item_id?: string
+          line_item_id?: string | null
           notes?: string | null
           pulled_at?: string
           pulled_by?: string
@@ -2896,6 +2902,13 @@ export type Database = {
             columns: ["inventory_item_id"]
             isOneToOne: false
             referencedRelation: "store_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_pull_log_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_line_items"
             referencedColumns: ["id"]
           },
           {
