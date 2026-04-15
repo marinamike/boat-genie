@@ -12,8 +12,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck, ChevronDown, Wrench } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
+import { useStoreInventory } from "@/hooks/useStoreInventory";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,8 +64,11 @@ export function ServiceWorkOrders({
   punchOut,
   getActiveEntry,
 }: ServiceManagementProps) {
-  const { business } = useBusiness();
+  const { business, enabledModules } = useBusiness();
   const { activeMenuItems } = useServiceMenu();
+  const { inventory, pullPartForWorkOrder, refreshInventory } = useStoreInventory();
+  const storeEnabled = enabledModules.includes("store");
+  const activeInventory = inventory.filter(i => i.is_active && i.current_quantity > 0);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,6 +99,30 @@ export function ServiceWorkOrders({
   const [showReapprovalDialog, setShowReapprovalDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  // Parts tracking state
+  const [partsByLineItem, setPartsByLineItem] = useState<Record<string, any[]>>({});
+  const [addingPartForLineItem, setAddingPartForLineItem] = useState<string | null>(null);
+  const [partForm, setPartForm] = useState({ itemId: "", quantity: "1", chargePrice: "" });
+  const [submittingPart, setSubmittingPart] = useState(false);
+
+  const fetchPartsForWorkOrder = useCallback(async (workOrderId: string) => {
+    const { data, error } = await supabase
+      .from("parts_pull_log" as any)
+      .select("*, store_inventory:inventory_item_id(name)")
+      .eq("work_order_id", workOrderId);
+    if (error) {
+      console.error("Error fetching parts:", error);
+      return;
+    }
+    const grouped: Record<string, any[]> = {};
+    for (const row of (data as any[]) || []) {
+      const key = row.line_item_id || "__unlinked__";
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(row);
+    }
+    setPartsByLineItem(grouped);
+  }, []);
+
   useEffect(() => {
     fetchWorkOrders();
   }, [business?.id]);
@@ -103,6 +132,7 @@ export function ServiceWorkOrders({
       fetchPhases(selectedWorkOrder.id);
       fetchTimeEntries(selectedWorkOrder.id);
       fetchLineItems(selectedWorkOrder.id);
+      if (storeEnabled) fetchPartsForWorkOrder(selectedWorkOrder.id);
     }
   }, [selectedWorkOrder?.id]);
 
@@ -157,7 +187,16 @@ export function ServiceWorkOrders({
           }
 
           const items = (woLineItems as any[]) || [];
-          const totalAmount = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
+          let totalAmount = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
+
+          // Fetch parts pulls for the work order
+          const { data: partsPulls } = await supabase
+            .from("parts_pull_log" as any)
+            .select("*, store_inventory:inventory_item_id(name)")
+            .eq("work_order_id", selectedWorkOrder.id);
+          const partsItems = (partsPulls as any[]) || [];
+          const partsTotal = partsItems.reduce((sum: number, p: any) => sum + (Number(p.charge_price) * Number(p.quantity)), 0);
+          totalAmount += partsTotal;
 
           const ownerId = (selectedWorkOrder as any).boats?.owner_id || null;
           const guestCustomerId = (selectedWorkOrder as any).guest_customer_id || null;
@@ -182,8 +221,8 @@ export function ServiceWorkOrders({
             throw invError;
           }
 
-          // Insert invoice line items
-          if (items.length > 0 && invoice) {
+          // Insert invoice line items (services + parts)
+          if (invoice) {
             const invoiceLines = items.map((item: any) => ({
               invoice_id: invoice.id,
               service_name: item.service_name,
@@ -193,13 +232,28 @@ export function ServiceWorkOrders({
               verified: false,
             }));
 
-            const { error: linesError } = await supabase
-              .from("invoice_line_items")
-              .insert(invoiceLines);
+            // Add parts as invoice line items
+            for (const p of partsItems) {
+              const partName = (p.store_inventory as any)?.name || "Part";
+              invoiceLines.push({
+                invoice_id: invoice.id,
+                service_name: `Part: ${partName}`,
+                quantity: Number(p.quantity),
+                unit_price: Number(p.charge_price),
+                total: Number(p.charge_price) * Number(p.quantity),
+                verified: false,
+              });
+            }
 
-            if (linesError) {
-              console.error("Error creating invoice line items:", linesError);
-              throw linesError;
+            if (invoiceLines.length > 0) {
+              const { error: linesError } = await supabase
+                .from("invoice_line_items")
+                .insert(invoiceLines);
+
+              if (linesError) {
+                console.error("Error creating invoice line items:", linesError);
+                throw linesError;
+              }
             }
           }
 
@@ -787,17 +841,125 @@ export function ServiceWorkOrders({
                   <p className="text-muted-foreground text-sm text-center py-4">No services added</p>
                 ) : (
                   <div className="space-y-2">
-                    {lineItems.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
-                        <div>
-                          <p className="font-medium">{item.service_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatPrice(item.unit_price)} × {item.quantity}
-                          </p>
+                    {lineItems.map((item) => {
+                      const itemParts = partsByLineItem[item.id] || [];
+                      const partsSubtotal = itemParts.reduce((s: number, p: any) => s + Number(p.charge_price) * Number(p.quantity), 0);
+                      return (
+                        <div key={item.id} className="border rounded overflow-hidden">
+                          <div className="flex items-center justify-between text-sm p-2 bg-muted/50">
+                            <div>
+                              <p className="font-medium">{item.service_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatPrice(item.unit_price)} × {item.quantity}
+                              </p>
+                            </div>
+                            <span className="font-medium">{formatPrice(item.total)}</span>
+                          </div>
+
+                          {storeEnabled && (
+                            <Collapsible>
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-7 rounded-none border-t">
+                                  <span className="flex items-center gap-1">
+                                    <Wrench className="w-3 h-3" />
+                                    Parts {itemParts.length > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">{itemParts.length}</Badge>}
+                                  </span>
+                                  <ChevronDown className="w-3 h-3" />
+                                </Button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="border-t px-2 py-1 space-y-1 bg-background">
+                                {itemParts.length > 0 ? (
+                                  <>
+                                    {itemParts.map((p: any) => (
+                                      <div key={p.id} className="flex justify-between text-xs py-0.5">
+                                        <span>{(p.store_inventory as any)?.name || "Part"} × {p.quantity}</span>
+                                        <span>{formatPrice(Number(p.charge_price) * Number(p.quantity))}</span>
+                                      </div>
+                                    ))}
+                                    <div className="flex justify-between text-xs font-semibold border-t pt-1">
+                                      <span>Parts subtotal</span>
+                                      <span>{formatPrice(partsSubtotal)}</span>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground py-1">No parts added</p>
+                                )}
+
+                                {addingPartForLineItem === item.id ? (
+                                  <div className="space-y-2 pt-1 pb-2 border-t mt-1">
+                                    <div>
+                                      <Label className="text-xs">Part</Label>
+                                      <Select value={partForm.itemId} onValueChange={(v) => {
+                                        const inv = activeInventory.find(i => i.id === v);
+                                        setPartForm({ itemId: v, quantity: "1", chargePrice: inv ? inv.retail_price.toString() : "" });
+                                      }}>
+                                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select part" /></SelectTrigger>
+                                        <SelectContent>
+                                          {activeInventory.map(inv => (
+                                            <SelectItem key={inv.id} value={inv.id} className="text-xs">
+                                              {inv.name} ({inv.current_quantity} in stock)
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <Label className="text-xs">Qty</Label>
+                                        <Input type="number" min="1" className="h-8 text-xs" value={partForm.quantity}
+                                          onChange={e => setPartForm(f => ({ ...f, quantity: e.target.value }))} />
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs">Charge $</Label>
+                                        <Input type="number" min="0" step="0.01" className="h-8 text-xs" value={partForm.chargePrice}
+                                          onChange={e => setPartForm(f => ({ ...f, chargePrice: e.target.value }))} />
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <Button size="sm" className="h-7 text-xs flex-1" disabled={!partForm.itemId || submittingPart}
+                                        onClick={async () => {
+                                          if (!selectedWorkOrder) return;
+                                          setSubmittingPart(true);
+                                          try {
+                                            const qty = parseInt(partForm.quantity) || 1;
+                                            const cp = parseFloat(partForm.chargePrice) || 0;
+                                            const pullId = await pullPartForWorkOrder(
+                                              selectedWorkOrder.id, partForm.itemId, qty, undefined, cp
+                                            );
+                                            if (pullId && typeof pullId === "string") {
+                                              await supabase.from("parts_pull_log" as any)
+                                                .update({ line_item_id: item.id, charge_price: cp } as any)
+                                                .eq("id", pullId);
+                                            }
+                                            await fetchPartsForWorkOrder(selectedWorkOrder.id);
+                                            await refreshInventory();
+                                            setAddingPartForLineItem(null);
+                                            setPartForm({ itemId: "", quantity: "1", chargePrice: "" });
+                                          } finally {
+                                            setSubmittingPart(false);
+                                          }
+                                        }}>
+                                        {submittingPart && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                        Save
+                                      </Button>
+                                      <Button size="sm" variant="ghost" className="h-7 text-xs"
+                                        onClick={() => { setAddingPartForLineItem(null); setPartForm({ itemId: "", quantity: "1", chargePrice: "" }); }}>
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Button size="sm" variant="ghost" className="w-full h-6 text-xs mt-1"
+                                    onClick={() => setAddingPartForLineItem(item.id)}>
+                                    <Plus className="w-3 h-3 mr-1" /> Add Part
+                                  </Button>
+                                )}
+                              </CollapsibleContent>
+                            </Collapsible>
+                          )}
                         </div>
-                        <span className="font-medium">{formatPrice(item.total)}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <Separator />
                     <div className="flex justify-between text-sm font-semibold pt-1">
                       <span>Subtotal</span>
