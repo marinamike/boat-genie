@@ -5297,6 +5297,7 @@ export type Database = {
           pending_invite_id: string | null
           photos_uploaded_at: string | null
           priority: number | null
+          proposed_retail_price: number | null
           provider_checked_in_at: string | null
           provider_diagnostic_fee: number | null
           provider_hourly_rate: number | null
@@ -5348,6 +5349,7 @@ export type Database = {
           pending_invite_id?: string | null
           photos_uploaded_at?: string | null
           priority?: number | null
+          proposed_retail_price?: number | null
           provider_checked_in_at?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
@@ -5399,6 +5401,7 @@ export type Database = {
           pending_invite_id?: string | null
           photos_uploaded_at?: string | null
           priority?: number | null
+          proposed_retail_price?: number | null
           provider_checked_in_at?: string | null
           provider_diagnostic_fee?: number | null
           provider_hourly_rate?: number | null
