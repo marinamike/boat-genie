@@ -105,6 +105,24 @@ export function ServiceWorkOrders({
   const [partForm, setPartForm] = useState({ itemId: "", quantity: "1", chargePrice: "" });
   const [submittingPart, setSubmittingPart] = useState(false);
 
+  const fetchPartsForWorkOrder = useCallback(async (workOrderId: string) => {
+    const { data, error } = await supabase
+      .from("parts_pull_log" as any)
+      .select("*, store_inventory:inventory_item_id(name)")
+      .eq("work_order_id", workOrderId);
+    if (error) {
+      console.error("Error fetching parts:", error);
+      return;
+    }
+    const grouped: Record<string, any[]> = {};
+    for (const row of (data as any[]) || []) {
+      const key = row.line_item_id || "__unlinked__";
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(row);
+    }
+    setPartsByLineItem(grouped);
+  }, []);
+
   useEffect(() => {
     fetchWorkOrders();
   }, [business?.id]);
@@ -114,6 +132,7 @@ export function ServiceWorkOrders({
       fetchPhases(selectedWorkOrder.id);
       fetchTimeEntries(selectedWorkOrder.id);
       fetchLineItems(selectedWorkOrder.id);
+      if (storeEnabled) fetchPartsForWorkOrder(selectedWorkOrder.id);
     }
   }, [selectedWorkOrder?.id]);
 
