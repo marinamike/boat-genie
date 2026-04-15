@@ -64,8 +64,11 @@ export function ServiceWorkOrders({
   punchOut,
   getActiveEntry,
 }: ServiceManagementProps) {
-  const { business } = useBusiness();
+  const { business, enabledModules } = useBusiness();
   const { activeMenuItems } = useServiceMenu();
+  const { inventory, pullPartForWorkOrder, refreshInventory } = useStoreInventory();
+  const storeEnabled = enabledModules.includes("store");
+  const activeInventory = inventory.filter(i => i.is_active && i.current_quantity > 0);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,6 +98,12 @@ export function ServiceWorkOrders({
   const [addingService, setAddingService] = useState(false);
   const [showReapprovalDialog, setShowReapprovalDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Parts tracking state
+  const [partsByLineItem, setPartsByLineItem] = useState<Record<string, any[]>>({});
+  const [addingPartForLineItem, setAddingPartForLineItem] = useState<string | null>(null);
+  const [partForm, setPartForm] = useState({ itemId: "", quantity: "1", chargePrice: "" });
+  const [submittingPart, setSubmittingPart] = useState(false);
 
   useEffect(() => {
     fetchWorkOrders();
