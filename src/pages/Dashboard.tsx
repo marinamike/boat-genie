@@ -617,6 +617,8 @@ const Dashboard = () => {
               }
             };
 
+            console.log("[Job Detail Sheet] status:", selectedJobDetail.status, "proposed_retail_price:", selectedJobDetail.proposed_retail_price);
+
             return (
               <div className="space-y-4 mt-4">
                 <div className="flex items-center justify-between">
@@ -653,7 +655,7 @@ const Dashboard = () => {
                     <p className="text-sm bg-muted/50 rounded-lg p-3">{selectedJobDetail.description}</p>
                   </div>
                 )}
-                {selectedJobDetail.status === "pending_approval" && selectedJobDetail.proposed_retail_price != null && (
+                {selectedJobDetail.status === "pending_approval" && selectedJobDetail.proposed_retail_price !== null && selectedJobDetail.proposed_retail_price !== undefined && selectedJobDetail.proposed_retail_price > 0 && (
                   <div className="space-y-3 border border-amber-200 bg-amber-50 rounded-lg p-4">
                     <h3 className="font-semibold text-amber-800">Price Change Pending Approval</h3>
                     <div className="space-y-2">
