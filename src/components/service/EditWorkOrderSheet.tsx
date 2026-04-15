@@ -80,7 +80,7 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
       proposed_retail_price: Number(basePrice),
       materials_deposit: Math.min(clampedDeposit, originalRetailPrice),
       scheduled_date: scheduledDate || null,
-      status: "pending_approval",
+      status: "pending_approval" as const,
     } : {
       title,
       description: notes || description,
