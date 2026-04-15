@@ -60,6 +60,7 @@ interface ActiveJob {
   status: string;
   scheduled_date: string | null;
   created_at: string;
+  description: string | null;
   boat: { name: string } | null;
   business: { business_name: string } | null;
 }
@@ -82,6 +83,7 @@ const Dashboard = () => {
   const [showWishForm, setShowWishForm] = useState(false);
   const [boatToEdit, setBoatToEdit] = useState<BoatToEdit | null>(null);
   const [reviewingInvoiceId, setReviewingInvoiceId] = useState<string | null>(null);
+  const [selectedJobDetail, setSelectedJobDetail] = useState<ActiveJob | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -150,7 +152,7 @@ const Dashboard = () => {
     const boatIds = ownerBoats.map((b) => b.id);
     const { data } = await supabase
       .from("work_orders")
-      .select("id, title, status, scheduled_date, created_at, boat:boats(name), business:businesses!work_orders_business_id_fkey(business_name)")
+      .select("id, title, status, scheduled_date, created_at, description, boat:boats(name), business:businesses!work_orders_business_id_fkey(business_name)")
       .in("boat_id", boatIds)
       .in("status", ["assigned", "in_progress", "qc_review", "completed", "disputed"])
       .order("created_at", { ascending: false });
@@ -474,7 +476,7 @@ const Dashboard = () => {
                 };
 
                 return (
-                  <Card key={job.id}>
+                  <Card key={job.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedJobDetail(job)}>
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 min-w-0">
@@ -499,15 +501,6 @@ const Dashboard = () => {
                                 {formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
                               </span>
                             </div>
-                            {job.status === "completed" && (
-                              <Button
-                                size="sm"
-                                className="mt-2 bg-primary font-semibold"
-                                onClick={handleReviewInvoice}
-                              >
-                                Review Invoice
-                              </Button>
-                            )}
                           </div>
                         </div>
                         <Badge variant="outline" className={badge.className}>
