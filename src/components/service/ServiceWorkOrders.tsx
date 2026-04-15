@@ -452,15 +452,26 @@ export function ServiceWorkOrders({
       // Update work order price and status
       const needsReapproval = !["pending", "pending_approval"].includes(selectedWorkOrder.status);
       
-      await supabase
-        .from("work_orders")
-        .update({
-          retail_price: newTotal,
-          wholesale_price: newTotal,
-          status: "pending_approval",
-          approved_at: null,
-        } as any)
-        .eq("id", selectedWorkOrder.id);
+      if (needsReapproval) {
+        await supabase
+          .from("work_orders")
+          .update({
+            proposed_retail_price: newTotal,
+            status: "pending_approval",
+            approved_at: null,
+          } as any)
+          .eq("id", selectedWorkOrder.id);
+      } else {
+        await supabase
+          .from("work_orders")
+          .update({
+            retail_price: newTotal,
+            wholesale_price: newTotal,
+            status: "pending_approval",
+            approved_at: null,
+          } as any)
+          .eq("id", selectedWorkOrder.id);
+      }
 
       // Also update the quote record
       await supabase
