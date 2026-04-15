@@ -225,6 +225,14 @@ export function ServiceWorkOrders({
       // Auto-generate invoice when completed
       if (newStatus === "completed") {
         try {
+          // Check for existing invoice (e.g. from a previous completion before dispute)
+          const { data: existingInvoice } = await supabase
+            .from("invoices")
+            .select("id")
+            .eq("work_order_id", selectedWorkOrder.id)
+            .limit(1)
+            .maybeSingle();
+
           // Fetch work order line items
           const { data: woLineItems, error: liError } = await supabase
             .from("work_order_line_items" as any)
@@ -248,62 +256,76 @@ export function ServiceWorkOrders({
           const partsTotal = partsItems.reduce((sum: number, p: any) => sum + (Number(p.charge_price) * Number(p.quantity)), 0);
           totalAmount += partsTotal;
 
-          const ownerId = (selectedWorkOrder as any).boats?.owner_id || null;
-          const guestCustomerId = (selectedWorkOrder as any).guest_customer_id || null;
-
-          // Create invoice
-          const { data: invoice, error: invError } = await supabase
-            .from("invoices")
-            .insert({
-              work_order_id: selectedWorkOrder.id,
-              business_id: business.id,
-              boat_id: selectedWorkOrder.boat_id,
-              owner_id: ownerId,
-              guest_customer_id: guestCustomerId,
-              status: "pending_review",
-              total_amount: totalAmount,
-            })
-            .select("id")
-            .single();
-
-          if (invError) {
-            console.error("Error creating invoice:", invError);
-            throw invError;
+          // Build invoice line items array
+          const invoiceLines = items.map((item: any) => ({
+            service_name: item.service_name,
+            quantity: Number(item.quantity),
+            unit_price: Number(item.unit_price),
+            total: Number(item.total),
+            verified: false,
+          }));
+          for (const p of partsItems) {
+            const partName = (p.store_inventory as any)?.name || "Part";
+            invoiceLines.push({
+              service_name: `Part: ${partName}`,
+              quantity: Number(p.quantity),
+              unit_price: Number(p.charge_price),
+              total: Number(p.charge_price) * Number(p.quantity),
+              verified: false,
+            });
           }
 
-          // Insert invoice line items (services + parts)
-          if (invoice) {
-            const invoiceLines = items.map((item: any) => ({
-              invoice_id: invoice.id,
-              service_name: item.service_name,
-              quantity: Number(item.quantity),
-              unit_price: Number(item.unit_price),
-              total: Number(item.total),
-              verified: false,
-            }));
+          let invoiceId: string;
 
-            // Add parts as invoice line items
-            for (const p of partsItems) {
-              const partName = (p.store_inventory as any)?.name || "Part";
-              invoiceLines.push({
-                invoice_id: invoice.id,
-                service_name: `Part: ${partName}`,
-                quantity: Number(p.quantity),
-                unit_price: Number(p.charge_price),
-                total: Number(p.charge_price) * Number(p.quantity),
-                verified: false,
-              });
+          if (existingInvoice) {
+            // Update existing invoice instead of creating a duplicate
+            invoiceId = existingInvoice.id;
+            await supabase
+              .from("invoices")
+              .update({ status: "pending_review", total_amount: totalAmount, updated_at: new Date().toISOString() })
+              .eq("id", invoiceId);
+
+            // Remove old line items and re-insert fresh ones
+            await supabase
+              .from("invoice_line_items")
+              .delete()
+              .eq("invoice_id", invoiceId);
+          } else {
+            // Create new invoice
+            const ownerId = (selectedWorkOrder as any).boats?.owner_id || null;
+            const guestCustomerId = (selectedWorkOrder as any).guest_customer_id || null;
+
+            const { data: invoice, error: invError } = await supabase
+              .from("invoices")
+              .insert({
+                work_order_id: selectedWorkOrder.id,
+                business_id: business.id,
+                boat_id: selectedWorkOrder.boat_id,
+                owner_id: ownerId,
+                guest_customer_id: guestCustomerId,
+                status: "pending_review",
+                total_amount: totalAmount,
+              })
+              .select("id")
+              .single();
+
+            if (invError) {
+              console.error("Error creating invoice:", invError);
+              throw invError;
             }
+            invoiceId = invoice.id;
+          }
 
-            if (invoiceLines.length > 0) {
-              const { error: linesError } = await supabase
-                .from("invoice_line_items")
-                .insert(invoiceLines);
+          // Insert fresh invoice line items
+          if (invoiceLines.length > 0) {
+            const linesWithInvoiceId = invoiceLines.map((l) => ({ ...l, invoice_id: invoiceId }));
+            const { error: linesError } = await supabase
+              .from("invoice_line_items")
+              .insert(linesWithInvoiceId);
 
-              if (linesError) {
-                console.error("Error creating invoice line items:", linesError);
-                throw linesError;
-              }
+            if (linesError) {
+              console.error("Error creating invoice line items:", linesError);
+              throw linesError;
             }
           }
 
