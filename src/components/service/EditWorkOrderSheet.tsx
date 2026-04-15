@@ -58,9 +58,9 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
       setTitle(data.title || "");
       setDescription(data.description || "");
       setRetailPrice(data.retail_price?.toString() || "0");
+      setOriginalRetailPrice(data.retail_price || 0);
       setMaterialsDeposit(data.materials_deposit?.toString() || "0");
       setScheduledDate(data.scheduled_date || "");
-      // Use description as notes too
       setNotes(data.description || "");
     }
   };
