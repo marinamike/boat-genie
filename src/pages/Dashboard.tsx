@@ -655,7 +655,7 @@ const Dashboard = () => {
                     <p className="text-sm bg-muted/50 rounded-lg p-3">{selectedJobDetail.description}</p>
                   </div>
                 )}
-                {selectedJobDetail.status === "pending_approval" && selectedJobDetail.proposed_retail_price !== null && selectedJobDetail.proposed_retail_price !== undefined && selectedJobDetail.proposed_retail_price > 0 && (
+                {selectedJobDetail.status === "pending_approval" && (
                   <div className="space-y-3 border border-amber-200 bg-amber-50 rounded-lg p-4">
                     <h3 className="font-semibold text-amber-800">Price Change Pending Approval</h3>
                     <div className="space-y-2">
@@ -665,7 +665,11 @@ const Dashboard = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Proposed New Price</span>
-                        <span className="font-semibold text-amber-700">${selectedJobDetail.proposed_retail_price.toFixed(2)}</span>
+                        {selectedJobDetail.proposed_retail_price && selectedJobDetail.proposed_retail_price > 0 ? (
+                          <span className="font-semibold text-amber-700">${selectedJobDetail.proposed_retail_price.toFixed(2)}</span>
+                        ) : (
+                          <span className="font-semibold text-amber-700">Proposed price not available</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -675,7 +679,12 @@ const Dashboard = () => {
                         onClick={async () => {
                           setApprovingPrice(true);
                           try {
-                            const proposedPrice = selectedJobDetail.proposed_retail_price!;
+                            const proposedPrice = selectedJobDetail.proposed_retail_price;
+                            if (!proposedPrice || proposedPrice <= 0) {
+                              toast({ title: "Error", description: "No valid proposed price to approve", variant: "destructive" });
+                              setApprovingPrice(false);
+                              return;
+                            }
                             const { error } = await supabase
                               .from("work_orders")
                               .update({
