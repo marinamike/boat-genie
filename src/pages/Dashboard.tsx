@@ -130,7 +130,7 @@ const Dashboard = () => {
         boat:boats(name)
       `)
       .eq("requester_id", user.id)
-      .not("status", "eq", "closed")
+      .not("status", "in", '("closed","accepted")')
       .order("created_at", { ascending: false });
 
     setWishes((wishData as unknown as Wish[]) || []);

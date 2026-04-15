@@ -316,7 +316,7 @@ export function ServiceWorkOrders({
       .from("work_orders")
       .select("id, title, description, status, boat_id, provider_checked_in_at, guest_customer_id, boats(name, make, model, owner_id)")
       .eq("business_id", business.id)
-      .in("status", ["pending", "pending_approval", "approved", "assigned", "in_progress", "qc_review", "completed", "paid", "cancelled"] as any[])
+      .in("status", ["pending", "pending_approval", "approved", "assigned", "in_progress", "qc_review", "completed", "paid", "cancelled", "disputed"] as any[])
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching work orders:", error);
