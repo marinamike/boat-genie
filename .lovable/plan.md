@@ -1,32 +1,33 @@
 
+## Plan: Simplify Price Change Approval Section Condition
 
-## Plan: Floating Point and Condition Fixes
+### Changes to `src/pages/Dashboard.tsx`
 
-### 1. `src/components/service/EditWorkOrderSheet.tsx` — Line 75
-Fix floating point comparison in price change detection:
+**Line 658**: Simplify the condition to only check status:
 ```typescript
-// Change from:
-const priceChanged = isActiveStatus && basePrice !== originalRetailPrice;
-// To:
-const priceChanged = isActiveStatus && Math.abs(basePrice - originalRetailPrice) > 0.001;
+{selectedJobDetail.status === "pending_approval" && (
 ```
 
-### 2. `src/pages/Dashboard.tsx` — Line 656
-Strengthen the condition for showing the price change approval section:
+**Lines 666-669**: Update the proposed price display to handle null/0 values:
 ```typescript
-// Change from:
-{selectedJobDetail.status === "pending_approval" && selectedJobDetail.proposed_retail_price != null && (
-// To:
-{selectedJobDetail.status === "pending_approval" && selectedJobDetail.proposed_retail_price !== null && selectedJobDetail.proposed_retail_price !== undefined && selectedJobDetail.proposed_retail_price > 0 && (
+<div className="flex justify-between">
+  <span className="text-sm text-muted-foreground">Proposed New Price</span>
+  {selectedJobDetail.proposed_retail_price && selectedJobDetail.proposed_retail_price > 0 ? (
+    <span className="font-semibold text-amber-700">${selectedJobDetail.proposed_retail_price.toFixed(2)}</span>
+  ) : (
+    <span className="font-semibold text-amber-700">Proposed price not available</span>
+  )}
+</div>
 ```
 
-### 3. `src/pages/Dashboard.tsx` — Inside job detail sheet (after line 620)
-Add debugging console.log inside the job detail sheet render:
+**Approve button handler (line 677)**: Add guard to prevent approving if no valid price:
 ```typescript
-console.log("[Job Detail Sheet] status:", selectedJobDetail.status, "proposed_retail_price:", selectedJobDetail.proposed_retail_price);
+const proposedPrice = selectedJobDetail.proposed_retail_price;
+if (!proposedPrice || proposedPrice <= 0) {
+  toast({ title: "Error", description: "No valid proposed price to approve", variant: "destructive" });
+  setApprovingPrice(false);
+  return;
+}
 ```
 
-### Files changed
-- `src/components/service/EditWorkOrderSheet.tsx` — floating point comparison fix
-- `src/pages/Dashboard.tsx` — condition fix + debug logging
-
+This ensures the Approve/Decline buttons always appear when status is `pending_approval`, while gracefully handling missing proposed price data.
