@@ -172,6 +172,25 @@ export function ServiceWorkOrders({
       toast.success(labels[newStatus] || "Status updated");
       setSelectedWorkOrder({ ...selectedWorkOrder, status: newStatus });
 
+      // Notify the boat owner on key status changes
+      const notifyStatuses: Record<string, string> = {
+        in_progress: "Work Has Started",
+        qc_review: "QC Review",
+        completed: "Work Completed",
+      };
+      if (notifyStatuses[newStatus]) {
+        const ownerId = (selectedWorkOrder as any).boats?.owner_id;
+        if (ownerId) {
+          await supabase.from("notifications").insert({
+            user_id: ownerId,
+            title: notifyStatuses[newStatus],
+            message: `${business.business_name} updated the status of ${selectedWorkOrder.title}`,
+            type: "status",
+            related_id: selectedWorkOrder.id,
+          });
+        }
+      }
+
       // Auto-generate invoice when completed
       if (newStatus === "completed") {
         try {
