@@ -38,6 +38,7 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
   const [materialsDeposit, setMaterialsDeposit] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [originalRetailPrice, setOriginalRetailPrice] = useState(0);
 
   // Load current values from DB when sheet opens
   useEffect(() => {
