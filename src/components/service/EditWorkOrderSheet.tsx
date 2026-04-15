@@ -71,32 +71,64 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
 
   const saveChanges = async () => {
     const clampedDeposit = Math.min(deposit, basePrice);
+    const isActiveStatus = ["assigned", "in_progress", "qc_review"].includes(workOrder.status);
+    const priceChanged = isActiveStatus && basePrice !== originalRetailPrice;
 
-    const { error } = await supabase
-      .from("work_orders")
-      .update({
-        title,
-        description: notes || description,
-        retail_price: basePrice,
-        wholesale_price: basePrice,
-        materials_deposit: clampedDeposit,
-        scheduled_date: scheduledDate || null,
-      })
-      .eq("id", workOrder.id);
+    if (priceChanged) {
+      // Price changed on an active work order — propose price, reset to pending_approval
+      const { error } = await supabase
+        .from("work_orders")
+        .update({
+          title,
+          description: notes || description,
+          proposed_retail_price: basePrice,
+          materials_deposit: Math.min(clampedDeposit, originalRetailPrice),
+          scheduled_date: scheduledDate || null,
+          status: "pending_approval",
+        } as any)
+        .eq("id", workOrder.id);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Also update the quote record if it exists
-    await supabase
-      .from("quotes")
-      .update({
-        base_price: basePrice,
-        total_owner_price: basePrice,
-        total_provider_receives: basePrice,
-        materials_deposit: clampedDeposit,
-        notes: notes || null,
-      })
-      .eq("work_order_id", workOrder.id);
+      // Notify the owner about the price change
+      const ownerId = workOrder.boats?.owner_id;
+      if (ownerId) {
+        await supabase.from("notifications").insert({
+          user_id: ownerId,
+          title: "Approval Needed — Price Change",
+          message: `The price for "${title}" has been updated from $${originalRetailPrice.toFixed(2)} to $${basePrice.toFixed(2)}. Your approval is required.`,
+          type: "quote",
+          related_id: workOrder.id,
+        });
+      }
+    } else {
+      // Normal save — update retail_price directly
+      const { error } = await supabase
+        .from("work_orders")
+        .update({
+          title,
+          description: notes || description,
+          retail_price: basePrice,
+          wholesale_price: basePrice,
+          materials_deposit: clampedDeposit,
+          scheduled_date: scheduledDate || null,
+        })
+        .eq("id", workOrder.id);
+
+      if (error) throw error;
+
+      // Also update the quote record if it exists
+      await supabase
+        .from("quotes")
+        .update({
+          base_price: basePrice,
+          total_owner_price: basePrice,
+          total_provider_receives: basePrice,
+          materials_deposit: clampedDeposit,
+          notes: notes || null,
+        })
+        .eq("work_order_id", workOrder.id);
+    }
 
     return clampedDeposit;
   };
