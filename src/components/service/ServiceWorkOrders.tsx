@@ -187,7 +187,16 @@ export function ServiceWorkOrders({
           }
 
           const items = (woLineItems as any[]) || [];
-          const totalAmount = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
+          let totalAmount = items.reduce((sum: number, item: any) => sum + Number(item.total || 0), 0);
+
+          // Fetch parts pulls for the work order
+          const { data: partsPulls } = await supabase
+            .from("parts_pull_log" as any)
+            .select("*, store_inventory:inventory_item_id(name)")
+            .eq("work_order_id", selectedWorkOrder.id);
+          const partsItems = (partsPulls as any[]) || [];
+          const partsTotal = partsItems.reduce((sum: number, p: any) => sum + (Number(p.charge_price) * Number(p.quantity)), 0);
+          totalAmount += partsTotal;
 
           const ownerId = (selectedWorkOrder as any).boats?.owner_id || null;
           const guestCustomerId = (selectedWorkOrder as any).guest_customer_id || null;
@@ -212,8 +221,8 @@ export function ServiceWorkOrders({
             throw invError;
           }
 
-          // Insert invoice line items
-          if (items.length > 0 && invoice) {
+          // Insert invoice line items (services + parts)
+          if (invoice) {
             const invoiceLines = items.map((item: any) => ({
               invoice_id: invoice.id,
               service_name: item.service_name,
@@ -223,13 +232,28 @@ export function ServiceWorkOrders({
               verified: false,
             }));
 
-            const { error: linesError } = await supabase
-              .from("invoice_line_items")
-              .insert(invoiceLines);
+            // Add parts as invoice line items
+            for (const p of partsItems) {
+              const partName = (p.store_inventory as any)?.name || "Part";
+              invoiceLines.push({
+                invoice_id: invoice.id,
+                service_name: `Part: ${partName}`,
+                quantity: Number(p.quantity),
+                unit_price: Number(p.charge_price),
+                total: Number(p.charge_price) * Number(p.quantity),
+                verified: false,
+              });
+            }
 
-            if (linesError) {
-              console.error("Error creating invoice line items:", linesError);
-              throw linesError;
+            if (invoiceLines.length > 0) {
+              const { error: linesError } = await supabase
+                .from("invoice_line_items")
+                .insert(invoiceLines);
+
+              if (linesError) {
+                console.error("Error creating invoice line items:", linesError);
+                throw linesError;
+              }
             }
           }
 
