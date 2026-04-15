@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck, ChevronDown, Wrench } from "lucide-react";
+import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck, ChevronDown, Wrench, AlertTriangle } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
 import { useStoreInventory } from "@/hooks/useStoreInventory";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
@@ -99,6 +99,9 @@ export function ServiceWorkOrders({
   const [showReapprovalDialog, setShowReapprovalDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  // Disputed items state
+  const [disputedItems, setDisputedItems] = useState<{ service_name: string; dispute_note: string | null }[]>([]);
+
   // Parts tracking state
   const [partsByLineItem, setPartsByLineItem] = useState<Record<string, any[]>>({});
   const [addingPartForLineItem, setAddingPartForLineItem] = useState<string | null>(null);
@@ -127,14 +130,42 @@ export function ServiceWorkOrders({
     fetchWorkOrders();
   }, [business?.id]);
 
+  const fetchDisputedItems = useCallback(async (workOrderId: string) => {
+    try {
+      const { data: invoiceData } = await supabase
+        .from("invoices")
+        .select("id")
+        .eq("work_order_id", workOrderId)
+        .limit(1);
+      if (!invoiceData || invoiceData.length === 0) {
+        setDisputedItems([]);
+        return;
+      }
+      const { data: items } = await supabase
+        .from("invoice_line_items")
+        .select("service_name, dispute_note")
+        .eq("invoice_id", invoiceData[0].id)
+        .eq("disputed", true);
+      setDisputedItems(items || []);
+    } catch (err) {
+      console.error("Error fetching disputed items:", err);
+      setDisputedItems([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (selectedWorkOrder) {
       fetchPhases(selectedWorkOrder.id);
       fetchTimeEntries(selectedWorkOrder.id);
       fetchLineItems(selectedWorkOrder.id);
       if (storeEnabled) fetchPartsForWorkOrder(selectedWorkOrder.id);
+      if (selectedWorkOrder.status === "disputed") {
+        fetchDisputedItems(selectedWorkOrder.id);
+      } else {
+        setDisputedItems([]);
+      }
     }
-  }, [selectedWorkOrder?.id]);
+  }, [selectedWorkOrder?.id, selectedWorkOrder?.status]);
 
   useEffect(() => {
     const findStaff = async () => {
@@ -791,6 +822,30 @@ export function ServiceWorkOrders({
                 )}
               </CardContent>
             </Card>
+
+            {/* Dispute Details */}
+            {selectedWorkOrder.status === "disputed" && disputedItems.length > 0 && (
+              <Card className="border-destructive bg-destructive/5">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-destructive font-semibold mb-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Invoice Disputed
+                  </div>
+                  <ul className="space-y-2">
+                    {disputedItems.map((item, i) => (
+                      <li key={i} className="text-sm">
+                        <span className="font-medium">{item.service_name}</span>
+                        {item.dispute_note ? (
+                          <span className="text-muted-foreground"> — "{item.dispute_note}"</span>
+                        ) : (
+                          <span className="text-muted-foreground"> — No reason provided</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Services / Line Items */}
             <Card>
