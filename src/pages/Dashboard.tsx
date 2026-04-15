@@ -154,7 +154,7 @@ const Dashboard = () => {
       .from("work_orders")
       .select("id, title, status, scheduled_date, created_at, description, boat:boats(name), business:businesses!work_orders_business_id_fkey(business_name)")
       .in("boat_id", boatIds)
-      .in("status", ["assigned", "in_progress", "qc_review", "completed", "disputed"])
+      .in("status", ["assigned", "in_progress", "qc_review", "completed", "disputed", "pending_approval"])
       .order("created_at", { ascending: false });
     setActiveJobs((data as unknown as ActiveJob[]) || []);
   }, [user]);
@@ -459,6 +459,7 @@ const Dashboard = () => {
                   qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-700 border-violet-200" },
                   completed: { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200" },
                   disputed: { label: "Disputed", className: "bg-red-500 text-white border-red-500" },
+                  pending_approval: { label: "Re-approval Needed", className: "bg-amber-100 text-amber-700 border-amber-200" },
                 };
                 const badge = statusMap[job.status] || { label: job.status, className: "" };
 
@@ -594,6 +595,7 @@ const Dashboard = () => {
               qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-700 border-violet-200" },
               completed: { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200" },
               disputed: { label: "Disputed", className: "bg-red-500 text-white border-red-500" },
+              pending_approval: { label: "Re-approval Needed", className: "bg-amber-100 text-amber-700 border-amber-200" },
             };
             const badge = statusMap[selectedJobDetail.status] || { label: selectedJobDetail.status, className: "" };
 
