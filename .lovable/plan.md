@@ -1,33 +1,48 @@
 
-## Plan: Simplify Price Change Approval Section Condition
 
-### Changes to `src/pages/Dashboard.tsx`
+## Plan: Add Debug Logging & Ensure Numeric Types in EditWorkOrderSheet
 
-**Line 658**: Simplify the condition to only check status:
+### Changes to `src/components/service/EditWorkOrderSheet.tsx`
+
+**1. Ensure numeric values (line 68)**
+Wrap `parseFloat` results in `Number()` for explicit numeric coercion:
 ```typescript
-{selectedJobDetail.status === "pending_approval" && (
+const basePrice = Number(parseFloat(retailPrice) || 0);
+const deposit = Number(parseFloat(materialsDeposit) || 0);
 ```
 
-**Lines 666-669**: Update the proposed price display to handle null/0 values:
+**2. Add console.log before the update call (after line 75, before `if (priceChanged)`)**
 ```typescript
-<div className="flex justify-between">
-  <span className="text-sm text-muted-foreground">Proposed New Price</span>
-  {selectedJobDetail.proposed_retail_price && selectedJobDetail.proposed_retail_price > 0 ? (
-    <span className="font-semibold text-amber-700">${selectedJobDetail.proposed_retail_price.toFixed(2)}</span>
-  ) : (
-    <span className="font-semibold text-amber-700">Proposed price not available</span>
-  )}
-</div>
+const updatePayload = priceChanged ? {
+  title,
+  description: notes || description,
+  proposed_retail_price: Number(basePrice),
+  materials_deposit: Math.min(clampedDeposit, originalRetailPrice),
+  scheduled_date: scheduledDate || null,
+  status: "pending_approval",
+} : {
+  title,
+  description: notes || description,
+  retail_price: Number(basePrice),
+  wholesale_price: Number(basePrice),
+  materials_deposit: clampedDeposit,
+  scheduled_date: scheduledDate || null,
+};
+
+console.log("[EditWorkOrderSheet] saveChanges debug:", {
+  workOrderStatus: workOrder.status,
+  isActiveStatus,
+  basePrice,
+  basePriceType: typeof basePrice,
+  originalRetailPrice,
+  priceChanged,
+  updatePayload,
+});
 ```
 
-**Approve button handler (line 677)**: Add guard to prevent approving if no valid price:
-```typescript
-const proposedPrice = selectedJobDetail.proposed_retail_price;
-if (!proposedPrice || proposedPrice <= 0) {
-  toast({ title: "Error", description: "No valid proposed price to approve", variant: "destructive" });
-  setApprovingPrice(false);
-  return;
-}
-```
+**3. Ensure `proposed_retail_price` is explicitly `Number(basePrice)` in the update call (line 84)**
+Change `proposed_retail_price: basePrice` to `proposed_retail_price: Number(basePrice)` to guarantee numeric type.
 
-This ensures the Approve/Decline buttons always appear when status is `pending_approval`, while gracefully handling missing proposed price data.
+### Files changed
+- `src/components/service/EditWorkOrderSheet.tsx`
+
