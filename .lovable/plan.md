@@ -1,38 +1,40 @@
 
 
-## Plan: Return inserted record ID from pullPartForWorkOrder
+## Plan: Parts Tracking Per Line Item in ServiceWorkOrders
 
-### 1. `src/hooks/useStoreInventory.ts`
+### 1. `src/components/service/ServiceWorkOrders.tsx`
 
-**Change return type** from `boolean` to `string | false` (returns the inserted record's ID on success, `false` on failure).
+**New imports & hooks:**
+- Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent`, `ChevronDown`
+- Import `useStoreInventory` from hooks
+- Access `enabledModules` from `useBusiness()`
+- Add state: `partsByLineItem: Record<string, any[]>`, `addingPartForLineItem: string | null`, `partForm: { itemId: string, quantity: string, chargePrice: string }`
 
-**Update the insert call** (line 380) to add `.select("id").single()` so the inserted record's ID is returned.
+**New function `fetchPartsForWorkOrder(workOrderId)`:**
+- Query `parts_pull_log` where `work_order_id = workOrderId`, join with `store_inventory` to get item name
+- Group results by `line_item_id` into `partsByLineItem` state
 
-**Return the ID** instead of `true` on success (line 410).
+**Call `fetchPartsForWorkOrder`** in the `useEffect` that fires on `selectedWorkOrder` change (line 101-107).
 
-```typescript
-// Line 380: add .select().single()
-const { data: logData, error: logError } = await supabase
-  .from("parts_pull_log")
-  .insert({
-    work_order_id: workOrderId,
-    inventory_item_id: itemId,
-    quantity,
-    unit_cost: item.unit_cost,
-    total_cost: totalCost,
-    charge_price: finalChargePrice,
-    pulled_by: user.id,
-    notes,
-  })
-  .select("id")
-  .single();
+**Line items section (lines 789-807):**
+Replace flat line item rows with collapsible rows. For each line item, if `enabledModules.includes("store")`:
+- Collapsible trigger showing parts count badge
+- Content: list of parts (name, qty, `charge_price × qty`), subtotal
+- "Add Part" button toggling inline form with:
+  - Select of `inventory` items (active, qty > 0) showing name + stock count
+  - Quantity input (number)
+  - Charge price input (pre-filled with selected item's `retail_price`, editable)
+  - Submit: calls `pullPartForWorkOrder(workOrderId, itemId, qty, null, chargePrice)` → returns record ID → updates that record's `line_item_id` via direct supabase update → refreshes parts data
 
-// Line 410: return the ID
-return (logData as any)?.id || true;
-```
+**Invoice generation (lines 146-210):**
+After fetching `woLineItems`, also fetch `parts_pull_log` for the work order. For each parts pull record, add an additional entry to `invoiceLines` with:
+- `service_name`: item name (from joined inventory or stored description)
+- `quantity`: pull quantity
+- `unit_price`: charge_price
+- `total`: charge_price × quantity
 
-This lets the ServiceWorkOrders "Add Part" flow use the returned ID directly to update `line_item_id` on that specific `parts_pull_log` record, eliminating race conditions.
+Add parts totals to `totalAmount` for the invoice.
 
 ### Files changed
-- `src/hooks/useStoreInventory.ts` — modify insert to return ID, change return type
+- `src/components/service/ServiceWorkOrders.tsx`
 
