@@ -580,6 +580,83 @@ const Dashboard = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Job Detail Sheet */}
+      <Sheet open={!!selectedJobDetail} onOpenChange={(open) => !open && setSelectedJobDetail(null)}>
+        <SheetContent side="bottom" className="h-auto max-h-[70vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Job Details</SheetTitle>
+          </SheetHeader>
+          {selectedJobDetail && (() => {
+            const statusMap: Record<string, { label: string; className: string }> = {
+              assigned: { label: "Scheduled", className: "bg-blue-100 text-blue-700 border-blue-200" },
+              in_progress: { label: "In Progress", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+              qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-700 border-violet-200" },
+              completed: { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200" },
+              disputed: { label: "Disputed", className: "bg-red-100 text-red-700 border-red-200" },
+            };
+            const badge = statusMap[selectedJobDetail.status] || { label: selectedJobDetail.status, className: "" };
+
+            const handleReviewInvoice = async () => {
+              const { data } = await supabase
+                .from("invoices")
+                .select("id")
+                .eq("work_order_id", selectedJobDetail.id)
+                .maybeSingle();
+              if (data) {
+                setSelectedJobDetail(null);
+                setReviewingInvoiceId(data.id);
+              } else {
+                toast({ title: "No invoice found", description: "Invoice has not been generated yet.", variant: "destructive" });
+              }
+            };
+
+            return (
+              <div className="space-y-4 mt-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">{selectedJobDetail.title}</h3>
+                  <Badge variant="outline" className={badge.className}>{badge.label}</Badge>
+                </div>
+                <div className="space-y-2 text-sm">
+                  {selectedJobDetail.business?.business_name && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Business</span>
+                      <span className="font-medium">{selectedJobDetail.business.business_name}</span>
+                    </div>
+                  )}
+                  {selectedJobDetail.boat?.name && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Boat</span>
+                      <span className="font-medium">{selectedJobDetail.boat.name}</span>
+                    </div>
+                  )}
+                  {selectedJobDetail.scheduled_date && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Scheduled Date</span>
+                      <span className="font-medium">{new Date(selectedJobDetail.scheduled_date).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Created</span>
+                    <span className="font-medium">{formatDistanceToNow(new Date(selectedJobDetail.created_at), { addSuffix: true })}</span>
+                  </div>
+                </div>
+                {selectedJobDetail.description && (
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground font-medium">Notes</p>
+                    <p className="text-sm bg-muted/50 rounded-lg p-3">{selectedJobDetail.description}</p>
+                  </div>
+                )}
+                {(selectedJobDetail.status === "completed" || selectedJobDetail.status === "disputed") && (
+                  <Button className="w-full" onClick={handleReviewInvoice}>
+                    Review Invoice
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
