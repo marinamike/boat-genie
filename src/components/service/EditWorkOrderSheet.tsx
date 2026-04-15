@@ -65,8 +65,8 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
     }
   };
 
-  const basePrice = parseFloat(retailPrice) || 0;
-  const deposit = parseFloat(materialsDeposit) || 0;
+  const basePrice = Number(parseFloat(retailPrice) || 0);
+  const deposit = Number(parseFloat(materialsDeposit) || 0);
   const depositExceedsPrice = deposit > basePrice;
 
   const saveChanges = async () => {
@@ -74,18 +74,36 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
     const isActiveStatus = ["assigned", "in_progress", "qc_review"].includes(workOrder.status);
     const priceChanged = isActiveStatus && Math.abs(basePrice - originalRetailPrice) > 0.001;
 
+    const updatePayload = priceChanged ? {
+      title,
+      description: notes || description,
+      proposed_retail_price: Number(basePrice),
+      materials_deposit: Math.min(clampedDeposit, originalRetailPrice),
+      scheduled_date: scheduledDate || null,
+      status: "pending_approval",
+    } : {
+      title,
+      description: notes || description,
+      retail_price: Number(basePrice),
+      wholesale_price: Number(basePrice),
+      materials_deposit: clampedDeposit,
+      scheduled_date: scheduledDate || null,
+    };
+
+    console.log("[EditWorkOrderSheet] saveChanges debug:", {
+      workOrderStatus: workOrder.status,
+      isActiveStatus,
+      basePrice,
+      basePriceType: typeof basePrice,
+      originalRetailPrice,
+      priceChanged,
+      updatePayload,
+    });
+
     if (priceChanged) {
-      // Price changed on an active work order — propose price, reset to pending_approval
       const { error } = await supabase
         .from("work_orders")
-        .update({
-          title,
-          description: notes || description,
-          proposed_retail_price: basePrice,
-          materials_deposit: Math.min(clampedDeposit, originalRetailPrice),
-          scheduled_date: scheduledDate || null,
-          status: "pending_approval",
-        } as any)
+        .update(updatePayload as any)
         .eq("id", workOrder.id);
 
       if (error) throw error;
@@ -102,17 +120,9 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
         });
       }
     } else {
-      // Normal save — update retail_price directly
       const { error } = await supabase
         .from("work_orders")
-        .update({
-          title,
-          description: notes || description,
-          retail_price: basePrice,
-          wholesale_price: basePrice,
-          materials_deposit: clampedDeposit,
-          scheduled_date: scheduledDate || null,
-        })
+        .update(updatePayload)
         .eq("id", workOrder.id);
 
       if (error) throw error;
@@ -121,9 +131,9 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
       await supabase
         .from("quotes")
         .update({
-          base_price: basePrice,
-          total_owner_price: basePrice,
-          total_provider_receives: basePrice,
+          base_price: Number(basePrice),
+          total_owner_price: Number(basePrice),
+          total_provider_receives: Number(basePrice),
           materials_deposit: clampedDeposit,
           notes: notes || null,
         })
