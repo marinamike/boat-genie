@@ -72,7 +72,7 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
   const saveChanges = async () => {
     const clampedDeposit = Math.min(deposit, basePrice);
     const isActiveStatus = ["assigned", "in_progress", "qc_review"].includes(workOrder.status);
-    const priceChanged = isActiveStatus && basePrice !== originalRetailPrice;
+    const priceChanged = isActiveStatus && Math.abs(basePrice - originalRetailPrice) > 0.001;
 
     if (priceChanged) {
       // Price changed on an active work order — propose price, reset to pending_approval
