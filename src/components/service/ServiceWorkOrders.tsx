@@ -12,8 +12,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck, ChevronDown, Wrench } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
+import { useStoreInventory } from "@/hooks/useStoreInventory";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
 import { supabase } from "@/integrations/supabase/client";
