@@ -458,7 +458,7 @@ const Dashboard = () => {
                   in_progress: { label: "In Progress", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
                   qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-700 border-violet-200" },
                   completed: { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200" },
-                  disputed: { label: "Disputed", className: "bg-red-100 text-red-700 border-red-200" },
+                  disputed: { label: "Disputed", className: "bg-red-500 text-white border-red-500" },
                 };
                 const badge = statusMap[job.status] || { label: job.status, className: "" };
 
@@ -593,7 +593,7 @@ const Dashboard = () => {
               in_progress: { label: "In Progress", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
               qc_review: { label: "QC Review", className: "bg-violet-100 text-violet-700 border-violet-200" },
               completed: { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200" },
-              disputed: { label: "Disputed", className: "bg-red-100 text-red-700 border-red-200" },
+              disputed: { label: "Disputed", className: "bg-red-500 text-white border-red-500" },
             };
             const badge = statusMap[selectedJobDetail.status] || { label: selectedJobDetail.status, className: "" };
 
