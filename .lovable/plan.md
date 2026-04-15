@@ -1,40 +1,110 @@
 
 
-## Plan: Parts Tracking Per Line Item in ServiceWorkOrders
+## Plan: Add Notification Inserts + Realtime Leads Refresh
 
-### 1. `src/components/service/ServiceWorkOrders.tsx`
+### 1. `src/hooks/useJobBoard.ts` — Quote submitted notification
 
-**New imports & hooks:**
-- Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent`, `ChevronDown`
-- Import `useStoreInventory` from hooks
-- Access `enabledModules` from `useBusiness()`
-- Add state: `partsByLineItem: Record<string, any[]>`, `addingPartForLineItem: string | null`, `partForm: { itemId: string, quantity: string, chargePrice: string }`
+After `submitQuote` succeeds (line ~353, after quote insert), fetch the business name and insert a notification:
 
-**New function `fetchPartsForWorkOrder(workOrderId)`:**
-- Query `parts_pull_log` where `work_order_id = workOrderId`, join with `store_inventory` to get item name
-- Group results by `line_item_id` into `partsByLineItem` state
+```typescript
+// Fetch business name for the notification
+const { data: bizData } = await supabase
+  .from("businesses")
+  .select("business_name")
+  .eq("id", bizId)
+  .single();
 
-**Call `fetchPartsForWorkOrder`** in the `useEffect` that fires on `selectedWorkOrder` change (line 101-107).
+await supabase.from("notifications").insert({
+  user_id: wish.requester_id,
+  title: "New Quote Received",
+  message: `${bizData?.business_name || "A business"} submitted a quote for ${wishTitle}`,
+  type: "quote",
+  related_id: wishId,
+});
+```
 
-**Line items section (lines 789-807):**
-Replace flat line item rows with collapsible rows. For each line item, if `enabledModules.includes("store")`:
-- Collapsible trigger showing parts count badge
-- Content: list of parts (name, qty, `charge_price × qty`), subtotal
-- "Add Part" button toggling inline form with:
-  - Select of `inventory` items (active, qty > 0) showing name + stock count
-  - Quantity input (number)
-  - Charge price input (pre-filled with selected item's `retail_price`, editable)
-  - Submit: calls `pullPartForWorkOrder(workOrderId, itemId, qty, null, chargePrice)` → returns record ID → updates that record's `line_item_id` via direct supabase update → refreshes parts data
+### 2. `src/hooks/useJobBoard.ts` — Realtime subscription for new wishes
 
-**Invoice generation (lines 146-210):**
-After fetching `woLineItems`, also fetch `parts_pull_log` for the work order. For each parts pull record, add an additional entry to `invoiceLines` with:
-- `service_name`: item name (from joined inventory or stored description)
-- `quantity`: pull quantity
-- `unit_price`: charge_price
-- `total`: charge_price × quantity
+Add a realtime subscription in the `useEffect` block (after `fetchJobs()` call, line ~254) to listen for `INSERT` events on `wish_forms` and auto-refresh leads:
 
-Add parts totals to `totalAmount` for the invoice.
+```typescript
+const channel = supabase
+  .channel("job-board-wishes")
+  .on("postgres_changes", { event: "INSERT", schema: "public", table: "wish_forms" }, () => {
+    fetchJobs();
+  })
+  .subscribe();
+return () => { supabase.removeChannel(channel); };
+```
+
+### 3. `src/components/owner/PendingQuotesSection.tsx` — Quote accepted notification
+
+After `handleAcceptQuote` succeeds (line ~203, after wish/sibling updates), fetch the business owner_id and insert:
+
+```typescript
+if (quote.business_id) {
+  const { data: biz } = await supabase
+    .from("businesses")
+    .select("owner_id")
+    .eq("id", quote.business_id)
+    .single();
+  if (biz?.owner_id) {
+    await supabase.from("notifications").insert({
+      user_id: biz.owner_id,
+      title: "Quote Accepted",
+      message: `Your quote for ${quote.work_order?.title} has been accepted. Work is now assigned.`,
+      type: "job",
+      related_id: quote.work_order_id,
+    });
+  }
+}
+```
+
+### 4. `src/components/service/ServiceWorkOrders.tsx` — Status progression notifications
+
+After `handleStatusProgression` succeeds (line ~164, after `toast.success`), for statuses `in_progress`, `qc_review`, and `completed`, notify the boat owner:
+
+```typescript
+const notifyStatuses: Record<string, string> = {
+  in_progress: "Work Has Started",
+  qc_review: "QC Review",
+  completed: "Work Completed",
+};
+if (notifyStatuses[newStatus]) {
+  const ownerId = (selectedWorkOrder as any).boats?.owner_id;
+  if (ownerId) {
+    await supabase.from("notifications").insert({
+      user_id: ownerId,
+      title: notifyStatuses[newStatus],
+      message: `${business.business_name} updated the status of ${selectedWorkOrder.title}`,
+      type: "status",
+      related_id: selectedWorkOrder.id,
+    });
+  }
+}
+```
+
+### 5. `src/components/owner/InvoiceReview.tsx` — Dispute notification
+
+After `handleDispute` succeeds (line ~122, after toast), notify the business owner:
+
+```typescript
+if (recipientId) {
+  await supabase.from("notifications").insert({
+    user_id: recipientId,
+    title: "Invoice Disputed",
+    message: `A line item has been disputed: ${item.service_name} — ${disputeNote.trim()}`,
+    type: "alert",
+    related_id: invoice.work_order_id,
+  });
+}
+```
+
+This reuses the already-available `recipientId` (`invoice.businesses.owner_id`) from the existing dispute logic.
 
 ### Files changed
-- `src/components/service/ServiceWorkOrders.tsx`
+- `src/hooks/useJobBoard.ts` — notification insert after quote + realtime subscription
+- `src/components/owner/PendingQuotesSection.tsx` — notification on quote acceptance
+- `src/components/service/ServiceWorkOrders.tsx` — notification on status changes
+- `src/components/owner/InvoiceReview.tsx` — notification on dispute
 
