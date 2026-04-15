@@ -61,6 +61,9 @@ interface ActiveJob {
   scheduled_date: string | null;
   created_at: string;
   description: string | null;
+  retail_price: number | null;
+  proposed_retail_price: number | null;
+  business_id: string | null;
   boat: { name: string } | null;
   business: { business_name: string } | null;
 }
@@ -84,6 +87,7 @@ const Dashboard = () => {
   const [boatToEdit, setBoatToEdit] = useState<BoatToEdit | null>(null);
   const [reviewingInvoiceId, setReviewingInvoiceId] = useState<string | null>(null);
   const [selectedJobDetail, setSelectedJobDetail] = useState<ActiveJob | null>(null);
+  const [approvingPrice, setApprovingPrice] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -152,7 +156,7 @@ const Dashboard = () => {
     const boatIds = ownerBoats.map((b) => b.id);
     const { data } = await supabase
       .from("work_orders")
-      .select("id, title, status, scheduled_date, created_at, description, boat:boats(name), business:businesses!work_orders_business_id_fkey(business_name)")
+      .select("id, title, status, scheduled_date, created_at, description, retail_price, proposed_retail_price, business_id, boat:boats(name), business:businesses!work_orders_business_id_fkey(business_name)")
       .in("boat_id", boatIds)
       .in("status", ["assigned", "in_progress", "qc_review", "completed", "disputed", "pending_approval"])
       .order("created_at", { ascending: false });
@@ -647,6 +651,120 @@ const Dashboard = () => {
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground font-medium">Notes</p>
                     <p className="text-sm bg-muted/50 rounded-lg p-3">{selectedJobDetail.description}</p>
+                  </div>
+                )}
+                {selectedJobDetail.status === "pending_approval" && selectedJobDetail.proposed_retail_price != null && (
+                  <div className="space-y-3 border border-amber-200 bg-amber-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-amber-800">Price Change Pending Approval</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Original Price</span>
+                        <span className="font-medium">${(selectedJobDetail.retail_price ?? 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Proposed New Price</span>
+                        <span className="font-semibold text-amber-700">${selectedJobDetail.proposed_retail_price.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        disabled={approvingPrice}
+                        onClick={async () => {
+                          setApprovingPrice(true);
+                          try {
+                            const proposedPrice = selectedJobDetail.proposed_retail_price!;
+                            const { error } = await supabase
+                              .from("work_orders")
+                              .update({
+                                retail_price: proposedPrice,
+                                wholesale_price: proposedPrice,
+                                proposed_retail_price: null,
+                                status: "assigned",
+                              })
+                              .eq("id", selectedJobDetail.id);
+                            if (error) throw error;
+
+                            // Send notification to business owner
+                            if (selectedJobDetail.business_id) {
+                              const { data: biz } = await supabase
+                                .from("businesses")
+                                .select("owner_id")
+                                .eq("id", selectedJobDetail.business_id)
+                                .maybeSingle();
+                              if (biz?.owner_id) {
+                                const ownerName = profile?.full_name || "The owner";
+                                await supabase.from("notifications").insert({
+                                  user_id: biz.owner_id,
+                                  title: "Price Change Approved",
+                                  message: `${ownerName} approved the updated price for ${selectedJobDetail.title}.`,
+                                  type: "work_order",
+                                  related_id: selectedJobDetail.id,
+                                });
+                              }
+                            }
+
+                            toast({ title: "Price change approved" });
+                            setSelectedJobDetail(null);
+                            fetchActiveJobs();
+                          } catch (e) {
+                            console.error(e);
+                            toast({ title: "Error", description: "Failed to approve price change", variant: "destructive" });
+                          } finally {
+                            setApprovingPrice(false);
+                          }
+                        }}
+                      >
+                        Approve New Price
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        disabled={approvingPrice}
+                        onClick={async () => {
+                          setApprovingPrice(true);
+                          try {
+                            const { error } = await supabase
+                              .from("work_orders")
+                              .update({
+                                proposed_retail_price: null,
+                                status: "assigned",
+                              })
+                              .eq("id", selectedJobDetail.id);
+                            if (error) throw error;
+
+                            if (selectedJobDetail.business_id) {
+                              const { data: biz } = await supabase
+                                .from("businesses")
+                                .select("owner_id")
+                                .eq("id", selectedJobDetail.business_id)
+                                .maybeSingle();
+                              if (biz?.owner_id) {
+                                const ownerName = profile?.full_name || "The owner";
+                                await supabase.from("notifications").insert({
+                                  user_id: biz.owner_id,
+                                  title: "Price Change Declined",
+                                  message: `${ownerName} declined the price change for ${selectedJobDetail.title}. Original price stands.`,
+                                  type: "work_order",
+                                  related_id: selectedJobDetail.id,
+                                });
+                              }
+                            }
+
+                            toast({ title: "Price change declined", description: "Original price stands." });
+                            setSelectedJobDetail(null);
+                            fetchActiveJobs();
+                          } catch (e) {
+                            console.error(e);
+                            toast({ title: "Error", description: "Failed to decline price change", variant: "destructive" });
+                          } finally {
+                            setApprovingPrice(false);
+                          }
+                        }}
+                      >
+                        Decline Change
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {(selectedJobDetail.status === "completed" || selectedJobDetail.status === "disputed") && (
