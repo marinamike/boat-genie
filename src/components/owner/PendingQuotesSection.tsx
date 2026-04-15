@@ -201,6 +201,24 @@ export function PendingQuotesSection({ userId, onQuoteAction }: PendingQuotesSec
         }
       }
 
+      // Notify the business owner that their quote was accepted
+      if (quote.business_id) {
+        const { data: biz } = await supabase
+          .from("businesses")
+          .select("owner_id")
+          .eq("id", quote.business_id)
+          .single();
+        if (biz?.owner_id) {
+          await supabase.from("notifications").insert({
+            user_id: biz.owner_id,
+            title: "Quote Accepted",
+            message: `Your quote for ${quote.work_order?.title || "a service"} has been accepted. Work is now assigned.`,
+            type: "job",
+            related_id: quote.work_order_id,
+          });
+        }
+      }
+
       toast({
         title: "Quote accepted!",
         description: "The service provider has been notified and will begin work soon.",

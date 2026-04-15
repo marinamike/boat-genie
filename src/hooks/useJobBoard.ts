@@ -253,6 +253,15 @@ export function useJobBoard() {
 
   useEffect(() => {
     fetchJobs();
+
+    const channel = supabase
+      .channel("job-board-wishes")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "wish_forms" }, () => {
+        fetchJobs();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchJobs]);
 
   const submitQuote = async (wishId: string, quoteData: QuoteFormData) => {
@@ -351,6 +360,21 @@ export function useJobBoard() {
       if (quoteError) throw quoteError;
 
       // Wish stays "open" until owner accepts a quote
+
+      // Notify the boat owner about the new quote
+      const { data: bizData } = await supabase
+        .from("businesses")
+        .select("business_name")
+        .eq("id", bizId)
+        .single();
+
+      await supabase.from("notifications").insert({
+        user_id: (wish as any).requester_id,
+        title: "New Quote Received",
+        message: `${bizData?.business_name || "A business"} submitted a quote for ${wishTitle}`,
+        type: "quote",
+        related_id: wishId,
+      });
 
       toast({ 
         title: "Quote submitted!", 

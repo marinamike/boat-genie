@@ -119,6 +119,17 @@ export function InvoiceReview({ invoiceId, onClose }: InvoiceReviewProps) {
       });
     }
 
+    // Notify the business owner about the dispute
+    if (recipientId) {
+      await supabase.from("notifications").insert({
+        user_id: recipientId,
+        title: "Invoice Disputed",
+        message: `A line item has been disputed: ${item.service_name} — ${disputeNote.trim()}`,
+        type: "alert",
+        related_id: invoice.work_order_id,
+      });
+    }
+
     toast({ title: "Dispute Sent", description: "Your dispute has been sent to the provider." });
     setDisputeItemId(null);
     setDisputeNote("");
