@@ -250,11 +250,16 @@ export function ServiceMenuManager() {
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium text-sm truncate">{item.name}</p>
                             <Badge variant="outline" className="text-xs shrink-0">
                               {getPricingLabel(item.pricing_model)}
                             </Badge>
+                            {formatLengthRange(item.min_length, item.max_length) && (
+                              <Badge variant="outline" className="text-xs shrink-0">
+                                {formatLengthRange(item.min_length, item.max_length)}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             ${item.default_price.toFixed(2)}
