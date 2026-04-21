@@ -193,6 +193,28 @@ export function ServiceMenuManager() {
                     placeholder="0.00"
                   />
                 </div>
+                <div>
+                  <Label>Min Length (ft)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={form.min_length}
+                    onChange={(e) => setForm({ ...form, min_length: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div>
+                  <Label>Max Length (ft)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={form.max_length}
+                    onChange={(e) => setForm({ ...form, max_length: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
               <div>
                 <Label>Description (optional)</Label>
