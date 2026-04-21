@@ -22,10 +22,12 @@ export function ServiceMenuManager() {
     pricing_model: "fixed",
     default_price: "",
     description: "",
+    min_length: "",
+    max_length: "",
   });
 
   const resetForm = () => {
-    setForm({ name: "", category: "Detailing & Cleaning", pricing_model: "fixed", default_price: "", description: "" });
+    setForm({ name: "", category: "Detailing & Cleaning", pricing_model: "fixed", default_price: "", description: "", min_length: "", max_length: "" });
     setCatalogServices([]);
     setShowForm(false);
     setEditingId(null);
