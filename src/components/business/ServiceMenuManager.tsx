@@ -56,6 +56,8 @@ export function ServiceMenuManager() {
       pricing_model: form.pricing_model,
       default_price: parseFloat(form.default_price) || 0,
       description: form.description.trim() || null,
+      min_length: form.min_length.trim() === "" ? null : parseFloat(form.min_length),
+      max_length: form.max_length.trim() === "" ? null : parseFloat(form.max_length),
     };
 
     if (editingId) {
@@ -75,12 +77,21 @@ export function ServiceMenuManager() {
       pricing_model: item.pricing_model,
       default_price: item.default_price.toString(),
       description: item.description || "",
+      min_length: item.min_length != null ? item.min_length.toString() : "",
+      max_length: item.max_length != null ? item.max_length.toString() : "",
     });
     setShowForm(true);
   };
 
   const getPricingLabel = (model: string) => {
     return PRICING_MODELS.find((p) => p.value === model)?.label || model;
+  };
+
+  const formatLengthRange = (min: number | null, max: number | null): string | null => {
+    if (min == null && max == null) return null;
+    if (min != null && max != null) return `${min}-${max}ft`;
+    if (max != null) return `Up to ${max}ft`;
+    return `${min}ft+`;
   };
 
   const groupedItems = menuItems.reduce<Record<string, typeof menuItems>>((acc, item) => {
