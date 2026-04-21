@@ -1,32 +1,56 @@
 
 
-## Plan: Add Length Range Columns to Service Menu
+## Plan: Surface Length Range Fields in Service Menu UI
 
-### Database Migration
+### 1. `src/hooks/useServiceMenu.ts`
 
-Add two nullable numeric columns to `business_service_menu`:
+Extend the `ServiceMenuItem` interface:
 
-- `min_length` (numeric, nullable) — minimum boat length in feet for this pricing tier
-- `max_length` (numeric, nullable) — maximum boat length in feet for this pricing tier
-
-Semantics:
-- `NULL min_length` → no lower bound
-- `NULL max_length` → no upper bound
-- Both fields are optional regardless of `pricing_model` (fixed, hourly, per_foot, diagnostic_fee)
-
-```sql
-ALTER TABLE public.business_service_menu
-  ADD COLUMN min_length numeric NULL,
-  ADD COLUMN max_length numeric NULL;
+```ts
+export interface ServiceMenuItem {
+  // ...existing fields
+  min_length: number | null;
+  max_length: number | null;
+}
 ```
 
-No backfill needed (existing rows default to NULL = unbounded). No RLS changes needed (existing policies cover the table).
+No changes needed to `createMenuItem` / `updateMenuItem` — they already accept `Partial<ServiceMenuItem>` and forward via spread, so the new fields flow through automatically.
+
+### 2. `src/components/business/ServiceMenuManager.tsx`
+
+**Form state** — add `min_length` and `max_length` to the form state (stored as strings for input handling, converted to `number | null` on submit).
+
+**Form UI** — in both the create and edit forms, add a two-column row of numeric inputs after the price field, shown for all pricing models:
+
+```
+┌──────────────────┬──────────────────┐
+│ Min Length (ft)  │ Max Length (ft)  │
+│ [   optional   ] │ [   optional   ] │
+└──────────────────┴──────────────────┘
+```
+
+- `type="number"`, `min="0"`, `step="0.1"`, `placeholder="Optional"`
+- Empty string → `null` on save; numeric string → `parseFloat(value)`
+
+**Submit payload** — include `min_length` and `max_length` in both `createMenuItem` and `updateMenuItem` calls (sending `null` when blank).
+
+**Edit pre-fill** — when opening the edit form, populate the inputs from the existing item's values (convert `null` → `""`).
+
+**List display** — render a size-range badge next to the existing pricing-model badge when either `min_length` or `max_length` is set. Helper:
+
+```ts
+function formatLengthRange(min: number | null, max: number | null): string | null {
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return `${min}-${max}ft`;
+  if (max != null) return `Up to ${max}ft`;
+  return `${min}ft+`;
+}
+```
+
+Render as a `<Badge variant="outline">` adjacent to the pricing model badge.
 
 ### Files Changed
 
-- New migration: `supabase/migrations/<timestamp>_add_length_range_to_service_menu.sql`
-
-### Notes
-
-This migration only adds the schema. UI surfacing of the new fields in `ServiceMenuManager.tsx` and any pricing/matching logic that should consume length ranges will need follow-up work — let me know if you want those wired up next.
+- `src/hooks/useServiceMenu.ts` — add `min_length` / `max_length` to `ServiceMenuItem` interface
+- `src/components/business/ServiceMenuManager.tsx` — form state, inputs, payload, edit pre-fill, list badge
 
