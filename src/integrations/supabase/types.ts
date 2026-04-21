@@ -649,6 +649,8 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          max_length: number | null
+          min_length: number | null
           name: string
           pricing_model: string
           updated_at: string
@@ -661,6 +663,8 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          max_length?: number | null
+          min_length?: number | null
           name: string
           pricing_model?: string
           updated_at?: string
@@ -673,6 +677,8 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          max_length?: number | null
+          min_length?: number | null
           name?: string
           pricing_model?: string
           updated_at?: string
