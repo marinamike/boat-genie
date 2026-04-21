@@ -22,10 +22,12 @@ export function ServiceMenuManager() {
     pricing_model: "fixed",
     default_price: "",
     description: "",
+    min_length: "",
+    max_length: "",
   });
 
   const resetForm = () => {
-    setForm({ name: "", category: "Detailing & Cleaning", pricing_model: "fixed", default_price: "", description: "" });
+    setForm({ name: "", category: "Detailing & Cleaning", pricing_model: "fixed", default_price: "", description: "", min_length: "", max_length: "" });
     setCatalogServices([]);
     setShowForm(false);
     setEditingId(null);
@@ -54,6 +56,8 @@ export function ServiceMenuManager() {
       pricing_model: form.pricing_model,
       default_price: parseFloat(form.default_price) || 0,
       description: form.description.trim() || null,
+      min_length: form.min_length.trim() === "" ? null : parseFloat(form.min_length),
+      max_length: form.max_length.trim() === "" ? null : parseFloat(form.max_length),
     };
 
     if (editingId) {
@@ -73,12 +77,21 @@ export function ServiceMenuManager() {
       pricing_model: item.pricing_model,
       default_price: item.default_price.toString(),
       description: item.description || "",
+      min_length: item.min_length != null ? item.min_length.toString() : "",
+      max_length: item.max_length != null ? item.max_length.toString() : "",
     });
     setShowForm(true);
   };
 
   const getPricingLabel = (model: string) => {
     return PRICING_MODELS.find((p) => p.value === model)?.label || model;
+  };
+
+  const formatLengthRange = (min: number | null, max: number | null): string | null => {
+    if (min == null && max == null) return null;
+    if (min != null && max != null) return `${min}-${max}ft`;
+    if (max != null) return `Up to ${max}ft`;
+    return `${min}ft+`;
   };
 
   const groupedItems = menuItems.reduce<Record<string, typeof menuItems>>((acc, item) => {
@@ -180,6 +193,28 @@ export function ServiceMenuManager() {
                     placeholder="0.00"
                   />
                 </div>
+                <div>
+                  <Label>Min Length (ft)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={form.min_length}
+                    onChange={(e) => setForm({ ...form, min_length: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div>
+                  <Label>Max Length (ft)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={form.max_length}
+                    onChange={(e) => setForm({ ...form, max_length: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
               <div>
                 <Label>Description (optional)</Label>
@@ -215,11 +250,16 @@ export function ServiceMenuManager() {
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium text-sm truncate">{item.name}</p>
                             <Badge variant="outline" className="text-xs shrink-0">
                               {getPricingLabel(item.pricing_model)}
                             </Badge>
+                            {formatLengthRange(item.min_length, item.max_length) && (
+                              <Badge variant="outline" className="text-xs shrink-0">
+                                {formatLengthRange(item.min_length, item.max_length)}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             ${item.default_price.toFixed(2)}

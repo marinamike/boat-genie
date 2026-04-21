@@ -12,6 +12,8 @@ export interface ServiceMenuItem {
   default_price: number;
   description: string | null;
   is_active: boolean;
+  min_length: number | null;
+  max_length: number | null;
   created_at: string;
   updated_at: string;
 }
