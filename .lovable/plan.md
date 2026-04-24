@@ -1,64 +1,64 @@
 
 
-## Plan: Add Info Banner When Auto-Selection Defers to Manual Tier Pick
+## Plan: Add Type Coercion + Debug Logging to Tier Matching
 
 ### Context
 
-In the planned `QuickQuoteDialog` update (in `src/components/provider/LeadStream.tsx`), `lineItems` is intentionally left empty in two branches:
+`min_length` / `max_length` come back from Supabase as `numeric` columns. The JS client typically returns these as JS `number`s, but in some cases (especially when the column is `numeric` rather than `int`/`float8`) they can come through as **strings**. If that happens, comparisons like `boatLength >= p.minLength` silently misbehave (string vs number coercion), which would explain tiers not matching even when values look right.
 
-1. **Ambiguous match** — multiple tiers share the service name and >1 (or 0) match the boat length
-2. **No match** — boat length doesn't fit any tier's range
+### Changes to `src/components/provider/LeadStream.tsx`
 
-Currently the user just sees an empty line items area with no explanation, which looks broken.
+#### 1. Explicit `Number()` coercion when building the pool
 
-### Changes
-
-#### 1. Track the "deferred selection" reason in state
-
-Add a small piece of state alongside `lineItems`:
+In `fetchMenuItems`, where the pool array is constructed from the fetched menu rows, normalize `min_length` and `max_length`:
 
 ```ts
-const [tierSelectionHint, setTierSelectionHint] = useState<string | null>(null);
+const pool: LineItemState[] = (data ?? []).map((item) => ({
+  // ...existing fields
+  minLength:
+    item.min_length === null || item.min_length === undefined
+      ? null
+      : Number(item.min_length),
+  maxLength:
+    item.max_length === null || item.max_length === undefined
+      ? null
+      : Number(item.max_length),
+}));
 ```
 
-Set it in the same branch of the `fetchMenuItems` effect that empties `lineItems`:
+`Number(null)` → `0`, which is why we explicitly preserve `null` instead of blindly coercing.
+
+#### 2. Debug logging inside `lengthMatches`
+
+Add a `console.log` at the top of `lengthMatches` to surface the actual runtime values and types:
 
 ```ts
-// Inside the "multiple tiers" branch when matched.length !== 1
-setLineItems([]);
-setTierSelectionHint(
-  "Multiple pricing tiers found for this service. Please select the correct tier for this boat using the Add Menu Item button below."
-);
+const lengthMatches = (p: LineItemState) => {
+  if (boatLength == null) return true;
+  const minOk = p.minLength == null || boatLength >= p.minLength;
+  const maxOk = p.maxLength == null || boatLength <= p.maxLength;
+  console.log("[QuickQuote tier match]", {
+    boatLength,
+    name: p.name,
+    minLength: p.minLength,
+    maxLength: p.maxLength,
+    minOk,
+    maxOk,
+    types: {
+      boatLength: typeof boatLength,
+      minLength: typeof p.minLength,
+      maxLength: typeof p.maxLength,
+    },
+  });
+  return minOk && maxOk;
+};
 ```
 
-In every other branch (single match, exact length match, custom fallback), explicitly clear it:
-
-```ts
-setTierSelectionHint(null);
-```
-
-Also clear it whenever the provider adds a line item from the menu picker, so the banner disappears once they make a choice.
-
-#### 2. Render a subtle info banner in the line items section
-
-Just above the line items list (or in place of the empty list), render:
-
-```tsx
-{tierSelectionHint && lineItems.length === 0 && (
-  <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-    <Info className="h-4 w-4 mt-0.5 shrink-0" />
-    <span>{tierSelectionHint}</span>
-  </div>
-)}
-```
-
-- Uses `bg-muted/40` + `text-muted-foreground` for a subtle, non-alarming look (not `destructive` styling)
-- `Info` icon from `lucide-react`
-- Conditional on both the hint being set AND no line items existing, so it auto-hides as soon as the provider picks a tier
+Logging `typeof` for each value will immediately confirm whether the suspected string-vs-number issue is real.
 
 ### Files Changed
 
-- `src/components/provider/LeadStream.tsx` — add `tierSelectionHint` state, set/clear it in the tier-selection branches, render the info banner above the line items list, import `Info` from `lucide-react` if not already imported
+- `src/components/provider/LeadStream.tsx` — `Number()` coercion when mapping pool items + debug `console.log` in `lengthMatches`
 
-No DB, hook, or schema changes.
+No DB, hook, or schema changes. Logging is intended as a diagnostic — once we confirm the cause we can remove it in a follow-up.
 
