@@ -151,6 +151,10 @@ export default function BusinessSettings() {
               <Store className="w-4 h-4" />
               <span>Store</span>
             </TabsTrigger>
+            <TabsTrigger value="fees" className="flex items-center gap-1.5 px-3">
+              <DollarSign className="w-4 h-4" />
+              <span>Fees</span>
+            </TabsTrigger>
             <TabsTrigger value="staff" className="flex items-center gap-1.5 px-3">
               <Users className="w-4 h-4" />
               <span>Staff</span>
