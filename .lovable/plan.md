@@ -1,53 +1,106 @@
 
 
-## Plan: Auto-Add Emergency Service Fee to QuickQuoteDialog
+## Plan: Add Emergency Fee Columns & `business_fees` Table
 
 ### Context
 
-In `src/components/provider/LeadStream.tsx`, `fetchMenuItems` (lines 324–419) builds the menu pool and pre-populates `lineItems` based on the requested service + tier-matching logic. Wishes already carry an `is_emergency` flag (used for the lead card badge on line 143). Today, even when an emergency wish opens the quote dialog, the provider has to manually add any "Emergency Service Fee" menu item.
+The user wants to formalize fee management on the business level beyond the service menu. Currently, "Emergency Service Fee" is detected as a menu item by name match in `LeadStream.tsx`. This migration introduces structured storage for ad-hoc business fees and a quick-toggle for emergency surcharges.
 
-### Change
+### Migration Changes
 
-After the existing tier-aware auto-selection block (lines 379–410) sets the initial `lineItems`, append an extra emergency-fee line item when applicable.
+#### 1. Extend `businesses` table
 
-#### Logic
-
-```ts
-// After the existing if/else chain that sets initial lineItems:
-if (wish?.is_emergency) {
-  const emergencyFee = pool.find(
-    (p) => p.name.trim().toLowerCase() === "emergency service fee"
-  );
-  if (emergencyFee) {
-    setLineItems((prev) => [
-      ...prev,
-      { ...emergencyFee, id: nextId(), included: true, quantity: 1, poolId: emergencyFee.id },
-    ]);
-  }
-}
+```sql
+ALTER TABLE public.businesses
+  ADD COLUMN emergency_fee_enabled boolean NOT NULL DEFAULT false,
+  ADD COLUMN emergency_fee_amount numeric NOT NULL DEFAULT 0;
 ```
 
-#### Behavior
+#### 2. Create `business_fees` table
 
-- **Emergency wish + business has "Emergency Service Fee" on menu** → fee is appended as a second pre-populated line item (included, quantity 1, price from menu).
-- **Emergency wish + no matching menu item** → no-op (silent; provider can still add manually).
-- **Non-emergency wish** → no change.
-- **Match is case-insensitive** and trims whitespace, but requires the exact phrase "Emergency Service Fee" — no fuzzy matching.
-- **Ambiguous-tier branch** (where `lineItems` is set to `[]` and the hint banner shows) still gets the emergency fee appended on its own — the banner remains visible until the provider also picks the service tier, which is correct UX.
+```sql
+CREATE TABLE public.business_fees (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  pricing_model text NOT NULL CHECK (pricing_model IN ('fixed', 'hourly', 'per_foot', 'percentage')),
+  amount numeric NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-#### Placement
+CREATE INDEX idx_business_fees_business_id ON public.business_fees(business_id);
+```
 
-The emergency-fee block goes inside `fetchMenuItems`, immediately after the closing brace of the tier-selection `if/else` chain (after line 410), still inside the `try` block so the `catch` resets cleanly on error.
+- `pricing_model` uses a CHECK constraint (immutable enum-like guard) — values are static, so this is safe (not time-based).
+- `ON DELETE CASCADE` so fees are cleaned up when a business is deleted.
+- Index on `business_id` for the common scoped lookup.
 
-The functional `setLineItems((prev) => [...prev, …])` form ensures it appends to whatever the prior branch set, including the empty array from the ambiguous-tier branch.
+#### 3. Enable RLS + Policies
 
-### Why no list-card UI changes are needed
+```sql
+ALTER TABLE public.business_fees ENABLE ROW LEVEL SECURITY;
 
-The lead card on line 143 already shows the "Emergency" badge via `wish.is_emergency`. The user's second paragraph ("the emergency fee should appear automatically without the provider having to add it manually") is satisfied entirely by the `fetchMenuItems` change — when the dialog opens, the line item is already there. No card-side rendering change is required.
+-- SELECT: owner, staff, or platform admin
+CREATE POLICY "Business members can view fees"
+ON public.business_fees FOR SELECT
+TO authenticated
+USING (
+  public.is_business_owner(business_id)
+  OR public.is_business_staff(business_id)
+  OR public.is_platform_admin()
+);
+
+-- INSERT
+CREATE POLICY "Business members can insert fees"
+ON public.business_fees FOR INSERT
+TO authenticated
+WITH CHECK (
+  public.is_business_owner(business_id)
+  OR public.is_business_staff(business_id)
+  OR public.is_platform_admin()
+);
+
+-- UPDATE
+CREATE POLICY "Business members can update fees"
+ON public.business_fees FOR UPDATE
+TO authenticated
+USING (
+  public.is_business_owner(business_id)
+  OR public.is_business_staff(business_id)
+  OR public.is_platform_admin()
+)
+WITH CHECK (
+  public.is_business_owner(business_id)
+  OR public.is_business_staff(business_id)
+  OR public.is_platform_admin()
+);
+
+-- DELETE
+CREATE POLICY "Business members can delete fees"
+ON public.business_fees FOR DELETE
+TO authenticated
+USING (
+  public.is_business_owner(business_id)
+  OR public.is_business_staff(business_id)
+  OR public.is_platform_admin()
+);
+```
+
+- Uses existing security-definer helpers (`is_business_owner`, `is_business_staff`, `is_platform_admin`) — no recursion risk.
+- Platform admin included for God Mode visibility, consistent with other business-scoped tables.
+- Per-operation policies (split rather than `FOR ALL`) for clarity and easier future tightening.
+
+### Notes & Open Questions
+
+- **No data backfill** — existing emergency-fee menu items remain untouched. A future task can migrate them into `business_fees` or wire `emergency_fee_enabled`/`emergency_fee_amount` into `LeadStream.tsx`'s auto-add logic, replacing the current name-match approach. Out of scope for this migration.
+- **No `updated_at`** — not requested; can be added later with a trigger using the existing `update_updated_at_column()` if needed.
+- **No code changes** — this migration is schema-only. Hooks, forms, and the LeadStream auto-add logic stay as-is until follow-up work explicitly wires them up.
+- **Types regen** — `src/integrations/supabase/types.ts` will refresh automatically after the migration runs.
 
 ### Files Changed
 
-- `src/components/provider/LeadStream.tsx` — add the emergency-fee append block at the end of the tier-selection logic in `fetchMenuItems`.
+- New Supabase migration adding the two columns to `businesses`, creating `business_fees`, enabling RLS, and adding the four policies.
 
-No DB, hook, schema, or type changes. Relies on the business having a menu item literally named "Emergency Service Fee" (case-insensitive).
+No application code, hook, or component changes in this step.
 
