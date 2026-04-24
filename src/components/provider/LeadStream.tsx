@@ -35,6 +35,7 @@ import {
   Loader2,
   Plus,
   Trash2,
+  Info,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { WishFormItem, QuoteFormData, QuoteLineItem } from "@/hooks/useJobBoard";
@@ -270,6 +271,16 @@ interface LineItemState {
   unitPrice: number;
   included: boolean;
   isCustom: boolean;
+  minLength?: number | null;
+  maxLength?: number | null;
+  poolId?: string;
+}
+
+function formatLengthRange(min: number | null | undefined, max: number | null | undefined): string | null {
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return `${min}-${max}ft`;
+  if (max != null) return `Up to ${max}ft`;
+  return `${min}ft+`;
 }
 
 let lineItemIdCounter = 0;
@@ -301,6 +312,7 @@ function QuickQuoteDialog({
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [notes, setNotes] = useState("");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [tierSelectionHint, setTierSelectionHint] = useState<string | null>(null);
 
   const boatLength = wish?.boat?.length_ft ?? null;
   const { category, name } = wish ? getServiceDisplay(wish) : { category: "", name: "" };
@@ -314,7 +326,7 @@ function QuickQuoteDialog({
       try {
         let query = supabase
           .from("business_service_menu")
-          .select("id, name, pricing_model, default_price, category, description")
+          .select("id, name, pricing_model, default_price, category, description, min_length, max_length")
           .eq("business_id", businessId)
           .eq("is_active", true);
 
@@ -324,7 +336,7 @@ function QuickQuoteDialog({
 
         const { data } = await query.order("name");
 
-        const pool: LineItemState[] = (data || []).map((item) => {
+        const pool: LineItemState[] = (data || []).map((item: any) => {
           const isPft = item.pricing_model === "per_foot";
           const qty = isPft && boatLength ? boatLength : 1;
           return {
@@ -335,17 +347,24 @@ function QuickQuoteDialog({
             unitPrice: Number(item.default_price) || 0,
             included: true,
             isCustom: false,
+            minLength: item.min_length != null ? Number(item.min_length) : null,
+            maxLength: item.max_length != null ? Number(item.max_length) : null,
           };
         });
 
         setMenuPool(pool);
 
-        // Find the requested service in the menu
-        const matchIdx = pool.findIndex((p) => p.name === name);
-        if (matchIdx >= 0) {
-          setLineItems([{ ...pool[matchIdx], id: nextId(), included: true }]);
-        } else {
-          // Not found — add as custom line item
+        // Tier-aware auto-selection
+        const sameName = pool.filter((p) => p.name === name);
+        const lengthMatches = (p: LineItemState) => {
+          if (boatLength == null) return true;
+          const minOk = p.minLength == null || boatLength >= p.minLength;
+          const maxOk = p.maxLength == null || boatLength <= p.maxLength;
+          return minOk && maxOk;
+        };
+
+        if (sameName.length === 0) {
+          // No menu match → custom blank line item
           setLineItems([
             {
               id: nextId(),
@@ -357,11 +376,30 @@ function QuickQuoteDialog({
               isCustom: true,
             },
           ]);
+          setTierSelectionHint(null);
+        } else if (sameName.length === 1) {
+          // Single tier → pre-populate
+          setLineItems([{ ...sameName[0], id: nextId(), included: true, poolId: sameName[0].id }]);
+          setTierSelectionHint(null);
+        } else {
+          const matched = sameName.filter(lengthMatches);
+          if (matched.length === 1) {
+            // Exactly one tier fits this boat
+            setLineItems([{ ...matched[0], id: nextId(), included: true, poolId: matched[0].id }]);
+            setTierSelectionHint(null);
+          } else {
+            // Ambiguous or no length match → defer to manual selection
+            setLineItems([]);
+            setTierSelectionHint(
+              "Multiple pricing tiers found for this service. Please select the correct tier for this boat using the Add Menu Item button below."
+            );
+          }
         }
       } catch (err) {
         console.error("Error fetching menu items:", err);
         setMenuPool([]);
         setLineItems([]);
+        setTierSelectionHint(null);
       } finally {
         setLoadingMenu(false);
       }
@@ -430,13 +468,14 @@ function QuickQuoteDialog({
     ]);
   };
 
-  const addFromMenu = (menuItemName: string) => {
-    const poolItem = menuPool.find((p) => p.name === menuItemName);
+  const addFromMenu = (poolItemId: string) => {
+    const poolItem = menuPool.find((p) => p.id === poolItemId);
     if (!poolItem) return;
     setLineItems((prev) => [
       ...prev,
-      { ...poolItem, id: nextId(), included: true },
+      { ...poolItem, id: nextId(), included: true, poolId: poolItem.id },
     ]);
+    setTierSelectionHint(null);
     setAddMenuOpen(false);
   };
 
@@ -447,9 +486,9 @@ function QuickQuoteDialog({
   // Computed
   const runningTotal = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 
-  // Menu items not yet added
-  const addedNames = new Set(lineItems.map((li) => li.name));
-  const availableMenuItems = menuPool.filter((p) => !addedNames.has(p.name));
+  // Menu items not yet added (by source pool id, so duplicate-name tiers all stay available)
+  const addedPoolIds = new Set(lineItems.map((li) => li.poolId).filter(Boolean));
+  const availableMenuItems = menuPool.filter((p) => !addedPoolIds.has(p.id));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -515,9 +554,16 @@ function QuickQuoteDialog({
                   Loading...
                 </div>
               ) : lineItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-2">
-                  No items added yet. Add items below.
-                </p>
+                tierSelectionHint ? (
+                  <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{tierSelectionHint}</span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-2">
+                    No items added yet. Add items below.
+                  </p>
+                )
               ) : (
                 <div className="space-y-2">
                   {lineItems.map((li) => (
@@ -597,11 +643,15 @@ function QuickQuoteDialog({
                       <span>Add Menu Item</span>
                     </SelectTrigger>
                     <SelectContent>
-                      {availableMenuItems.map((mi) => (
-                        <SelectItem key={mi.name} value={mi.name}>
-                          {mi.name} — {formatPrice(mi.unitPrice)}
-                        </SelectItem>
-                      ))}
+                      {availableMenuItems.map((mi) => {
+                        const range = formatLengthRange(mi.minLength, mi.maxLength);
+                        return (
+                          <SelectItem key={mi.id} value={mi.id}>
+                            {mi.name}
+                            {range && ` (${range})`} — {formatPrice(mi.unitPrice)}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 )}
