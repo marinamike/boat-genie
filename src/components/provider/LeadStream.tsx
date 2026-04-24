@@ -35,6 +35,7 @@ import {
   Loader2,
   Plus,
   Trash2,
+  Info,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { WishFormItem, QuoteFormData, QuoteLineItem } from "@/hooks/useJobBoard";
