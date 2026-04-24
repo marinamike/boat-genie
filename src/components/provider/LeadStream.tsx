@@ -360,6 +360,19 @@ function QuickQuoteDialog({
           if (boatLength == null) return true;
           const minOk = p.minLength == null || boatLength >= p.minLength;
           const maxOk = p.maxLength == null || boatLength <= p.maxLength;
+          console.log("[QuickQuote tier match]", {
+            boatLength,
+            name: p.name,
+            minLength: p.minLength,
+            maxLength: p.maxLength,
+            minOk,
+            maxOk,
+            types: {
+              boatLength: typeof boatLength,
+              minLength: typeof p.minLength,
+              maxLength: typeof p.maxLength,
+            },
+          });
           return minOk && maxOk;
         };
 
