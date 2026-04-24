@@ -636,11 +636,15 @@ function QuickQuoteDialog({
                       <span>Add Menu Item</span>
                     </SelectTrigger>
                     <SelectContent>
-                      {availableMenuItems.map((mi) => (
-                        <SelectItem key={mi.name} value={mi.name}>
-                          {mi.name} — {formatPrice(mi.unitPrice)}
-                        </SelectItem>
-                      ))}
+                      {availableMenuItems.map((mi) => {
+                        const range = formatLengthRange(mi.minLength, mi.maxLength);
+                        return (
+                          <SelectItem key={mi.id} value={mi.id}>
+                            {mi.name}
+                            {range && ` (${range})`} — {formatPrice(mi.unitPrice)}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 )}
