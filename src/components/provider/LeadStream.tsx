@@ -273,6 +273,7 @@ interface LineItemState {
   isCustom: boolean;
   minLength?: number | null;
   maxLength?: number | null;
+  poolId?: string;
 }
 
 function formatLengthRange(min: number | null | undefined, max: number | null | undefined): string | null {
