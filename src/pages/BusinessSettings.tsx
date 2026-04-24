@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2, ClipboardCheck, DollarSign } from "lucide-react";
+import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2, DollarSign } from "lucide-react";
 import { FeesSetupTab } from "@/components/business/FeesSetupTab";
 import { InsuranceVaultForm } from "@/components/provider/InsuranceVaultForm";
 import { BankSetupForm } from "@/components/provider/BankSetupForm";
