@@ -408,6 +408,25 @@ function QuickQuoteDialog({
             );
           }
         }
+
+        // Auto-add Emergency Service Fee for emergency wishes
+        if (wish?.is_emergency) {
+          const emergencyFee = pool.find(
+            (p) => p.name.trim().toLowerCase() === "emergency service fee"
+          );
+          if (emergencyFee) {
+            setLineItems((prev) => [
+              ...prev,
+              {
+                ...emergencyFee,
+                id: nextId(),
+                included: true,
+                quantity: 1,
+                poolId: emergencyFee.id,
+              },
+            ]);
+          }
+        }
       } catch (err) {
         console.error("Error fetching menu items:", err);
         setMenuPool([]);
