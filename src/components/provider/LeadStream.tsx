@@ -554,9 +554,16 @@ function QuickQuoteDialog({
                   Loading...
                 </div>
               ) : lineItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-2">
-                  No items added yet. Add items below.
-                </p>
+                tierSelectionHint ? (
+                  <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{tierSelectionHint}</span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-2">
+                    No items added yet. Add items below.
+                  </p>
+                )
               ) : (
                 <div className="space-y-2">
                   {lineItems.map((li) => (
