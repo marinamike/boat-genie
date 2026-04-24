@@ -211,12 +211,12 @@ export default function BusinessSettings() {
             </CardContent>
           </Card>
 
-          <ModuleManager />
-
           <InsuranceVaultForm />
           <TaxInfoForm />
           <BankSetupForm />
           <TermsAcceptanceForm />
+
+          <ModuleManager />
 
           <Separator />
 
