@@ -311,6 +311,7 @@ function QuickQuoteDialog({
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [notes, setNotes] = useState("");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [tierSelectionHint, setTierSelectionHint] = useState<string | null>(null);
 
   const boatLength = wish?.boat?.length_ft ?? null;
   const { category, name } = wish ? getServiceDisplay(wish) : { category: "", name: "" };
@@ -324,7 +325,7 @@ function QuickQuoteDialog({
       try {
         let query = supabase
           .from("business_service_menu")
-          .select("id, name, pricing_model, default_price, category, description")
+          .select("id, name, pricing_model, default_price, category, description, min_length, max_length")
           .eq("business_id", businessId)
           .eq("is_active", true);
 
@@ -334,7 +335,7 @@ function QuickQuoteDialog({
 
         const { data } = await query.order("name");
 
-        const pool: LineItemState[] = (data || []).map((item) => {
+        const pool: LineItemState[] = (data || []).map((item: any) => {
           const isPft = item.pricing_model === "per_foot";
           const qty = isPft && boatLength ? boatLength : 1;
           return {
@@ -345,17 +346,24 @@ function QuickQuoteDialog({
             unitPrice: Number(item.default_price) || 0,
             included: true,
             isCustom: false,
+            minLength: item.min_length != null ? Number(item.min_length) : null,
+            maxLength: item.max_length != null ? Number(item.max_length) : null,
           };
         });
 
         setMenuPool(pool);
 
-        // Find the requested service in the menu
-        const matchIdx = pool.findIndex((p) => p.name === name);
-        if (matchIdx >= 0) {
-          setLineItems([{ ...pool[matchIdx], id: nextId(), included: true }]);
-        } else {
-          // Not found — add as custom line item
+        // Tier-aware auto-selection
+        const sameName = pool.filter((p) => p.name === name);
+        const lengthMatches = (p: LineItemState) => {
+          if (boatLength == null) return true;
+          const minOk = p.minLength == null || boatLength >= p.minLength;
+          const maxOk = p.maxLength == null || boatLength <= p.maxLength;
+          return minOk && maxOk;
+        };
+
+        if (sameName.length === 0) {
+          // No menu match → custom blank line item
           setLineItems([
             {
               id: nextId(),
@@ -367,11 +375,30 @@ function QuickQuoteDialog({
               isCustom: true,
             },
           ]);
+          setTierSelectionHint(null);
+        } else if (sameName.length === 1) {
+          // Single tier → pre-populate
+          setLineItems([{ ...sameName[0], id: nextId(), included: true }]);
+          setTierSelectionHint(null);
+        } else {
+          const matched = sameName.filter(lengthMatches);
+          if (matched.length === 1) {
+            // Exactly one tier fits this boat
+            setLineItems([{ ...matched[0], id: nextId(), included: true }]);
+            setTierSelectionHint(null);
+          } else {
+            // Ambiguous or no length match → defer to manual selection
+            setLineItems([]);
+            setTierSelectionHint(
+              "Multiple pricing tiers found for this service. Please select the correct tier for this boat using the Add Menu Item button below."
+            );
+          }
         }
       } catch (err) {
         console.error("Error fetching menu items:", err);
         setMenuPool([]);
         setLineItems([]);
+        setTierSelectionHint(null);
       } finally {
         setLoadingMenu(false);
       }
