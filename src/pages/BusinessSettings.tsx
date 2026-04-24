@@ -260,6 +260,10 @@ export default function BusinessSettings() {
           <StoreSetupTab />
         </TabsContent>
 
+        <TabsContent value="fees" className="mt-4">
+          <FeesSetupTab />
+        </TabsContent>
+
         <TabsContent value="compliance" className="mt-4 space-y-6">
           <InsuranceVaultForm />
           <TaxInfoForm />
