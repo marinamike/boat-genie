@@ -379,13 +379,13 @@ function QuickQuoteDialog({
           setTierSelectionHint(null);
         } else if (sameName.length === 1) {
           // Single tier → pre-populate
-          setLineItems([{ ...sameName[0], id: nextId(), included: true }]);
+          setLineItems([{ ...sameName[0], id: nextId(), included: true, poolId: sameName[0].id }]);
           setTierSelectionHint(null);
         } else {
           const matched = sameName.filter(lengthMatches);
           if (matched.length === 1) {
             // Exactly one tier fits this boat
-            setLineItems([{ ...matched[0], id: nextId(), included: true }]);
+            setLineItems([{ ...matched[0], id: nextId(), included: true, poolId: matched[0].id }]);
             setTierSelectionHint(null);
           } else {
             // Ambiguous or no length match → defer to manual selection
