@@ -213,6 +213,11 @@ export default function BusinessSettings() {
 
           <ModuleManager />
 
+          <InsuranceVaultForm />
+          <TaxInfoForm />
+          <BankSetupForm />
+          <TermsAcceptanceForm />
+
           <Separator />
 
           {user?.email === PLATFORM_ADMIN_EMAIL && (
