@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2, ClipboardCheck, DollarSign } from "lucide-react";
+import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2, DollarSign } from "lucide-react";
 import { FeesSetupTab } from "@/components/business/FeesSetupTab";
 import { InsuranceVaultForm } from "@/components/provider/InsuranceVaultForm";
 import { BankSetupForm } from "@/components/provider/BankSetupForm";
@@ -159,10 +159,6 @@ export default function BusinessSettings() {
               <Users className="w-4 h-4" />
               <span>Staff</span>
             </TabsTrigger>
-            <TabsTrigger value="compliance" className="flex items-center gap-1.5 px-3">
-              <ClipboardCheck className="w-4 h-4" />
-              <span>Compliance</span>
-            </TabsTrigger>
           </TabsList>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
@@ -217,6 +213,11 @@ export default function BusinessSettings() {
 
           <ModuleManager />
 
+          <InsuranceVaultForm />
+          <TaxInfoForm />
+          <BankSetupForm />
+          <TermsAcceptanceForm />
+
           <Separator />
 
           {user?.email === PLATFORM_ADMIN_EMAIL && (
@@ -262,13 +263,6 @@ export default function BusinessSettings() {
 
         <TabsContent value="fees" className="mt-4">
           <FeesSetupTab />
-        </TabsContent>
-
-        <TabsContent value="compliance" className="mt-4 space-y-6">
-          <InsuranceVaultForm />
-          <TaxInfoForm />
-          <BankSetupForm />
-          <TermsAcceptanceForm />
         </TabsContent>
       </Tabs>
     </div>
