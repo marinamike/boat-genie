@@ -159,10 +159,6 @@ export default function BusinessSettings() {
               <Users className="w-4 h-4" />
               <span>Staff</span>
             </TabsTrigger>
-            <TabsTrigger value="compliance" className="flex items-center gap-1.5 px-3">
-              <ClipboardCheck className="w-4 h-4" />
-              <span>Compliance</span>
-            </TabsTrigger>
           </TabsList>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
