@@ -473,7 +473,7 @@ function QuickQuoteDialog({
     if (!poolItem) return;
     setLineItems((prev) => [
       ...prev,
-      { ...poolItem, id: nextId(), included: true },
+      { ...poolItem, id: nextId(), included: true, poolId: poolItem.id },
     ]);
     setTierSelectionHint(null);
     setAddMenuOpen(false);
@@ -486,8 +486,8 @@ function QuickQuoteDialog({
   // Computed
   const runningTotal = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 
-  // Menu items not yet added (by pool id, so duplicate-name tiers all stay available)
-  const addedPoolIds = new Set(lineItems.map((li) => li.id));
+  // Menu items not yet added (by source pool id, so duplicate-name tiers all stay available)
+  const addedPoolIds = new Set(lineItems.map((li) => li.poolId).filter(Boolean));
   const availableMenuItems = menuPool.filter((p) => !addedPoolIds.has(p.id));
 
   const handleSubmit = (e: React.FormEvent) => {
