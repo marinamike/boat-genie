@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2, ClipboardCheck } from "lucide-react";
+import { Building2, Users, Wrench, Anchor, Fuel, Store, User, LogOut, Shield, Save, Loader2, ClipboardCheck, DollarSign } from "lucide-react";
+import { FeesSetupTab } from "@/components/business/FeesSetupTab";
 import { InsuranceVaultForm } from "@/components/provider/InsuranceVaultForm";
 import { BankSetupForm } from "@/components/provider/BankSetupForm";
 import { TaxInfoForm } from "@/components/provider/TaxInfoForm";
@@ -150,6 +151,10 @@ export default function BusinessSettings() {
               <Store className="w-4 h-4" />
               <span>Store</span>
             </TabsTrigger>
+            <TabsTrigger value="fees" className="flex items-center gap-1.5 px-3">
+              <DollarSign className="w-4 h-4" />
+              <span>Fees</span>
+            </TabsTrigger>
             <TabsTrigger value="staff" className="flex items-center gap-1.5 px-3">
               <Users className="w-4 h-4" />
               <span>Staff</span>
@@ -253,6 +258,10 @@ export default function BusinessSettings() {
 
         <TabsContent value="store" className="mt-4">
           <StoreSetupTab />
+        </TabsContent>
+
+        <TabsContent value="fees" className="mt-4">
+          <FeesSetupTab />
         </TabsContent>
 
         <TabsContent value="compliance" className="mt-4 space-y-6">
