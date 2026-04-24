@@ -467,13 +467,14 @@ function QuickQuoteDialog({
     ]);
   };
 
-  const addFromMenu = (menuItemName: string) => {
-    const poolItem = menuPool.find((p) => p.name === menuItemName);
+  const addFromMenu = (poolItemId: string) => {
+    const poolItem = menuPool.find((p) => p.id === poolItemId);
     if (!poolItem) return;
     setLineItems((prev) => [
       ...prev,
       { ...poolItem, id: nextId(), included: true },
     ]);
+    setTierSelectionHint(null);
     setAddMenuOpen(false);
   };
 
@@ -484,9 +485,9 @@ function QuickQuoteDialog({
   // Computed
   const runningTotal = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 
-  // Menu items not yet added
-  const addedNames = new Set(lineItems.map((li) => li.name));
-  const availableMenuItems = menuPool.filter((p) => !addedNames.has(p.name));
+  // Menu items not yet added (by pool id, so duplicate-name tiers all stay available)
+  const addedPoolIds = new Set(lineItems.map((li) => li.id));
+  const availableMenuItems = menuPool.filter((p) => !addedPoolIds.has(p.id));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
