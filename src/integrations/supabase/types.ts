@@ -640,6 +640,44 @@ export type Database = {
           },
         ]
       }
+      business_fees: {
+        Row: {
+          amount: number
+          business_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          pricing_model: string
+        }
+        Insert: {
+          amount?: number
+          business_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          pricing_model: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          pricing_model?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_fees_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_service_menu: {
         Row: {
           business_id: string
@@ -762,6 +800,8 @@ export type Database = {
           description: string | null
           diagnostic_fee: number | null
           ein: string | null
+          emergency_fee_amount: number
+          emergency_fee_enabled: boolean
           enabled_modules: Database["public"]["Enums"]["business_module"][]
           fuel_diesel: boolean | null
           fuel_gas: boolean | null
@@ -826,6 +866,8 @@ export type Database = {
           description?: string | null
           diagnostic_fee?: number | null
           ein?: string | null
+          emergency_fee_amount?: number
+          emergency_fee_enabled?: boolean
           enabled_modules?: Database["public"]["Enums"]["business_module"][]
           fuel_diesel?: boolean | null
           fuel_gas?: boolean | null
@@ -890,6 +932,8 @@ export type Database = {
           description?: string | null
           diagnostic_fee?: number | null
           ein?: string | null
+          emergency_fee_amount?: number
+          emergency_fee_enabled?: boolean
           enabled_modules?: Database["public"]["Enums"]["business_module"][]
           fuel_diesel?: boolean | null
           fuel_gas?: boolean | null
