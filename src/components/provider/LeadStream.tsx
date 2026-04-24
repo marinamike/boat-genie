@@ -271,6 +271,15 @@ interface LineItemState {
   unitPrice: number;
   included: boolean;
   isCustom: boolean;
+  minLength?: number | null;
+  maxLength?: number | null;
+}
+
+function formatLengthRange(min: number | null | undefined, max: number | null | undefined): string | null {
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return `${min}-${max}ft`;
+  if (max != null) return `Up to ${max}ft`;
+  return `${min}ft+`;
 }
 
 let lineItemIdCounter = 0;
