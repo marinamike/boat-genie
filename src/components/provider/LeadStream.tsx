@@ -274,9 +274,18 @@ interface LineItemState {
   unitPrice: number;
   included: boolean;
   isCustom: boolean;
+  isFee?: boolean;
+  appliesTo?: string; // "total" | another lineItem.id (percentage fees only)
   minLength?: number | null;
   maxLength?: number | null;
   poolId?: string;
+}
+
+interface BusinessFeeRow {
+  id: string;
+  name: string;
+  pricing_model: "fixed" | "hourly" | "per_foot" | "percentage";
+  amount: number;
 }
 
 function formatLengthRange(min: number | null | undefined, max: number | null | undefined): string | null {
