@@ -539,12 +539,55 @@ function QuickQuoteDialog({
     setAddMenuOpen(false);
   };
 
+  const addFromFee = (feeId: string) => {
+    const fee = businessFees.find((f) => f.id === feeId);
+    if (!fee) return;
+    setLineItems((prev) => [
+      ...prev,
+      {
+        id: nextId(),
+        name: fee.name,
+        pricingModel: fee.pricing_model,
+        quantity: fee.pricing_model === "per_foot" && boatLength ? boatLength : 1,
+        unitPrice: Number(fee.amount) || 0,
+        included: true,
+        isCustom: false,
+        isFee: true,
+        appliesTo: fee.pricing_model === "percentage" ? "total" : undefined,
+      },
+    ]);
+    setAddFeeOpen(false);
+  };
+
+  const updateAppliesTo = (id: string, target: string) => {
+    setLineItems((prev) =>
+      prev.map((li) => (li.id === id ? { ...li, appliesTo: target } : li))
+    );
+  };
+
   const removeItem = (id: string) => {
     setLineItems((prev) => prev.filter((li) => li.id !== id));
   };
 
-  // Computed
-  const runningTotal = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+  // Computed — base total excludes percentage fees so they layer on top
+  const baseItems = lineItems.filter(
+    (li) => !(li.isFee && li.pricingModel === "percentage")
+  );
+  const baseTotal = baseItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0);
+
+  const computeLineTotal = (li: LineItemState): number => {
+    if (li.isFee && li.pricingModel === "percentage") {
+      const pct = Number(li.unitPrice) || 0;
+      if (!li.appliesTo || li.appliesTo === "total") {
+        return (baseTotal * pct) / 100;
+      }
+      const target = lineItems.find((x) => x.id === li.appliesTo);
+      return target ? (target.quantity * target.unitPrice * pct) / 100 : 0;
+    }
+    return li.quantity * li.unitPrice;
+  };
+
+  const runningTotal = lineItems.reduce((s, li) => s + computeLineTotal(li), 0);
 
   // Menu items not yet added (by source pool id, so duplicate-name tiers all stay available)
   const addedPoolIds = new Set(lineItems.map((li) => li.poolId).filter(Boolean));
@@ -557,7 +600,7 @@ function QuickQuoteDialog({
       pricingModel: li.pricingModel,
       quantity: li.quantity,
       unitPrice: li.unitPrice,
-      lineTotal: li.quantity * li.unitPrice,
+      lineTotal: computeLineTotal(li),
       isCustom: li.isCustom,
     }));
 
