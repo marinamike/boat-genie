@@ -40,6 +40,7 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { WishFormItem, QuoteFormData, QuoteLineItem } from "@/hooks/useJobBoard";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface LeadStreamProps {
   wishes: WishFormItem[];
