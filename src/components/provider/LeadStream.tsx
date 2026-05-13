@@ -58,9 +58,11 @@ const urgencyColors: Record<string, string> = {
 
 const pricingModelLabels: Record<string, string> = {
   flat_rate: "Fixed",
+  fixed: "Fixed",
   per_foot: "Per Ft",
   hourly: "Hourly",
   diagnostic: "Diag",
+  percentage: "%",
 };
 
 function formatPrice(amount: number): string {
