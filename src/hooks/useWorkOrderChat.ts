@@ -54,7 +54,7 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
         .from("work_orders")
         .select(`
           id,
-          provider_id,
+          business_id,
           boat_id,
           boats!inner (
             id,
@@ -69,7 +69,21 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
 
       const boat = workOrder.boats as { id: string; name: string; owner_id: string };
       const isOwner = boat.owner_id === session.user.id;
-      const isProvider = workOrder.provider_id === session.user.id;
+
+      // Resolve the business owner's user id (the "provider" side of the chat)
+      let businessOwnerUserId: string | null = null;
+      let businessName: string | null = null;
+      if (workOrder.business_id) {
+        const { data: biz } = await supabase
+          .from("businesses")
+          .select("owner_id, business_name")
+          .eq("id", workOrder.business_id)
+          .maybeSingle();
+        businessOwnerUserId = biz?.owner_id ?? null;
+        businessName = biz?.business_name ?? null;
+      }
+
+      const isProvider = !!businessOwnerUserId && businessOwnerUserId === session.user.id;
 
       if (isAdmin) {
         setParticipant({
@@ -77,32 +91,25 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
           display_name: "Boat Genie Admin",
           role: "admin",
         });
-        setRecipientId(workOrder.provider_id || boat.owner_id);
+        setRecipientId(businessOwnerUserId || boat.owner_id);
       } else if (isOwner) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
           .eq("id", session.user.id)
           .single();
-        
+
         const firstName = profile?.full_name?.split(" ")[0] || "Boat Owner";
         setParticipant({
           id: session.user.id,
           display_name: firstName,
           role: "owner",
         });
-        setRecipientId(workOrder.provider_id);
+        setRecipientId(businessOwnerUserId);
       } else if (isProvider) {
-        // Get provider's business name from businesses table (unified schema)
-        const { data: businessProfile } = await supabase
-          .from("businesses")
-          .select("business_name")
-          .eq("owner_id", session.user.id)
-          .single();
-        
         setParticipant({
           id: session.user.id,
-          display_name: businessProfile?.business_name || "Service Provider",
+          display_name: businessName || "Service Provider",
           role: "provider",
         });
         setRecipientId(boat.owner_id);
@@ -122,7 +129,7 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
       const { data: workOrder } = await supabase
         .from("work_orders")
         .select(`
-          provider_id,
+          business_id,
           boats!inner (
             name,
             owner_id
@@ -132,7 +139,20 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
         .single();
 
       const boat = workOrder?.boats as { name: string; owner_id: string } | null;
-      
+
+      // Resolve the business owner's user id for this work order
+      let businessOwnerUserId: string | null = null;
+      let businessName: string | null = null;
+      if (workOrder?.business_id) {
+        const { data: biz } = await supabase
+          .from("businesses")
+          .select("owner_id, business_name")
+          .eq("id", workOrder.business_id)
+          .maybeSingle();
+        businessOwnerUserId = biz?.owner_id ?? null;
+        businessName = biz?.business_name ?? null;
+      }
+
       const { data: messagesData, error } = await supabase
         .from("messages")
         .select("*")
@@ -142,33 +162,29 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
       if (error) throw error;
 
       const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
-      
+
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name")
         .in("id", senderIds);
 
-      // Get business names from businesses table (unified schema)
-      const { data: businessProfiles } = await supabase
-        .from("businesses")
-        .select("owner_id, business_name")
-        .in("owner_id", senderIds);
-
       const mappedMessages: ChatMessage[] = (messagesData || []).map(msg => {
         let senderDisplayName = "Unknown";
         const isOwnMessage = msg.sender_id === currentUserId;
-        
+
         if (msg.message_type === "system") {
           senderDisplayName = "Boat Genie";
         } else if (isAdmin) {
           const profile = profiles?.find(p => p.id === msg.sender_id);
-          const businessProfile = businessProfiles?.find(p => p.owner_id === msg.sender_id);
-          senderDisplayName = businessProfile?.business_name || profile?.full_name || "User";
+          if (msg.sender_id === businessOwnerUserId) {
+            senderDisplayName = businessName || profile?.full_name || "Service Provider";
+          } else {
+            senderDisplayName = profile?.full_name || "User";
+          }
         } else if (msg.sender_id === currentUserId) {
           senderDisplayName = "You";
-        } else if (msg.sender_id === workOrder?.provider_id) {
-          const businessProfile = businessProfiles?.find(p => p.owner_id === msg.sender_id);
-          senderDisplayName = businessProfile?.business_name || "Service Provider";
+        } else if (msg.sender_id === businessOwnerUserId) {
+          senderDisplayName = businessName || "Service Provider";
         } else if (msg.sender_id === boat?.owner_id) {
           const profile = profiles?.find(p => p.id === msg.sender_id);
           const firstName = profile?.full_name?.split(" ")[0] || "Boat Owner";
@@ -293,15 +309,26 @@ export function useWorkOrderChat({ workOrderId, isOpen }: UseWorkOrderChatProps)
       const { data: workOrder } = await supabase
         .from("work_orders")
         .select(`
-          provider_id,
+          business_id,
           boats!inner (owner_id)
         `)
         .eq("id", workOrderId)
         .single();
 
       const boat = workOrder?.boats as { owner_id: string } | null;
-      const targetRecipient = recipientIdOverride || 
-        (currentUserId === workOrder?.provider_id ? boat?.owner_id : workOrder?.provider_id);
+
+      let businessOwnerUserId: string | null = null;
+      if (workOrder?.business_id) {
+        const { data: biz } = await supabase
+          .from("businesses")
+          .select("owner_id")
+          .eq("id", workOrder.business_id)
+          .maybeSingle();
+        businessOwnerUserId = biz?.owner_id ?? null;
+      }
+
+      const targetRecipient = recipientIdOverride ||
+        (currentUserId === businessOwnerUserId ? boat?.owner_id : businessOwnerUserId);
 
       if (!targetRecipient) return false;
 

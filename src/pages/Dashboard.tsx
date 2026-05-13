@@ -22,6 +22,7 @@ import { useMarineWeather } from "@/hooks/useMarineWeather";
 import { MarineLoadingScreen } from "@/components/ui/marine-loading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { InvoiceReview } from "@/components/owner/InvoiceReview";
+import { WorkOrderChat } from "@/components/chat/WorkOrderChat";
 import { formatDistanceToNow } from "date-fns";
 
 interface Boat {
@@ -621,9 +622,16 @@ const Dashboard = () => {
 
             return (
               <div className="space-y-4 mt-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <h3 className="font-semibold text-lg">{selectedJobDetail.title}</h3>
-                  <Badge variant="outline" className={badge.className}>{badge.label}</Badge>
+                  <div className="flex items-center gap-2">
+                    <WorkOrderChat
+                      workOrderId={selectedJobDetail.id}
+                      isProvider={false}
+                      otherPartyName={selectedJobDetail.business?.business_name || "Service Provider"}
+                    />
+                    <Badge variant="outline" className={badge.className}>{badge.label}</Badge>
+                  </div>
                 </div>
                 <div className="space-y-2 text-sm">
                   {selectedJobDetail.business?.business_name && (
