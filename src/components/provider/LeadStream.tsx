@@ -324,6 +324,8 @@ function QuickQuoteDialog({
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [notes, setNotes] = useState("");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [addFeeOpen, setAddFeeOpen] = useState(false);
+  const [businessFees, setBusinessFees] = useState<BusinessFeeRow[]>([]);
   const [tierSelectionHint, setTierSelectionHint] = useState<string | null>(null);
 
   const boatLength = wish?.boat?.length_ft ?? null;
