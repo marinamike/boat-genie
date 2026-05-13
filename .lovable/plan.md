@@ -1,133 +1,34 @@
-## Plan: Wire `business_fees` + emergency-fee toggle into QuickQuoteDialog
+## Plan: Wire WorkOrderChat to business_id + add Chat buttons
 
-### Context
+### 1. `src/hooks/useWorkOrderChat.ts` — replace provider_id with business_id
 
-`src/components/provider/LeadStream.tsx` `QuickQuoteDialog` currently auto-adds an emergency fee by name-matching `"Emergency Service Fee"` inside `business_service_menu` (lines ~412-429). We want it driven by `businesses.emergency_fee_enabled` / `emergency_fee_amount`, expose ad-hoc fees from `business_fees`, and render percentage fees with an "Apply to" target plus a correct dollar line total.
+**`fetchParticipants`** — change select to `id, business_id, boat_id, boats!inner(id, name, owner_id)`.
 
-### Changes — `src/components/provider/LeadStream.tsx` only
+- `isOwner = boat.owner_id === session.user.id` (unchanged).
+- `isProvider`: lookup `businesses` row where `owner_id = session.user.id`, then `isProvider = userBiz?.id === workOrder.business_id`.
+- Admin branch: `setRecipientId` to the business owner's user id (lookup `businesses.owner_id where id = workOrder.business_id`) or `boat.owner_id` fallback.
+- Owner branch: `setRecipientId` to `businesses.owner_id where id = workOrder.business_id`.
+- Provider branch: `setRecipientId(boat.owner_id)`. Display name uses already-fetched business row.
 
-#### 1. Extend `LineItemState`
+**`fetchMessages`** — change select to `business_id, boats!inner(name, owner_id)`. Lookup business owner's user id once: `businesses.select("owner_id, business_name").eq("id", workOrder.business_id).maybeSingle()`. In the map:
+- Replace `msg.sender_id === workOrder?.provider_id` with `msg.sender_id === businessOwnerUserId`.
+- Replace `businessProfiles.find(p => p.owner_id === ...)` lookup accordingly (single business row, so just check ID match and use its `business_name`).
 
-```ts
-isFee?: boolean;        // emergency fee or business_fees item
-appliesTo?: string;     // "total" | another lineItem.id (percentage fees only)
-```
+**`createSystemMessage`** — change select to `business_id, boats!inner(owner_id)`. Lookup `businesses.owner_id where id = workOrder.business_id` → `businessOwnerUserId`. Compute `targetRecipient = recipientIdOverride || (currentUserId === businessOwnerUserId ? boat?.owner_id : businessOwnerUserId)`.
 
-`isCustom` stays as today (true only for the free-text Custom Item).
+No interface changes; no realtime change.
 
-#### 2. Replace emergency-fee auto-add (lines ~412-429)
+### 2. `src/components/service/ServiceWorkOrders.tsx` — add Chat button
 
-In the dialog's open-effect, fetch the business row alongside the menu pool:
+- Import `WorkOrderChat` from `@/components/chat/WorkOrderChat`.
+- In the selected work order header (around line 779-784, next to Edit button), render `<WorkOrderChat workOrderId={selectedWorkOrder.id} isProvider={true} otherPartyName={selectedWorkOrder.guest_customer_id ? selectedWorkOrder.guest_customers?.owner_name : selectedWorkOrder.owner_profile?.full_name || "Boat Owner"} />` alongside Edit. Keep both visible whenever status !== "paid"; show Chat even when paid (so owner/provider can still message).
 
-```ts
-const { data: biz } = await supabase
-  .from("businesses")
-  .select("emergency_fee_enabled, emergency_fee_amount")
-  .eq("id", businessId)
-  .maybeSingle();
+### 3. `src/pages/Dashboard.tsx` — add Chat button to job detail sheet
 
-if (wish?.is_emergency && biz?.emergency_fee_enabled) {
-  setLineItems((prev) => [...prev, {
-    id: nextId(),
-    name: "Emergency Service Fee",
-    pricingModel: "fixed",
-    quantity: 1,
-    unitPrice: Number(biz.emergency_fee_amount) || 0,
-    included: true,
-    isCustom: false,
-    isFee: true,
-  }]);
-}
-```
-
-Drop the `pool.find(... "emergency service fee")` block.
-
-#### 3. Fetch active `business_fees`
-
-In the same effect:
-
-```ts
-const { data: feeRows } = await supabase
-  .from("business_fees")
-  .select("id, name, pricing_model, amount")
-  .eq("business_id", businessId)
-  .eq("is_active", true)
-  .order("name");
-setBusinessFees(feeRows || []);
-```
-
-New state: `businessFees: { id, name, pricing_model, amount }[]`.
-
-#### 4. Replace single Custom Item button with two buttons
-
-Two side-by-side buttons in the existing add-row (lines ~700-709):
-
-- **Add Fee** — `Select`-as-trigger (same pattern already used for "Add Menu Item"), populated from `businessFees`. Each option label: `"{name} — {amount}%"` for percentage fees, `formatPrice(amount)` otherwise.
-- **Add Custom Item** — unchanged behavior (`addCustomItem`).
-
-`addFromFee(feeId)`:
-
-```ts
-const fee = businessFees.find((f) => f.id === feeId);
-if (!fee) return;
-setLineItems((prev) => [...prev, {
-  id: nextId(),
-  name: fee.name,
-  pricingModel: fee.pricing_model,        // fixed | hourly | per_foot | percentage
-  quantity: fee.pricing_model === "per_foot" && boatLength ? boatLength : 1,
-  unitPrice: Number(fee.amount) || 0,
-  included: true,
-  isCustom: false,
-  isFee: true,
-  appliesTo: fee.pricing_model === "percentage" ? "total" : undefined,
-}]);
-```
-
-#### 5. Percentage-fee inline target selector
-
-Inside the line-item card, when `li.isFee && li.pricingModel === "percentage"`:
-
-- Replace the qty input label with `%` and bind to `unitPrice` (stored as raw percent number, e.g. `3` for 3%); force `quantity = 1` and hide the `×$` input.
-- Render an inline "Apply to" `Select` with options:
-  - `"Quote Total"` (value `"total"`, default)
-  - Every other current line item that is **not** itself a percentage fee, labeled by its `name`.
-- Updating the select writes `appliesTo` on that line item.
-
-#### 6. `runningTotal` and per-line display use `computeLineTotal`
-
-Define once in the component:
-
-```ts
-const baseItems = lineItems.filter((li) => !(li.isFee && li.pricingModel === "percentage"));
-const baseTotal = baseItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0);
-
-const computeLineTotal = (li: LineItemState): number => {
-  if (li.isFee && li.pricingModel === "percentage") {
-    const pct = Number(li.unitPrice) || 0;
-    if (!li.appliesTo || li.appliesTo === "total") return (baseTotal * pct) / 100;
-    const target = lineItems.find((x) => x.id === li.appliesTo);
-    return target ? (target.quantity * target.unitPrice * pct) / 100 : 0;
-  }
-  return li.quantity * li.unitPrice;
-};
-
-const runningTotal = lineItems.reduce((s, li) => s + computeLineTotal(li), 0);
-```
-
-**Critical (per latest user feedback):** the per-line dollar amount rendered in the quote form (currently `formatPrice(li.quantity * li.unitPrice)` at line ~656) MUST be replaced with `formatPrice(computeLineTotal(li))` for **every** line item — not just non-percentage rows. So a 3% fee on a $1,700 quote shows `$51.00`, not `$3.00`.
-
-`handleSubmit`'s per-item `lineTotal` (line ~532) likewise uses `computeLineTotal(li)` so the persisted quote matches the displayed amount. `isCustom` in the submit payload stays as today (fees → `false`).
-
-#### 7. Visual differentiation for fees
-
-Card class varies by `isFee` (amber accent for fees, primary for menu items) using `cn(...)` from `@/lib/utils`.
+- Import `WorkOrderChat`.
+- In the job detail sheet (around line 622-787), in the header row alongside the title/badge (or under the Notes block, before the pending_approval / Review Invoice blocks), render `<WorkOrderChat workOrderId={selectedJobDetail.id} isProvider={false} otherPartyName={selectedJobDetail.business?.business_name || "Service Provider"} />`.
 
 ### Out of scope
 
-- No DB / RLS changes.
-- `useBusinessFees` hook intentionally not reused — the dialog needs `businessId` from the wish (admin/staff context may differ from `useBusiness().business?.id`); keep the inline fetch consistent with the menu fetch already in this file.
-- Downstream `QuoteLineItem` shape unchanged; percentage fees ship with their computed `lineTotal` so consumers stay unchanged.
-
-### Files Changed
-
-- `src/components/provider/LeadStream.tsx` — `LineItemState` extension, emergency-fee + business_fees fetch, two-button add row, `addFromFee`, percentage `Apply to` selector with `%` input, `computeLineTotal` used by per-line display, `runningTotal`, and submit payload, fee styling.
+- No DB/RLS changes (the `messages` RLS already permits both sides via work_order participation — assumed unchanged).
+- No edits to `WorkOrderChat.tsx` itself or `chatUtils.ts` (utility still references provider_id but isn't imported by these flows; leave for a separate pass).
