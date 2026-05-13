@@ -40,6 +40,7 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { WishFormItem, QuoteFormData, QuoteLineItem } from "@/hooks/useJobBoard";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface LeadStreamProps {
   wishes: WishFormItem[];
@@ -57,9 +58,11 @@ const urgencyColors: Record<string, string> = {
 
 const pricingModelLabels: Record<string, string> = {
   flat_rate: "Fixed",
+  fixed: "Fixed",
   per_foot: "Per Ft",
   hourly: "Hourly",
   diagnostic: "Diag",
+  percentage: "%",
 };
 
 function formatPrice(amount: number): string {
@@ -271,9 +274,18 @@ interface LineItemState {
   unitPrice: number;
   included: boolean;
   isCustom: boolean;
+  isFee?: boolean;
+  appliesTo?: string; // "total" | another lineItem.id (percentage fees only)
   minLength?: number | null;
   maxLength?: number | null;
   poolId?: string;
+}
+
+interface BusinessFeeRow {
+  id: string;
+  name: string;
+  pricing_model: "fixed" | "hourly" | "per_foot" | "percentage";
+  amount: number;
 }
 
 function formatLengthRange(min: number | null | undefined, max: number | null | undefined): string | null {
@@ -312,6 +324,8 @@ function QuickQuoteDialog({
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [notes, setNotes] = useState("");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [addFeeOpen, setAddFeeOpen] = useState(false);
+  const [businessFees, setBusinessFees] = useState<BusinessFeeRow[]>([]);
   const [tierSelectionHint, setTierSelectionHint] = useState<string | null>(null);
 
   const boatLength = wish?.boat?.length_ft ?? null;
@@ -409,23 +423,37 @@ function QuickQuoteDialog({
           }
         }
 
-        // Auto-add Emergency Service Fee for emergency wishes
-        if (wish?.is_emergency) {
-          const emergencyFee = pool.find(
-            (p) => p.name.trim().toLowerCase() === "emergency service fee"
-          );
-          if (emergencyFee) {
-            setLineItems((prev) => [
-              ...prev,
-              {
-                ...emergencyFee,
-                id: nextId(),
-                included: true,
-                quantity: 1,
-                poolId: emergencyFee.id,
-              },
-            ]);
-          }
+        // Fetch business emergency-fee settings + active business_fees
+        const [{ data: biz }, { data: feeRows }] = await Promise.all([
+          supabase
+            .from("businesses")
+            .select("emergency_fee_enabled, emergency_fee_amount")
+            .eq("id", businessId)
+            .maybeSingle(),
+          supabase
+            .from("business_fees")
+            .select("id, name, pricing_model, amount")
+            .eq("business_id", businessId)
+            .eq("is_active", true)
+            .order("name"),
+        ]);
+
+        setBusinessFees((feeRows || []) as BusinessFeeRow[]);
+
+        if (wish?.is_emergency && biz?.emergency_fee_enabled) {
+          setLineItems((prev) => [
+            ...prev,
+            {
+              id: nextId(),
+              name: "Emergency Service Fee",
+              pricingModel: "fixed",
+              quantity: 1,
+              unitPrice: Number(biz.emergency_fee_amount) || 0,
+              included: true,
+              isCustom: false,
+              isFee: true,
+            },
+          ]);
         }
       } catch (err) {
         console.error("Error fetching menu items:", err);
@@ -511,12 +539,55 @@ function QuickQuoteDialog({
     setAddMenuOpen(false);
   };
 
+  const addFromFee = (feeId: string) => {
+    const fee = businessFees.find((f) => f.id === feeId);
+    if (!fee) return;
+    setLineItems((prev) => [
+      ...prev,
+      {
+        id: nextId(),
+        name: fee.name,
+        pricingModel: fee.pricing_model,
+        quantity: fee.pricing_model === "per_foot" && boatLength ? boatLength : 1,
+        unitPrice: Number(fee.amount) || 0,
+        included: true,
+        isCustom: false,
+        isFee: true,
+        appliesTo: fee.pricing_model === "percentage" ? "total" : undefined,
+      },
+    ]);
+    setAddFeeOpen(false);
+  };
+
+  const updateAppliesTo = (id: string, target: string) => {
+    setLineItems((prev) =>
+      prev.map((li) => (li.id === id ? { ...li, appliesTo: target } : li))
+    );
+  };
+
   const removeItem = (id: string) => {
     setLineItems((prev) => prev.filter((li) => li.id !== id));
   };
 
-  // Computed
-  const runningTotal = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+  // Computed — base total excludes percentage fees so they layer on top
+  const baseItems = lineItems.filter(
+    (li) => !(li.isFee && li.pricingModel === "percentage")
+  );
+  const baseTotal = baseItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0);
+
+  const computeLineTotal = (li: LineItemState): number => {
+    if (li.isFee && li.pricingModel === "percentage") {
+      const pct = Number(li.unitPrice) || 0;
+      if (!li.appliesTo || li.appliesTo === "total") {
+        return (baseTotal * pct) / 100;
+      }
+      const target = lineItems.find((x) => x.id === li.appliesTo);
+      return target ? (target.quantity * target.unitPrice * pct) / 100 : 0;
+    }
+    return li.quantity * li.unitPrice;
+  };
+
+  const runningTotal = lineItems.reduce((s, li) => s + computeLineTotal(li), 0);
 
   // Menu items not yet added (by source pool id, so duplicate-name tiers all stay available)
   const addedPoolIds = new Set(lineItems.map((li) => li.poolId).filter(Boolean));
@@ -529,7 +600,7 @@ function QuickQuoteDialog({
       pricingModel: li.pricingModel,
       quantity: li.quantity,
       unitPrice: li.unitPrice,
-      lineTotal: li.quantity * li.unitPrice,
+      lineTotal: computeLineTotal(li),
       isCustom: li.isCustom,
     }));
 
@@ -598,10 +669,17 @@ function QuickQuoteDialog({
                 )
               ) : (
                 <div className="space-y-2">
-                  {lineItems.map((li) => (
+                  {lineItems.map((li) => {
+                    const isPercentageFee = li.isFee && li.pricingModel === "percentage";
+                    return (
                     <div
                       key={li.id}
-                      className="border rounded-lg p-3 space-y-2 border-primary/40 bg-primary/5"
+                      className={cn(
+                        "border rounded-lg p-3 space-y-2",
+                        li.isFee
+                          ? "border-amber-500/40 bg-amber-500/5"
+                          : "border-primary/40 bg-primary/5"
+                      )}
                     >
                       <div className="flex items-center gap-2">
                         {li.isCustom ? (
@@ -628,36 +706,80 @@ function QuickQuoteDialog({
                         </Button>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">
-                            {li.pricingModel === "per_foot" ? "Ft" : "Qty"}
-                          </Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={li.quantity}
-                            onChange={(e) => updateQuantity(li.id, parseFloat(e.target.value) || 0)}
-                            className="h-7 w-16 text-sm"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground">×$</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={li.unitPrice}
-                            onChange={(e) => updateUnitPrice(li.id, parseFloat(e.target.value) || 0)}
-                            className="h-7 w-20 text-sm"
-                          />
-                        </div>
+                        {isPercentageFee ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={li.unitPrice}
+                              onChange={(e) => updateUnitPrice(li.id, parseFloat(e.target.value) || 0)}
+                              className="h-7 w-20 text-sm"
+                            />
+                            <Label className="text-[10px] text-muted-foreground">%</Label>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1">
+                              <Label className="text-[10px] text-muted-foreground">
+                                {li.pricingModel === "per_foot" ? "Ft" : "Qty"}
+                              </Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={li.quantity}
+                                onChange={(e) => updateQuantity(li.id, parseFloat(e.target.value) || 0)}
+                                className="h-7 w-16 text-sm"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Label className="text-[10px] text-muted-foreground">×$</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={li.unitPrice}
+                                onChange={(e) => updateUnitPrice(li.id, parseFloat(e.target.value) || 0)}
+                                className="h-7 w-20 text-sm"
+                              />
+                            </div>
+                          </>
+                        )}
                         <span className="text-sm font-medium ml-auto">
-                          {formatPrice(li.quantity * li.unitPrice)}
+                          {formatPrice(computeLineTotal(li))}
                         </span>
                       </div>
+                      {isPercentageFee && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-[10px] text-muted-foreground shrink-0">Apply to</Label>
+                          <Select
+                            value={li.appliesTo || "total"}
+                            onValueChange={(v) => updateAppliesTo(li.id, v)}
+                          >
+                            <SelectTrigger className="h-7 text-xs flex-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="total">Quote Total</SelectItem>
+                              {lineItems
+                                .filter(
+                                  (x) =>
+                                    x.id !== li.id &&
+                                    !(x.isFee && x.pricingModel === "percentage")
+                                )
+                                .map((x) => (
+                                  <SelectItem key={x.id} value={x.id}>
+                                    {x.name || "Untitled"}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -697,6 +819,29 @@ function QuickQuoteDialog({
                   <Plus className="w-3 h-3 mr-1" />
                   Diagnostic Fee
                 </Button>
+                {businessFees.length > 0 && (
+                  <Select
+                    open={addFeeOpen}
+                    onOpenChange={setAddFeeOpen}
+                    onValueChange={addFromFee}
+                    value=""
+                  >
+                    <SelectTrigger className="h-8 w-auto text-xs gap-1 px-3">
+                      <Plus className="w-3 h-3" />
+                      <span>Add Fee</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {businessFees.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name} —{" "}
+                          {f.pricing_model === "percentage"
+                            ? `${Number(f.amount)}%`
+                            : formatPrice(Number(f.amount))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -705,7 +850,7 @@ function QuickQuoteDialog({
                   className="text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" />
-                  Custom Item
+                  Add Custom Item
                 </Button>
               </div>
             </div>
