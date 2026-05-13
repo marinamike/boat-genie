@@ -15,6 +15,7 @@ import {
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Plus, Play, Pause, ChevronRight, FilePlus, User, Pencil, PlusCircle, Package, Loader2, CheckCircle, ClipboardCheck, ChevronDown, Wrench, AlertTriangle } from "lucide-react";
 import { EditWorkOrderSheet } from "@/components/service/EditWorkOrderSheet";
+import { WorkOrderChat } from "@/components/chat/WorkOrderChat";
 import { useStoreInventory } from "@/hooks/useStoreInventory";
 import { CreateWorkOrderDialog } from "@/components/provider/CreateWorkOrderDialog";
 import { WorkTimer } from "@/components/provider/WorkTimer";
@@ -776,12 +777,23 @@ export function ServiceWorkOrders({
                   <CardTitle className="text-lg flex items-center gap-2">
                     {selectedWorkOrder.title}
                   </CardTitle>
-                  {selectedWorkOrder.status !== "paid" && (
-                    <Button size="sm" variant="outline" onClick={() => setShowEditSheet(true)}>
-                      <Pencil className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <WorkOrderChat
+                      workOrderId={selectedWorkOrder.id}
+                      isProvider={true}
+                      otherPartyName={
+                        selectedWorkOrder.guest_customer_id
+                          ? selectedWorkOrder.guest_customers?.owner_name || "Guest Customer"
+                          : selectedWorkOrder.owner_profile?.full_name || "Boat Owner"
+                      }
+                    />
+                    {selectedWorkOrder.status !== "paid" && (
+                      <Button size="sm" variant="outline" onClick={() => setShowEditSheet(true)}>
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
