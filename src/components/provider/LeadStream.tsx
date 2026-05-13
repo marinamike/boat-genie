@@ -423,23 +423,37 @@ function QuickQuoteDialog({
           }
         }
 
-        // Auto-add Emergency Service Fee for emergency wishes
-        if (wish?.is_emergency) {
-          const emergencyFee = pool.find(
-            (p) => p.name.trim().toLowerCase() === "emergency service fee"
-          );
-          if (emergencyFee) {
-            setLineItems((prev) => [
-              ...prev,
-              {
-                ...emergencyFee,
-                id: nextId(),
-                included: true,
-                quantity: 1,
-                poolId: emergencyFee.id,
-              },
-            ]);
-          }
+        // Fetch business emergency-fee settings + active business_fees
+        const [{ data: biz }, { data: feeRows }] = await Promise.all([
+          supabase
+            .from("businesses")
+            .select("emergency_fee_enabled, emergency_fee_amount")
+            .eq("id", businessId)
+            .maybeSingle(),
+          supabase
+            .from("business_fees")
+            .select("id, name, pricing_model, amount")
+            .eq("business_id", businessId)
+            .eq("is_active", true)
+            .order("name"),
+        ]);
+
+        setBusinessFees((feeRows || []) as BusinessFeeRow[]);
+
+        if (wish?.is_emergency && biz?.emergency_fee_enabled) {
+          setLineItems((prev) => [
+            ...prev,
+            {
+              id: nextId(),
+              name: "Emergency Service Fee",
+              pricingModel: "fixed",
+              quantity: 1,
+              unitPrice: Number(biz.emergency_fee_amount) || 0,
+              included: true,
+              isCustom: false,
+              isFee: true,
+            },
+          ]);
         }
       } catch (err) {
         console.error("Error fetching menu items:", err);
