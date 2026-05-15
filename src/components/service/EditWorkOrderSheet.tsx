@@ -90,16 +90,6 @@ export function EditWorkOrderSheet({ open, onOpenChange, workOrder, onSaved }: E
       scheduled_date: scheduledDate || null,
     };
 
-    console.log("[EditWorkOrderSheet] saveChanges debug:", {
-      workOrderStatus: workOrder.status,
-      isActiveStatus,
-      basePrice,
-      basePriceType: typeof basePrice,
-      originalRetailPrice,
-      priceChanged,
-      updatePayload,
-    });
-
     if (priceChanged) {
       const { error } = await supabase
         .from("work_orders")
