@@ -618,7 +618,6 @@ const Dashboard = () => {
               }
             };
 
-            console.log("[Job Detail Sheet] status:", selectedJobDetail.status, "proposed_retail_price:", selectedJobDetail.proposed_retail_price);
 
             return (
               <div className="space-y-4 mt-4">
